@@ -1,0 +1,11 @@
+h1. match
+
+A optimizing pattern matching and predicate dispatch library for Clojure.
+
+h1. Resources
+
+* "Efficient Predicate Dispatch":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553
+* "Optimizing Pattern Matching":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507
+* "Pattern Guards And Transformational Patterns":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.35.8851
+* "Extensible Pattern Matching for Extensible Languages":http://www.ccs.neu.edu/home/samth/ifl2010-slides.pdf
+* "Compiling Pattern Matching to Good Decision Trees":http://portal.acm.org/citation.cfm?id=1411311
