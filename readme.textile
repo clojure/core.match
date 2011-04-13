@@ -2,6 +2,8 @@ h1. match
 
 An optimizing pattern match and predicate dispatch library for Clojure.
 
+Note there's nothing to see here yet. There's a lot of work and research to do before anything useful comes of this. If you've signed a Clojure CA I'm more than willing to accept help.
+
 The basic idea is to maintain a DAG and compile it into a series of nested case statements. The following illustrates the basic idea and compares it against multimethod performance in the latest Clojure 1.3.0 alphas.
 
 <pre>
@@ -44,13 +46,13 @@ The basic idea is to maintain a DAG and compile it into a series of nested case 
                         false :m-not-understood))
         2 (case (id f2)
                 0 (case (id (x f1))
-                        1 :m2
                         0 :m4
+                        1 :m2
                         2 :m4
                         3 :m4)
                 1 (case (id (x f1))
-                        1 :m2
                         0 :m4
+                        1 :m2
                         2 :m4
                         3 :m4)
                 2 :m3
