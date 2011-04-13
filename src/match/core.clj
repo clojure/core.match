@@ -42,6 +42,97 @@
         `(case ~value
                ~@(mapcat #(emit-node % dag) edges))))))
 
+(def methodtable (atom {}))
+
+(defmacro defm [name spec args & body]
+  (if ))
+
+(comment
+  (is x A)
+  
+  (isa x ::a) 
+  (isa x ::b)
+
+  (derive ::b ::a)
+
+  (defn flip [f]
+    (fn [a b]
+      (f b a)))
+  
+  (condp (flip isa?) ::b
+    ::a :cool)
+
+  ;; 194ms for 1e6, yuk
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e6]
+       (condp (flip isa?) ::b
+         ::a :cool))))
+
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e8]
+       (.getName ^Class (class "foo")))))
+
+  ;; we can support hierarchies but they'll be the dog slow path
+
+  ;; perhaps build on strings for now, change later
+
+  ;; implicit and
+  ;; no support for or for now
+
+  (defm gf [(is A a) (is A (y a)) (not (is B (y a))) (= (y a) (y b))]
+    [a b] :m1)
+
+  (defm gf [(is B a) (is (y a) B)]
+    [a b] :m2)
+
+  (defm gf [(is C a) (is (y a) B) (is (y b) A)]
+    [a b] :m2)
+  
+  (defm gf [(is C a)]
+    [a b] :m4)
+
+  ;; we rather just want to be able to do whatever we want
+  ;; and supply preds any order, the macro should be able to
+  ;; sort it out.
+  ;; we don't want to mess w/ functions/ macros
+  ;; :of is the only special operator, for working with real types
+
+  (defm gf [a b]
+    [(a :of A) ((y a) :of A)
+     (not ((y b) :of B)) (= (y a) (= y b))]
+    :m1)
+
+  (defm gf [a b]
+    [(a :of B) ((y a) :of B)]
+    :m2)
+
+  (defm gf [a b]
+    [(a :of B) ((y a) :of B) ((y b) :of A)]
+    :m2)
+  
+  (defm gf [a b]
+    [(a :of C)]
+    :m4)
+
+  (defm gf [a b]
+    [(b :of clojure.lang.PersistentVector)]
+    :m4)
+
+  ;; guards coming before arg list is weird since we want to guard
+  ;; things that have appeared in bindings
+  (defn gf1 [0 _] :m1)
+  (defn gf1 [1 _] :m2)
+  (defn gf1 [a {y :y :as b}]
+    [(> 9 a) (float? a) (b :of B) (== y 5)]
+    :m2)
+
+  (methods gf1) ; #{ {:arglist [a {y :y :as b}] :guard {a ... }} }
+
+  ;; this is going to be tricky
+  )
+
 (comment
   ;; man I love Clojure
   (pprint (dag->case dag 0))
