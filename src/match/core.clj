@@ -131,6 +131,68 @@
   (methods gf1) ; #{ {:arglist [a {y :y :as b}] :guard {a ... }} }
 
   ;; this is going to be tricky
+
+  (defm gf2 [a]
+    (gf2 a (transient! [])))
+  (defm gf2 [[] v] (persistent! v))
+  (defm gf2 [[a & r] v] [(even? a) (integer? a)]
+    (recur r (conj v {:even-int a})))
+  (defm gf2 [[a & r] v] [(odd? a) (float? a)]
+    (recur r (conj v {:odd-float a})))
+  (defm gf2 [[a & r] v]
+    (recur r v))
+
+  (defm gf2
+    ([a] (gf2 (transient! [])))
+    ([[] v] (persistent! v))
+    ([[a & r] v] :guard [(even? a) (integer? a)]
+       (recur r (conj v {:even-int a})))
+    ([[a & r] v] :guard [(odd? a) (float? a)]
+       (recur r (conj v {:odd-float a})))
+    ([[a & r] v]
+       (recur r v)))
+
+  ;; can we make order not matter here?
+  ;; we can impose an order, is there something undecidable?
+  (defm precip
+    ([n] :guard [(integer? n)] (/ 1 n))
+    ([0] 0))
+
+  (defm precip2
+    ([n] :guard [(integer? n)] (/ 1 n))
+    ([0] 0)
+    ([1] 1)
+    ([2] 2)
+    ([3] 3)) ;; that's a constant time jump, OK
+
+  ;; if we have a literal, we check if it can subsumed by a guard?
+
+  ;; what if there's a check for (A. 0), a record
+  ;; and a test for (A? x)
+
+  (?- complement even? odd? )
+  (?- complement odd? even? )
+
+  (defm record-match [a b]
+    ([(A. 0) 1])
+    ([(A. x) 3] [(even? x)])
+    ([(A. 1) b])
+    ([(A. x) b] [(odd? x)]))
+
+  ;; 1. group expressions
+  ;;
+  ;; lots lots of thinking to do
+  ;; in all cases we need to extract a's field
+  ;;
+  ;; is A
+  ;; is x constant
+  ;; is b constant
+  ;; is x even or odd?
+
+  ;; would be nice if we could predefine define contrapositives
+  ;; *this* is what Rich Hickey is talking about
+  ;; what we'll have is an *incremental logic engine*
+  ;; the logic engine is ephemeral tho
   )
 
 (comment
