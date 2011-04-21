@@ -1,24 +1,44 @@
 (ns match.loader
   (:refer-clojure :exclude [reify == inc intern])
   (:use logos.minikanren
-        logos.rel))
+        logos.rel
+        logos.match
+        logos.tabled))
 
 (def cl (ClassLoader/getSystemClassLoader))
 
 (deftype A [])
 
 ;; defrel should be able define indexing
-(defrel is a b)
-(index-rel is b)
+(defrel is* a b)
 
 (comment
   (defrel is ^:index a ^:index b)
  )
 
-;; man is this fun!
 (defn load-class [c]
-  (doseq [x (bases c)]
-    (fact is c x)))
+  (let [bs (bases c)]
+    (doseq [x bs]
+      (fact is* c x)
+      (load-class x))))
+
+;; erg, we need to fix match
+(def is
+  (tabled [a b]
+    (cond-e
+      ((is* a b))
+      ((exist [c]
+        (is* a c)
+        (is c b))))))
+
+(comment
+  ;; FIXME
+  (defn-e is [a b]
+    ([_ _] (is* a b))
+    ([_ _] (exist [c]
+             (is* a c)
+             (is c b))))
+  )
 
 (comment
   (load-class String)
@@ -33,9 +53,11 @@
   ;; we would like to index the inverse here
 
   (run* [q]
-        (is q clojure.lang.IObj))
+        (is* q clojure.lang.IObj))
 
   ;; holy crap this would be an awesome explorer
+  ;; memoing makes a massive difference here
+  ;; 500ms versus 22000ms for 1e4
   (dotimes [_ 10]
     (time
      (dotimes [_ 1e4]
