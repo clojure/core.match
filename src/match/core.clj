@@ -47,9 +47,17 @@
 (defn subsumes? [pga pgb]
   )
 
+(defn guards-for [a gs]
+  (reduce (fn [s g]
+              (if (contains? (set g) a)
+                (conj s g)
+                s))
+          [] gs))
+
 (defn index-guards [guards al]
-  (let [gset (map set guards)]
-    ))
+  (reduce (fn [m a]
+            (assoc m a (guards-for a guards)))
+          {} al))
 
 (defn handle-p [mdata arglist guards body]
   )
