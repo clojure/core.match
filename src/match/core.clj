@@ -47,17 +47,21 @@
 (defn subsumes? [pga pgb]
   )
 
-(defn guards-for [a gs]
-  (reduce (fn [s g]
-              (if (contains? (set g) a)
-                (conj s g)
+(defn guards-for [arg guards]
+  (reduce (fn [s guard]
+              (if (contains? (set guard) arg)
+                (conj s guard)
                 s))
-          [] gs))
+          [] guards))
 
-(defn index-guards [guards al]
-  (reduce (fn [m a]
-            (assoc m a (guards-for a guards)))
-          {} al))
+;; in the end will we want to do this together with everything else
+;; TODO: descend into more complex destructuring
+(defn index-guards [arglist guards]
+  (loop [[arg & rargs] arglist path [0] m {}]
+    (if arg
+      (recur rargs (update-in path [0] clojure.core/inc)
+             (assoc m path (guards-for arg guards)))
+      m)))
 
 (defn handle-p [mdata arglist guards body]
   )
@@ -69,7 +73,7 @@
 (defmacro defpred [& xs]
   (apply defpred* xs))
 
-;; syntax-rules could really help with this
+;; sometimes syntax-rules would be real sweet
 (defn defm* [mname & [arglist & r']]
   (let [mdata (mname @method-table)]
    (cond
