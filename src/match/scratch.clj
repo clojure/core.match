@@ -4,6 +4,7 @@
 ;; :mu - method not understood
 ;; :ma - method ambiguous
 
+;; expressions ar the tests
 (def e1 '(id (class f1)))
 (def e2 '(id (class f2)))
 (def e3 '(id (class (x f1))))
