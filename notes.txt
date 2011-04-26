@@ -10,6 +10,108 @@ optimal data representation.
 
 Design
 --------------------------------------------------------------------------------
+
+Interesting case:
+
+[x y] :guard [(odd? x) (even? y)] :one
+[x 0]                             :two
+[0 y] :guard [(odd? y)]           :three
+[_ _]                             :four
+
+As matches are added we'll need to recompute the optimal matrix. We'll need to
+consider how to make this fast, as well what we can do minimize the
+work.
+
+  Step1
+  --------------------
+  [x y] :guard [(odd? x) (even? y)] :one
+
+  {:guards {[0] [(odd? x)]
+            [1] [(even? y)]}
+   :patterns [{:arglist [x y] :guard [(odd? x) (even? y)]}]
+   :start 1
+   :dag {0 ::no-method
+         1 {:test (odd? x)
+            :edges {true 2 false 0}}
+         2 {:test (odd? y)
+            :edges {true 3 fales 0}}
+         3 :one}}
+
+  Step2
+  --------------------
+  [x 0] :two
+
+  {:guards {[0] [(odd? x)]
+            [1] [(even? y)]}
+   :patterns [{:arglist [x y] :guard [(odd? x) (even? y)]}
+              {:arglist [x 0]}]
+   :start 1
+   :dag {0 ::no-method
+         1 {:test (odd? x)
+            :edges {true 4 false 0}}
+         2 {:test (odd? y)
+            :edges {true 3 false 0}}
+         3 :one
+         4 {:test y
+            :edges {0 5 ::default 2}}
+         5 :two}}
+
+  We need something like insert-node, which will shift a node.
+
+  Step3
+  --------------------
+  [0 y] :guard [(odd? y)] :three
+
+  {:guards {[0] [(odd? x)]
+            [1] [(even? y)]
+            [1] [(odd? y)]}
+   :patterns [{:arglist [x y] :guard [(odd? x) (even? y)]}
+              {:arglist [x 0]}
+              {:arglist [0 y] :guard [(odd? y)]}]
+   :start 6
+   :dag {0 ::no-method
+         1 {:test (odd? x)
+            :edges {true 4 false 0}}
+         2 {:test (odd? y)
+            :edges {true 3 false 0}}
+         3 :one
+         4 {:test y
+            :edges {0 5 ::default 2}}
+         5 :two
+         6 {:test x
+            :edges {0 7 ::default 1}}
+         7 :three}}
+
+  We'll have to rewrite parts of the graph, but that means we'll
+  have to the parts of the graph that return.
+
+  Step 4
+  --------------------
+  [_ _] :four
+
+  {:guards {[0] [(odd? x)]
+            [1] [(even? y)]
+            [1] [(odd? y)]}
+   :patterns [{:arglist [x y] :guard [(odd? x) (even? y)]}
+              {:arglist [x 0]}
+              {:arglist [0 y] :guard [(odd? y)]}
+              {:arglist [_ _]}]
+   :start 6
+   :dag {0 :four
+         1 {:test (odd? x)
+            :edges {true 4 false 0}}
+         2 {:test (odd? y)
+            :edges {true 3 false 0}}
+         3 :one
+         4 {:test y
+            :edges {0 5 ::default 2}}
+         5 :two
+         6 {:test x
+            :edges {0 7 ::default 1}}
+         7 :three}}
+  
+We still haven't considered the problem of necessity.
+
 User defines the following method
 
   (defm foo [x] :guard [(even? x)]
