@@ -18,6 +18,11 @@
 (defn var->sym [v]
   (symbol (str (.ns v)) (name (.sym v))))
 
+(defn get-implied-pred-fns [predsym]
+  (map (comp var-get resolve)
+       (run* [q]
+         (implies predsym q))))
+
 (defn defpred* [& xs]
   (let [[predsym predfn] (map (comp var->sym resolve) xs)]
    `(swap! pred-table assoc '~predsym '~predfn)))
@@ -43,4 +48,8 @@
 
   (run* [q]
     (implies `even? q))
+
+  (defm foo [x] :guard [(even? x)]
+    :two)
+  (defm foo [0] :one)
   )
