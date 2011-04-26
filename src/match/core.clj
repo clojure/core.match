@@ -92,7 +92,7 @@
   )
 
 ;; first check if any of the old guards apply to the arglist
-;; then 
+;; then whether any of the new guards apply to the 
 (defn add-method [mname arglist guards body]
   (let [{:keys [guards start dag] :as mdata} (mname @method-table)
         new-guards (index-guards arglist guards)]
