@@ -42,6 +42,7 @@
 
 (comment
   (load-class String)
+  (load-class clojure.lang.IFn)
   (load-class clojure.lang.PersistentVector)
   (load-class clojure.lang.PersistentHashMap)
   (load-class clojure.lang.PersistentHashSet)
@@ -64,4 +65,12 @@
        (doall
         (run* [q]
               (is q clojure.lang.Counted))))))
+
+  ;; now this is cool
+  (run* [q]
+     (is q clojure.lang.Sequential)
+     (is q clojure.lang.Counted))
+
+  (run* [q]
+     (is q clojure.lang.IFn))
   )
