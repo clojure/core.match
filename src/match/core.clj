@@ -21,8 +21,21 @@
             (is a z)
             (implies z b))))))
 
+(defrecord Boo [])
+
 ;; -----------------------------------------------------------------------------
-;; DAG Operations
+;; Method Operations
+
+(defn make-method
+  ([name]
+     {name {:guards {}
+            :dag {}}})
+  ([name & {:keys [guards dag] :or [{} {}]}]
+     {name {:guards guards
+            :dag dag}}))
+
+(defn make-dag []
+  [::no-method])
 
 (defn add-node [dag pred edges]
   (let [n (count dag)]
@@ -59,12 +72,14 @@
 (defn index-guards [arglist guards]
   (loop [[arg & rargs] arglist path [0] m {}]
     (if arg
+      ;; cond on whether arg is a symbol
       (recur rargs (update-in path [0] clojure.core/inc)
              (assoc m path (guards-for arg guards)))
       m)))
 
+;; TODO: check for subsumption
 (defn handle-p [mdata arglist guards body]
-  )
+  (update-in mdata [:guards] #(merge % (index-guards arglist guards))))
 
 (defn defpred* [& xs]
   (let [[predsym predfn] (map (comp var->sym resolve) xs)]
@@ -72,6 +87,19 @@
 
 (defmacro defpred [& xs]
   (apply defpred* xs))
+
+(defn merge-mdata [ma mb]
+  )
+
+;; first check if any of the old guards apply to the arglist
+;; then 
+(defn add-method [mname arglist guards body]
+  (let [{:keys [guards start dag] :as mdata} (mname @method-table)
+        new-guards (index-guards arglist guards)]
+   (swap! method-table update-in [mname]
+          (fnil (fn [mdata]
+                  (merge-with merge-mdata mdata new-mdata))
+                {}))))
 
 ;; sometimes syntax-rules would be real sweet
 (defn defm* [mname & [arglist & r']]
@@ -88,6 +116,8 @@
 
 (comment
   (defpred even? even?)
+
+  (defrecord Boo [])
 
   ;; could fix this with a macro
   ;; are there composability expectations?
@@ -130,4 +160,22 @@
 
   [a b] :guard [(= a b)]
   ;; track used guards
+
+  ;; might need to use the guard index to make the matrix for determining
+  ;; necessity in the decision tree
+
+  (let [x :foo
+        x :bar]
+    (case x
+          :foo :cool1
+          :bar :cool2
+          :fail))
+
+  (let [x [0]]
+    (case x
+         [0] :cool1
+         :bar :cool2
+         :fail))
+
+  prefers
   )
