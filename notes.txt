@@ -110,8 +110,33 @@ work.
             :edges {0 7 ::default 1}}
          7 :three}}
   
-We still haven't considered the problem of necessity.
+We still haven't considered the problem of necessity. This really feels
+like we something *before* the dag, that we can use to generate the
+dag.
 
+  | (odd? x) (even? y) |
+  | x        0         |
+  | 0        (odd? y)  |
+  | _        _         |
+
+Aha. The column representing is actually better!
+
+  | 0        (odd? y)  |
+  | (odd? x) (even? y) |
+  | x        0         |
+  | _        _         |
+
+We should put the example from Efficient Predicate Dispatch into this
+format.
+
+When there is an internal access, should just be considered as another column?
+
+  | 0         _  (odd? y)  |
+  | (odd? x)  _  (even? y) |
+  | x         _  0         |
+  | (A. y)    y  _         |
+  | _         _  _         |
+  
 User defines the following method
 
   (defm foo [x] :guard [(even? x)]
