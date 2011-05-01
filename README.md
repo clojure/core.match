@@ -1,4 +1,5 @@
-h1. match
+match
+====
 
 An optimizing pattern match and predicate dispatch library for Clojure.
 
@@ -8,7 +9,7 @@ The basic idea is to maintain a DAG and compile it into a series of nested case 
 
 More "crazy ideas here":https://github.com/swannodette/match/wiki/Crazy-Ideas.
 
-<pre>
+```clj
 (defprotocol I
   (x [this])
   (y [this]))
@@ -87,16 +88,18 @@ More "crazy ideas here":https://github.com/swannodette/match/wiki/Crazy-Ideas.
       (time
        (dotimes [_ 1e7]
          (gf o1 o2)))))
-</pre>
+```
 
-h1. Resources
+Resources
+----
 
-* "Efficient Predicate Dispatch":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553
-* "Optimizing Pattern Matching":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507
-* "Pattern Guards And Transformational Patterns":http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.35.8851
-* "Extensible Pattern Matching for Extensible Languages":http://www.ccs.neu.edu/home/samth/ifl2010-slides.pdf
-* "Compiling Pattern Matching to Good Decision Trees":http://portal.acm.org/citation.cfm?id=1411311
+* [Efficient Predicate Dispatch](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553)
+* [Optimizing Pattern Matching"](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507)
+* [Pattern Guards And Transformational Patterns"](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.35.8851)
+* [Extensible Pattern Matching for Extensible Languages](http://www.ccs.neu.edu/home/samth/ifl2010-slides.pdf)
+* [Compiling Pattern Matching to Good Decision Trees"](http://portal.acm.org/citation.cfm?id=1411311)
+* [Art of the Metaobject Protocol](http://mitpress.mit.edu/catalog/item/default.asp?ttype=2&tid=3925)
 
-Copyright (C) 2010 David Nolen
+Copyright (C) 2011 David Nolen
 
 Distributed under the Eclipse Public License, the same as Clojure.
