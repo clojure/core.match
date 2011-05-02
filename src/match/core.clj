@@ -49,6 +49,40 @@
 (defn type-spec? [[p s]]
   (== p `isa?))
 
+(defn is-pred? [[pa s] pb]
+  (== pa pb))
+
+(defn add-method [name as gs body]
+  (swap! method-table update-in [name (count as)]
+         (fnil (fn [xs]
+                 (conj xs {:pvector as
+                           :guards (index-guards as gs)}))
+               [])))
+
+(defn necessary? [pmatrix col-idx]
+  (every? (fn [{:keys [pvector guards]}]
+               (let [asym (pvector col-idx)]
+                 (some (fn [g] (type-spec? g)) (guards asym))))
+          pmatrix))
+
+(defn necessary-index [pmatrix arity]
+  (loop [col-idx 0]
+    (cond
+     (>= col-idx arity) 0
+     (necessary? pmatrix col-idx) col-idx
+     :else (recur (inc col-idx)))))
+
+;; destructuring would happen after we confirm the type, shazam!
+(defn specialize [pmatrix col-idx spec]
+  (map (fn [row]
+         (let [a ((:pvector row) col-idx)]
+           (-> row
+               (update-in [:pvector] (fn [v] (remove #(= % a) v)))
+               (update-in [:guards a] (fn [gs]
+                                         (remove (fn [g] (is-pred? g spec))
+                                                 gs))))))
+       pmatrix))
+
 (defn defpred* [& xs]
   (let [[predsym predfn] (map (comp var->sym resolve) xs)]
    `(swap! pred-table assoc '~predsym '~predfn)))
@@ -56,37 +90,13 @@
 (defmacro defpred [& xs]
   (apply defpred* xs))
 
-(defn add-method [name as gs body]
-  (swap! method-table update-in [name]
-         (fnil (fn [m]
-                 (update-in m [(count as)]
-                            (fnil
-                             (fn [xs]
-                                (conj xs {:arglist as
-                                          :guards (index-guards as gs)}))
-                             [])))
-               {})))
-
-(defn necessary? [pmatrix col-idx]
-  (every? (fn [{:keys [arglist guards]}]
-               (let [asym (arglist col-idx)]
-                 (some (fn [g] (type-spec? g)) (guards asym))))
-          pmatrix))
-
-(defn necessary-index [pmatrix arity]
-  (loop [i 0]
-    (cond
-     (>= i arity) 0
-     (necessary? pmatrix i) i
-     :else (recur (inc i)))))
-
-(defn defm* [mname & [arglist & r']]
+(defn defm* [mname & [pvector & r']]
   (let [mdata (mname @method-table)]
    (cond
-    (vector? arglist) (let [[guards body] (if (== (first r') :guard)
+    (vector? pvector) (let [[guards body] (if (== (first r') :guard)
                                             [(second r') (drop 2 r')]
                                             [nil (rest r')])]
-                        (handle-p mdata arglist guards body))
+                        (handle-p mdata pvector guards body))
     :else nil)))
 
 (defmacro defm [& xs]
@@ -96,9 +106,12 @@
   (do
     (reset! method-table {})
     (add-method 'foo '[a b] '[(isa? a A)] nil)
-    (add-method 'foo '[a b] '[(isa? a C)] nil))
+    (add-method 'foo '[a b] '[(isa? a C) (isa? b D)] nil))
 
-  (necessary? (get-in @method-table '[foo 2]) 1)
+  (necessary? (get-in @method-table '[foo 2]) 0) ; true
+  (necessary? (get-in @method-table '[foo 2]) 1) ; false
+
+  (specialize (get-in @method-table '[foo 2]) 0 'isa?)
 
   (defpred even? even?)
 
@@ -115,4 +128,6 @@
   (defm foo [x] :guard [(even? x)]
     :two)
   (defm foo [0] :one)
+
+  ;; more than one test, means we'll check things after the first dispatch?
   )
