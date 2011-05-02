@@ -357,3 +357,49 @@ This simple case can definitely be handled.
 We could support Racket like things.
 
 (? every? even? foo)
+
+
+Predicate Dispatch
+--------------------------------------------------------------------------------
+
+[{f1x :x f1y :y :as f1} {f2x :x f2y :y :as f2}] :guard [(isa? f1 A)
+                                                        (isa? f1x A)
+                                                        (not (isa? B f1))
+                                                        (isa? f2x C)
+                                                        (= f1y f2y)]
+
+[{f1x :x :as f1} f2] :guard [(isa? f1 B) (isa? f1x B)]
+[{f1x :x :as f1} f2] :guard [(isa? f1 C) (isa? f2 A) (isa? f1x B)]
+[f1 f2] :guard [(isa? f1 C) (isa? f2 C)]
+[f1 _] :guard [(isa? f1 C)]
+
+| f1#A f2   |
+| f1#B f2   |
+| f1#C f2#A |
+| f1#C f2#C |
+| f1#C f2   |
+
+NOTE: how to deal with multiple isa? on a subterm? (isa? x B) (isa? x A)
+
+column 1 is clear the most important since it tests for type in all cases
+
+This is actually much simpler than what is suggested in the Efficient
+Predicate Dispatch paper, if f1#A is selected we don't need to use
+those tests anywhere else, we can can remove predicates as we
+specialize and if there are no other matches, we can just destructure
+and run the remaining bits?
+
+Same for B
+
+For C we actually have some legitimate tests
+
+
+Issues
+-----------------------------------------------------------------------------
+
+One thing that is tough is recovering the method. 
+
+(get-method foo [0 1])
+
+Should return the method that matches the particular argument
+list. Need to think about this.

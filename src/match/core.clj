@@ -34,17 +34,17 @@
        (run* [q]
          (implies predsym q))))
 
-(defn guards-for [a gs]
+(defn guards-for [p gs]
   (reduce (fn [s g]
-              (if (contains? (set g) a)
+              (if (contains? (set g) p)
                 (conj s g)
                 s))
           [] gs))
 
-(defn index-guards [as gs]
-  (reduce (fn [m a]
-            (assoc m a (guards-for a gs)))
-          {} as))
+(defn index-guards [ps gs]
+  (reduce (fn [m p]
+            (assoc m p (guards-for p gs)))
+          {} ps))
 
 (defn type-spec? [[p s]]
   (== p `isa?))
@@ -52,17 +52,18 @@
 (defn is-pred? [[pa s] pb]
   (== pa pb))
 
-(defn add-method [name as gs body]
-  (swap! method-table update-in [name (count as)]
+(defn add-method [name ps gs body]
+  (swap! method-table update-in [name (count ps)]
          (fnil (fn [xs]
-                 (conj xs {:pvector as
-                           :guards (index-guards as gs)}))
+                 (conj xs {:pvector ps
+                           :guards (index-guards ps gs)}))
                [])))
 
 (defn necessary? [pmatrix col-idx]
   (every? (fn [{:keys [pvector guards]}]
-               (let [asym (pvector col-idx)]
-                 (some (fn [g] (type-spec? g)) (guards asym))))
+               (let [p (pvector col-idx)]
+                 (or (literal? p)
+                     (some (fn [g] (type-spec? g)) (guards p)))))
           pmatrix))
 
 (defn necessary-index [pmatrix arity]
@@ -72,13 +73,27 @@
      (necessary? pmatrix col-idx) col-idx
      :else (recur (inc col-idx)))))
 
+(defn literal? [x]
+  (or (number? x)))
+
+(defn specializer-for-pattern [p gs]
+  (cond
+   (literal? p) '=
+   :else (first (first gs))))
+
+(defn specializers [pmatrix col-idx]
+  (reduce (fn [s {:keys [pvector guards] :as row}]
+            (let [p (pvector col-idx)]
+             (conj s (specializer-for-pattern p (guards p)))))
+          #{} pmatrix))
+
 ;; destructuring would happen after we confirm the type, shazam!
 (defn specialize [pmatrix col-idx spec]
   (map (fn [row]
-         (let [a ((:pvector row) col-idx)]
+         (let [p ((:pvector row) col-idx)]
            (-> row
-               (update-in [:pvector] (fn [v] (remove #(= % a) v)))
-               (update-in [:guards a] (fn [gs]
+               (update-in [:pvector] (fn [v] (remove #(= % p) v)))
+               (update-in [:guards p] (fn [gs]
                                          (remove (fn [g] (is-pred? g spec))
                                                  gs))))))
        pmatrix))
@@ -105,6 +120,7 @@
 (comment
   (do
     (reset! method-table {})
+    (add-method 'foo '[0 b] nil nil)
     (add-method 'foo '[a b] '[(isa? a A)] nil)
     (add-method 'foo '[a b] '[(isa? a C) (isa? b D)] nil))
 
@@ -112,6 +128,8 @@
   (necessary? (get-in @method-table '[foo 2]) 1) ; false
 
   (specialize (get-in @method-table '[foo 2]) 0 'isa?)
+
+  (specializers (get-in @method-table '[foo 2]) 0) ; #{isa? =}
 
   (defpred even? even?)
 
@@ -130,4 +148,6 @@
   (defm foo [0] :one)
 
   ;; more than one test, means we'll check things after the first dispatch?
+  ;; remaining guards for an argument
+  ;;
   )
