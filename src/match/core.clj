@@ -119,15 +119,17 @@
   (do
     (reset! method-table {})
     (add-method 'foo '[0 b] nil nil)
+    (add-method 'foo '[x _] '[(number? x)] nil)
     (add-method 'foo '[a b] '[(isa? a A)] nil)
     (add-method 'foo '[a b] '[(isa? a C) (isa? b D)] nil))
 
   (necessary? (get-in @method-table '[foo 2]) 0) ; true
   (necessary? (get-in @method-table '[foo 2]) 1) ; false
 
+  ;; TODO: remove the one's that don't use isa?
   (specialize (get-in @method-table '[foo 2]) 0 'isa?)
 
-  (specializers (get-in @method-table '[foo 2]) 0) ; #{isa? =}
+  (specializers (get-in @method-table '[foo 2]) 0) ; #{isa? = number?}
 
   (defpred even? even?)
 
