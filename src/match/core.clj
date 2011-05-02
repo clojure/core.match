@@ -5,8 +5,8 @@
 ;; -----------------------------------------------------------------------------
 ;; Tables
 
-(def method-table (atom {}))
-(def pred-table (atom {}))
+(def method-table (atom {})) ;; storing methods
+(def pred-table (atom {}))   ;; tracking predicate symbols
 
 ;; -----------------------------------------------------------------------------
 ;; Logic
@@ -24,24 +24,6 @@
 (defrecord Boo [])
 
 ;; -----------------------------------------------------------------------------
-;; Method Operations
-
-(defn make-method
-  ([name]
-     {name {:guards {}
-            :dag {}}})
-  ([name & {:keys [guards dag] :or [{} {}]}]
-     {name {:guards guards
-            :dag dag}}))
-
-(defn make-dag []
-  [::no-method])
-
-(defn add-node [dag pred edges]
-  (let [n (count dag)]
-    (assoc dag n {:test pred :edges edges})))
-
-;; -----------------------------------------------------------------------------
 ;; defm
 
 (defn var->sym [v]
@@ -52,34 +34,20 @@
        (run* [q]
          (implies predsym q))))
 
-(defn emit-method [mname]
-  (let [m (mname @method-table)]))
-
-(defn dag->case [dag])
-
-(defn subsumes? [pga pgb]
-  )
-
-(defn guards-for [arg guards]
-  (reduce (fn [s guard]
-              (if (contains? (set guard) arg)
-                (conj s guard)
+(defn guards-for [a gs]
+  (reduce (fn [s g]
+              (if (contains? (set g) a)
+                (conj s g)
                 s))
-          [] guards))
+          [] gs))
 
-;; in the end will we want to do this together with everything else
-;; TODO: descend into more complex destructuring
-(defn index-guards [arglist guards]
-  (loop [[arg & rargs] arglist path [0] m {}]
-    (if arg
-      ;; cond on whether arg is a symbol
-      (recur rargs (update-in path [0] clojure.core/inc)
-             (assoc m path (guards-for arg guards)))
-      m)))
+(defn index-guards [as gs]
+  (reduce (fn [m a]
+            (assoc m a (guards-for a gs)))
+          {} as))
 
-;; TODO: check for subsumption
-(defn handle-p [mdata arglist guards body]
-  (update-in mdata [:guards] #(merge % (index-guards arglist guards))))
+(defn type-spec? [[p s]]
+  (== p `isa?))
 
 (defn defpred* [& xs]
   (let [[predsym predfn] (map (comp var->sym resolve) xs)]
@@ -88,20 +56,30 @@
 (defmacro defpred [& xs]
   (apply defpred* xs))
 
-(defn merge-mdata [ma mb]
-  )
+(defn add-method [name as gs body]
+  (swap! method-table update-in [name]
+         (fnil (fn [m]
+                 (update-in m [(count as)]
+                            (fnil
+                             (fn [xs]
+                                (conj xs {:arglist as
+                                          :guards (index-guards as gs)}))
+                             [])))
+               {})))
 
-;; first check if any of the old guards apply to the arglist
-;; then whether any of the new guards apply to the 
-(defn add-method [mname arglist guards body]
-  (let [{:keys [guards start dag] :as mdata} (mname @method-table)
-        new-guards (index-guards arglist guards)]
-   (swap! method-table update-in [mname]
-          (fnil (fn [mdata]
-                  (merge-with merge-mdata mdata new-mdata))
-                {}))))
+(defn necessary? [pmatrix col-idx]
+  (every? (fn [{:keys [arglist guards]}]
+               (let [asym (arglist col-idx)]
+                 (some (fn [g] (type-spec? g)) (guards asym))))
+          pmatrix))
 
-;; sometimes syntax-rules would be real sweet
+(defn necessary-index [pmatrix arity]
+  (loop [i 0]
+    (cond
+     (>= i arity) 0
+     (necessary? pmatrix i) i
+     :else (recur (inc i)))))
+
 (defn defm* [mname & [arglist & r']]
   (let [mdata (mname @method-table)]
    (cond
@@ -115,6 +93,13 @@
   (apply defm* xs))
 
 (comment
+  (do
+    (reset! method-table {})
+    (add-method 'foo '[a b] '[(isa? a A)] nil)
+    (add-method 'foo '[a b] '[(isa? a C)] nil))
+
+  (necessary? (get-in @method-table '[foo 2]) 1)
+
   (defpred even? even?)
 
   (defrecord Boo [])
@@ -130,52 +115,4 @@
   (defm foo [x] :guard [(even? x)]
     :two)
   (defm foo [0] :one)
-
-  ;; we kind of have to build backwards?
-  (add-node {} `even? {true 1 false 2})
-
-  ;; mapping from arg -> guard list for that arg
-  ;; some kind of ordering
-  {:arglists #{[0] [x]}
-   :guards {[0] [even?]}}
-
-  ;; we some concept of a path to an argument
-
-  ;; pattern match existence / non-existence of keys
-
-  ;; we need to sort the guards on the order of their appearce in the arglist ?
-
-  ;; keys that are internal to a map don't have order anyway
-  ;; vectors/seqs do
-  (let [{:keys [d e] a :a b :b}]
-    )
-
-  ;; keeping a path would work just fine
-  [0 :d]
-  [0 :b]
-  [1 :b :c 0]
-  ;; value should probably be a sorted set?
-
-  ;; guard indexing
-
-  [a b] :guard [(= a b)]
-  ;; track used guards
-
-  ;; might need to use the guard index to make the matrix for determining
-  ;; necessity in the decision tree
-
-  (let [x :foo
-        x :bar]
-    (case x
-          :foo :cool1
-          :bar :cool2
-          :fail))
-
-  (let [x [0]]
-    (case x
-         [0] :cool1
-         :bar :cool2
-         :fail))
-
-  prefers
   )
