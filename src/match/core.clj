@@ -44,11 +44,16 @@
             (assoc m p (guards-for p gs)))
           {} ps))
 
-(defn type-spec? [[p s]]
-  (== p `isa?))
+;; TODO: these will come from the macro so will most like be namespaced
+(defn type-spec? [[p]]
+  (or (= p 'isa?)
+      (= p 'number?)))
+
+(defn literal? [p]
+  (or (number? p)))
 
 (defn is-pred? [[pa s] pb]
-  (== pa pb))
+  (= pa pb))
 
 (defn add-method [name ps gs body]
   (swap! method-table update-in [name (count ps)]
@@ -71,9 +76,6 @@
      (necessary? pmatrix col-idx) col-idx
      :else (recur (inc col-idx)))))
 
-(defn literal? [x]
-  (or (number? x)))
-
 (defn specializer-for-pattern [p gs]
   (cond
    (literal? p) '=
@@ -87,14 +89,18 @@
 
 ;; destructuring would happen after we confirm the type, shazam!
 (defn specialize [pmatrix col-idx spec]
-  (map (fn [row]
-         (let [p ((:pvector row) col-idx)]
-           (-> row
-               (update-in [:pvector] (fn [v] (remove #(= % p) v)))
-               (update-in [:guards p] (fn [gs]
-                                         (remove (fn [g] (is-pred? g spec))
-                                                 gs))))))
-       pmatrix))
+  (reduce (fn [v row]
+            (let [p ((:pvector row) col-idx)
+                  gs (get-in row [:guards p])]
+              (if (some (fn [g] (is-pred? g spec)) gs)
+                (conj v
+                      (-> row
+                          (update-in [:pvector] (fn [v] (remove #(= % p) v)))
+                          (assoc-in [:guards p] (remove (fn [g]
+                                                          (is-pred? g spec))
+                                                        gs))))
+                v)))
+          [] pmatrix))
 
 (defn defpred* [& xs]
   (let [[predsym predfn] (map (comp var->sym resolve) xs)]
@@ -103,17 +109,18 @@
 (defmacro defpred [& xs]
   (apply defpred* xs))
 
-(defn defm* [mname & [pvector & r']]
-  (let [mdata (mname @method-table)]
-   (cond
-    (vector? pvector) (let [[guards body] (if (== (first r') :guard)
-                                            [(second r') (drop 2 r')]
-                                            [nil (rest r')])]
-                        (handle-p mdata pvector guards body))
-    :else nil)))
+(comment
+ (defn defm* [mname & [pvector & r']]
+   (let [mdata (mname @method-table)]
+     (cond
+      (vector? pvector) (let [[guards body] (if (= (first r') :guard)
+                                              [(second r') (drop 2 r')]
+                                              [nil (rest r')])]
+                          (handle-p mdata pvector guards body))
+      :else nil)))
 
-(defmacro defm [& xs]
-  (apply defm* xs))
+ (defmacro defm [& xs]
+   (apply defm* xs)))
 
 (comment
   (do
@@ -126,8 +133,11 @@
   (necessary? (get-in @method-table '[foo 2]) 0) ; true
   (necessary? (get-in @method-table '[foo 2]) 1) ; false
 
-  ;; TODO: remove the one's that don't use isa?
+  ;; TODO: filter the one's that don't match spec?
   (specialize (get-in @method-table '[foo 2]) 0 'isa?)
+
+  (count (get-in @method-table '[foo 2])) ; 4
+  (count (specialize (get-in @method-table '[foo 2]) 0 'isa?)) ; 2
 
   (specializers (get-in @method-table '[foo 2]) 0) ; #{isa? = number?}
 
