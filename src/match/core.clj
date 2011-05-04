@@ -123,6 +123,21 @@
    (apply defm* xs)))
 
 (comment
+  ;; NOTES: one thing to think about is how to sort the guards and how to
+  ;; move that between specializations. Perhaps it makes sense to pair each
+  ;; occurence under consideration to the most relevant guard, however the
+  ;; remaining guards will be used at the next step? Hmm this does make sense
+  ;; what if
+
+  [x] :guard [(number? x) (even? x)]
+  [x] :guard [(number? x) (even? x) (div3? x)]
+
+  ;; Really each guard represents another specialization.
+
+  ;; guard relevance
+  ;; = isa? everything else
+  ;; isa? should be the most specific?
+  
   (do
     (reset! method-table {})
     (add-method 'foo '[0 b] nil nil)
