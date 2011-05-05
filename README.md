@@ -7,7 +7,7 @@ Note there's nothing to see here yet. There's a lot of work and research to do b
 
 The basic idea is to maintain a DAG and compile it into a series of nested case statements. The following illustrates the basic idea and compares it against multimethod performance in the latest Clojure 1.3.0 alphas.
 
-More "crazy ideas here":https://github.com/swannodette/match/wiki/Crazy-Ideas.
+More [crazy ideas here](https://github.com/swannodette/match/wiki/Crazy-Ideas).
 
 ```clj
 (defprotocol I
