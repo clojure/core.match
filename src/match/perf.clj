@@ -113,12 +113,32 @@
                                      "match.perf.C" :mc
                                      "match.perf.D" :m-amb)))
 
+(defn m1 []
+  :m1)
+
+(defn mu []
+  :mu)
+
+(deftype PredFn [f]
+  clojure.lang.IFn
+  (invoke [this a1] (f a1))
+  (invoke [this a1 a2] (f a1 a2)))
+
+(comment
+  ;; 60ms
+  (let [f (PredFn. nil)]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e8]
+        (f 1 2)))))
+  )
+
 (defn dag4 [fa fb]
   (let [f (fn []
             (let [ya (y fa)
                   yb (y fb)]
               (if (= ya yb)
-                :m1)))]
+                (m1))))]
    (if (instance? A fa)
      (let [x (x fa)]
        (if (instance? A x)
@@ -132,7 +152,19 @@
        (if (instance? C fa)
          nil
          (if (instance? D fa)
-           :mu))))))
+           (mu)))))))
+
+(comment
+  ;; 60ms
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)
+        f (PredFn. dag4)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (f 1 2)))))
+  )
 
 (comment
   (let [s1 (B. nil nil)
@@ -192,7 +224,7 @@
         o2 (D. (A. nil nil) s1)]
     (dag4 o1 o2))
 
-  ;; 70ms
+  ;; 60ms
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
