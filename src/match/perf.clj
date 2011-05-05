@@ -113,13 +113,34 @@
                                      "match.perf.C" :mc
                                      "match.perf.D" :m-amb)))
 
+(defn dag4 [fa fb]
+  (let [f (fn []
+            (let [ya (y fa)
+                  yb (y fb)]
+              (if (= ya yb)
+                :m1)))]
+   (if (instance? A fa)
+     (let [x (x fa)]
+       (if (instance? A x)
+         (f)
+         (if (instance? B x)
+           (if (instance? C x)
+             (if (instance? D x)
+               nil)))))
+     (if (instance? B fa)
+       nil
+       (if (instance? C fa)
+         nil
+         (if (instance? D fa)
+           :mu))))))
+
 (comment
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
     (dag1 o1 o2))
   
-  ;; 480ms
+  ;; 330ms
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
@@ -131,9 +152,19 @@
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (id o1)))))
+
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)]
     (dag2 o1 o2))
   
-  ;; 750ms
+  ;; 360ms
+  ;; sharing fns is fine if we need that
+  ;; particularly if we support or
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
@@ -147,7 +178,7 @@
         o2 (A. (A. nil nil) s1)]
     (dag3 o1 o2))
 
-  ;; 350ms
+  ;; 175ms
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)]
@@ -155,4 +186,21 @@
       (time
        (dotimes [_ 1e7]
          (dag3 o1 o2)))))
+
+  (let [s1 (B. nil nil)
+        o1 (D. (A. nil nil) s1)
+        o2 (D. (A. nil nil) s1)]
+    (dag4 o1 o2))
+
+  ;; 70ms
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (dag4 o1 o2)))))
+
+  ;; whether expanding to if or case statements is really an implementation detail
+  ;; but even so, unless the 
   )

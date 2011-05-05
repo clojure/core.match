@@ -1,6 +1,23 @@
 Notes
 ================================================================================
 
+
+New Thoughts
+--------------------------------------------------------------------------------
+
+| x (isa? x A) _            _ |
+| _            y (isa? y B) _ |
+| x (isa? x C) y (isa? y C) 0 | x :guards [(isa? x D)]
+
+*{0}
+
+If there are guards remaining on x that's another pattern matrix, other people
+might use that guard as well, if it's an isa? or = check we can save space.
+
+During compilation we could just use an atomic integer to associate an id with
+a particular class when *compile-files*
+
+
 Thoughts
 --------------------------------------------------------------------------------
 
