@@ -154,8 +154,34 @@
          (if (instance? D fa)
            (mu)))))))
 
+(defn dag5 [fa fb]
+  (let [f (fn []
+            (let [ya (y fa)
+                  yb (y fb)]
+              (case (= ya yb)
+                    true (m1)
+                    false nil)))]
+    (case (instance? A fa)
+          true (let [x (x fa)]
+                 (case (instance? A x)
+                       true (f)
+                       false (case (instance? B x)
+                                   true (case (instance? C x)
+                                              true (case (instance? D x)
+                                                         true nil
+                                                         false nil)
+                                              false nil)
+                                   false nil)))
+          false (case (instance? B fa)
+                      true nil
+                      false (case (instance? C fa)
+                                  true nil
+                                  false (case (instance? D fa)
+                                              true (mu)
+                                              false nil))))))
+
 (comment
-  ;; 60ms
+  ;; ~90ms
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)
@@ -163,7 +189,17 @@
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]
-         (f 1 2)))))
+         (f o1 o2)))))
+
+  ;; slower, perhaps useful for very large switches
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)
+        f (PredFn. dag5)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (f o1 o2)))))
   )
 
 (comment
