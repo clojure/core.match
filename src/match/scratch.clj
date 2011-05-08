@@ -4,6 +4,9 @@
   (:use [clojure.pprint :only [pprint]])
   (:import [java.io Writer]))
 
+(def guard-priorities {'= 0
+                       'isa? 1})
+
 (defprotocol IPattern
   (guard [this]))
 
@@ -41,12 +44,35 @@
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
 
+(defn guards-for [p gs]
+  (sort sort-guards
+        (reduce (fn [s g]
+                  (if (contains? (set g) p)
+                    (conj s g)
+                    s))
+                [] gs)))
+
+(defn sort-guards [[as] [bs]]
+  (let [asi (get guard-priorities as 2)
+        bsi (get guard-priorities bs 2)]
+    (cond
+     (< asi bsi) -1
+     (> asi bsi) 1
+     :else 0)))
+
+(defn proc-row [[ps gs :as row]]
+  (map (fn [p]
+         (let [pgs (guards-for p gs)]
+           (pattern p pgs)))
+       ps))
+
 (defn sigs->pm [sigs]
-  )
+  (pattern-matrix (map proc-row sigs)))
 
 (comment
   (def pm (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
 
-  (column pm 1)
+  (.rows (sigs->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
+                     [[a b 1] [(isa? A a) (isa? B b)]]]))
   )
