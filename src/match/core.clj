@@ -1,5 +1,5 @@
 (ns match.core
-  (:refer-clojure :exclude [reify == inc])
+  (:refer-clojure :exclude [reify == inc compile])
   (:use [logos minikanren tabled rel]))
 
 ;; -----------------------------------------------------------------------------
@@ -7,6 +7,7 @@
 
 (def method-table (atom {})) ;; storing methods
 (def pred-table (atom {}))   ;; tracking predicate symbols
+(def priority ['= 'isa])
 
 ;; -----------------------------------------------------------------------------
 ;; Logic
@@ -174,5 +175,9 @@
 
   ;; more than one test, means we'll check things after the first dispatch?
   ;; remaining guards for an argument
-  ;;
+
+  ;; how to communicate that pattern has been bound, we just need to process
+  ;; more guards?, we can just track that in some external way
+
+  ;; the dag is a recursive switch list
   )
