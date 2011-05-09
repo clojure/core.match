@@ -16,10 +16,17 @@
   (into [x] v))
 
 (defprotocol IPattern
+  (literal? [this])
+  (type-pred? [this])
   (guard [this]))
 
 (deftype Pattern [p gs]
   IPattern
+  (literal? [this]
+    (or (number? p)))
+  (type-pred? [this]
+    (let [[pred] (first gs)]
+      (= pred 'isa?)))
   (guard [this] (first gs)))
 
 (defmethod print-method Pattern [^Pattern x ^Writer writer]
@@ -42,6 +49,8 @@
   (necessary-column [this])
   (swap [this idx]))
 
+(declare necessary?)
+
 (deftype PatternMatrix [rows]
   IPatternMatrix
   (specialize [this c])
@@ -51,7 +60,12 @@
   (column [this n] (map #(nth % n) rows))
   (row [this n] (nth rows n))
   (necessary-column [this]
-    )
+    (let [c (count rows)]
+      (loop [idx 0]
+        (cond
+          (= idx c) 0
+          (necessary? (column this idx)) idx
+          :else (recur (inc idx))))))
   (swap [this idx]
     (PatternMatrix.
      (into []
@@ -66,6 +80,12 @@
 
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
+
+(defn necessary? [column]
+  (every? (fn [p]
+            (or (literal? p)
+                (type-pred? p)))
+          column))
 
 (defn sort-guards [[as] [bs]]
   (let [asi (get guard-priorities as 2)
@@ -102,5 +122,11 @@
 
   (seq pm)
   (seq (swap pm 1))
+  
   ;; need to reread the bit about necessity before moving ahead much further
+  ;; looks like we need to think about scoring the column, we also need to
+  ;; read the accompanying paper on which rows can be considered useless
+
+  (dotimes [i 1e6]
+    )
   )

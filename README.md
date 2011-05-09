@@ -94,10 +94,11 @@ Resources
 ----
 
 * [Efficient Predicate Dispatch](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553)
-* [Optimizing Pattern Matching"](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507)
-* [Pattern Guards And Transformational Patterns"](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.35.8851)
+* [Optimizing Pattern Matching](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.6.5507)
+* [Pattern Guards And Transformational Patterns](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.35.8851)
 * [Extensible Pattern Matching for Extensible Languages](http://www.ccs.neu.edu/home/samth/ifl2010-slides.pdf)
-* [Compiling Pattern Matching to Good Decision Trees"](http://pauillac.inria.fr/~maranget/papers/ml05e-maranget.pdf)
+* [Compiling Pattern Matching to Good Decision Trees](http://pauillac.inria.fr/~maranget/papers/ml05e-maranget.pdf)
+* [Warning for Pattern Matching](http://moscova.inria.fr/~maranget/papers/warn/index.html)
 * [Art of the Metaobject Protocol](http://mitpress.mit.edu/catalog/item/default.asp?ttype=2&tid=3925)
 
 Copyright (C) 2011 David Nolen
