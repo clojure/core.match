@@ -1,11 +1,19 @@
 (ns match.scratch
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [logos minikanren tabled rel])
+  (:use [logos.minikanren :exclude [swap]]
+        [logos tabled rel])
   (:use [clojure.pprint :only [pprint]])
   (:import [java.io Writer]))
 
 (def guard-priorities {'= 0
                        'isa? 1})
+
+(defn drop-nth [v idx]
+  (into (subvec v 0 idx)
+        (subvec v (clojure.core/inc idx) (count v))))
+
+(defn prepend [v x]
+  (into [x] v))
 
 (defprotocol IPattern
   (guard [this]))
@@ -30,7 +38,9 @@
   (compile [this])
   (pattern-at [this x y])
   (column [this n])
-  (row [this n]))
+  (row [this n])
+  (necessary-column [this])
+  (swap [this idx]))
 
 (deftype PatternMatrix [rows]
   IPatternMatrix
@@ -39,18 +49,23 @@
   (compile [this])
   (pattern-at [this n m] ((rows n) m))
   (column [this n] (map #(nth % n) rows))
-  (row [this n] (nth rows n)))
+  (row [this n] (nth rows n))
+  (necessary-column [this]
+    )
+  (swap [this idx]
+    (PatternMatrix.
+     (into []
+           (map (fn [row]
+                  (let [p (nth row idx)]
+                   (-> row
+                       (drop-nth idx)
+                       (prepend p))))
+                rows))))
+  clojure.lang.ISeq
+  (seq [this] (seq rows)))
 
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
-
-(defn guards-for [p gs]
-  (sort sort-guards
-        (reduce (fn [s g]
-                  (if (contains? (set g) p)
-                    (conj s g)
-                    s))
-                [] gs)))
 
 (defn sort-guards [[as] [bs]]
   (let [asi (get guard-priorities as 2)
@@ -60,19 +75,32 @@
      (> asi bsi) 1
      :else 0)))
 
-(defn proc-row [[ps gs :as row]]
-  (map (fn [p]
-         (let [pgs (guards-for p gs)]
-           (pattern p pgs)))
-       ps))
+(defn guards-for [p gs]
+  (sort sort-guards
+        (reduce (fn [s g]
+                  (if (contains? (set g) p)
+                    (conj s g)
+                    s))
+                [] gs)))
 
-(defn sigs->pm [sigs]
-  (pattern-matrix (map proc-row sigs)))
+(defn proc-row [[ps gs :as row]]
+  (into []
+        (map (fn [p]
+               (let [pgs (guards-for p gs)]
+                 (pattern p pgs)))
+             ps)))
+
+(defn ms->pm [ms]
+  (pattern-matrix (map proc-row ms)))
 
 (comment
   (def pm (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
 
-  (.rows (sigs->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
-                     [[a b 1] [(isa? A a) (isa? B b)]]]))
+  (seq (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
+                 [[a b 1] [(isa? A a) (isa? B b)]]]))
+
+  (seq pm)
+  (seq (swap pm 1))
+  ;; need to reread the bit about necessity before moving ahead much further
   )
