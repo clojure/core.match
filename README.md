@@ -10,67 +10,47 @@ The basic idea is to maintain a DAG and compile it into a series of nested case 
 More [crazy ideas here](https://github.com/swannodette/match/wiki/Crazy-Ideas).
 
 ```clj
-(defprotocol I
-  (x [this])
-  (y [this]))
+(defn m1 []
+  :m1)
 
-(defprotocol IClass
-  (id [this]))
+(defn mu []
+  :mu)
 
-(deftype A [x y] I (x [_] x) (y [_] y))
-(deftype B [x y] I (x [_] x) (y [_] y))
-(deftype C [x y] I (x [_] x) (y [_] y))
-(deftype D [x y] I (x [_] x) (y [_] y))
+(deftype PredFn [f]
+  clojure.lang.IFn
+  (invoke [this a1] (@f a1))
+  (invoke [this a1 a2] (@f a1 a2)))
 
-(extend-type A IClass (id [_] 0))
-(extend-type B IClass (id [_] 1))
-(extend-type C IClass (id [_] 2))
-(extend-type D IClass (id [_] 3))
+(defn dag [fa fb]
+  (let [f (fn []
+            (let [ya (y fa)
+                  yb (y fb)]
+              (if (= ya yb)
+                (m1))))]
+   (if (instance? A fa)
+     (let [x (x fa)]
+       (if (instance? A x)
+         (f)
+         (if (instance? B x)
+           (if (instance? C x)
+             (if (instance? D x)
+               nil)))))
+     (if (instance? B fa)
+       nil
+       (if (instance? C fa)
+         nil
+         (if (instance? D fa)
+           (mu)))))))
 
-(defn dag [f1 f2]
-  (case (id f1)
-        0 (case (id (x f1))
-                0 (case (= (y f1) (y f2))
-                        true :m1
-                        false :m-not-understood)
-                1 :m-not-understood
-                2 :m-not-understood
-                3 (case (= (y f1) (y f2))
-                        true :m1
-                        false :m-not-understood))
-        1 (case (id (x f1)) 
-                0 (case (= (y f1) (y f2))
-                        true :m1
-                        false :m-not-understood)
-                1 :m2
-                2 :m-not-understood
-                3 (case (= (y f1) (y f2))
-                        true :m1
-                        false :m-not-understood))
-        2 (case (id f2)
-                0 (case (id (x f1))
-                        0 :m4
-                        1 :m2
-                        2 :m4
-                        3 :m4)
-                1 (case (id (x f1))
-                        0 :m4
-                        1 :m2
-                        2 :m4
-                        3 :m4)
-                2 :m3
-                3 :m-ambiguous)))
-
-;; ~340-50ms
+;; ~100ms
 (let [s1 (B. nil nil)
-      o1 (A. (A. nil nil) s1)
-      o2 (A. (A. nil nil) s1)]
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)
+        f (PredFn2. (atom dag4))]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]
-         (dag o1 o2)))))
-
-
+         (f o1 o2)))))
 
 (defmulti gf (fn [f1 f2]
                [(class f1)
