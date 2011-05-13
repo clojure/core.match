@@ -46,7 +46,7 @@ More [crazy ideas here](https://github.com/swannodette/match/wiki/Crazy-Ideas).
 (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)
-        f (PredFn2. (atom dag4))]
+        f (PredFn. (atom dag4))]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]
