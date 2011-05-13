@@ -180,12 +180,34 @@
                                               true (mu)
                                               false nil))))))
 
+(deftype PredFn2 [f]
+  clojure.lang.IFn
+  (invoke [this a1] (@f a1))
+  (invoke [this a1 a2] (@f a1 a2)))
+
 (comment
   ;; ~90ms
+  ;; 70ms
   (let [s1 (B. nil nil)
         o1 (A. (A. nil nil) s1)
         o2 (A. (A. nil nil) s1)
         f (PredFn. dag4)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (f o1 o2)))))
+
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)
+        f (PredFn2. (atom dag4))]
+    (f o1 o2))
+
+  ;; 100ms
+  (let [s1 (B. nil nil)
+        o1 (A. (A. nil nil) s1)
+        o2 (A. (A. nil nil) s1)
+        f (PredFn2. (atom dag4))]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]

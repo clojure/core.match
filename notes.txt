@@ -1,6 +1,21 @@
 Notes
 ================================================================================
 
+Useless clauses
+--------------------------------------------------------------------------------
+
+If we can throw away redundant checks and move forward
+good. Non-exhaustiveness is not really something we care about that
+much - I don't think. People either added the default handler or their
+didn't.
+
+Series of examples are excellent at the end of "Warnings for pattern
+matching", should definitely work against these.
+
+Reducing necessity to usefulness.
+
+type mylist = Nil | One of int | Cons of int * mylist
+
 
 New Thoughts
 --------------------------------------------------------------------------------
