@@ -291,6 +291,21 @@
        (dotimes [_ 1e7]
          (dag4 o1 o2)))))
 
+  (defn bar []
+    (if (= 1 1)
+      (if (= 2 2)
+        (if (= 3 3)
+          true))))
+
+  (defn foo []
+    (bar))
+
+  ;; 250ms
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e8]
+       (foo))))
+
   ;; whether expanding to if or case statements is really an implementation detail
   ;; but even so, unless the 
   )

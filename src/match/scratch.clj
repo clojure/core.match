@@ -126,7 +126,4 @@
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
   ;; read the accompanying paper on which rows can be considered useless
-
-  (dotimes [i 1e6]
-    )
   )

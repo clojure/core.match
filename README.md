@@ -80,6 +80,7 @@ Resources
 * [Compiling Pattern Matching to Good Decision Trees](http://pauillac.inria.fr/~maranget/papers/ml05e-maranget.pdf)
 * [Warning for Pattern Matching](http://moscova.inria.fr/~maranget/papers/warn/index.html)
 * [Art of the Metaobject Protocol](http://mitpress.mit.edu/catalog/item/default.asp?ttype=2&tid=3925)
+* [Custom Specializers in Object-Oriented Lisp](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.144.405&rep=rep1&type=pdf)
 
 Copyright (C) 2011 David Nolen
 
