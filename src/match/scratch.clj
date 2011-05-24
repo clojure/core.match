@@ -184,6 +184,15 @@
   
   (seq (swap pm1 1))
 
+  ;; we're working with this at the moment, no guards, no implication
+  ;; just the basic Maranget algorithm. We'd like to be execute the following
+  ;;
+  ;; (match [x y z]
+  ;;   [_  f# t#] 1
+  ;;   [f# t# _ ] 2
+  ;;   [_  _  f#] 3
+  ;;   [_  _  t#] 4)
+  ;;
   (def pm2 (pattern-matrix [[wildcard (pattern false) (pattern true)]
                             [(pattern false) (pattern true) wildcard]
                             [wildcard wildcard (pattern false)]
@@ -201,10 +210,4 @@
 
   (specialize (select pm2) (pattern true))
   (specialize (select pm2) (pattern false))
-
-  ;; need to reread the bit about necessity before moving ahead much further
-  ;; looks like we need to think about scoring the column, we also need to
-  ;; read the accompanying paper on which rows can be considered useless
-
-  ;; score
   )
