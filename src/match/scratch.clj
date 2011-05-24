@@ -186,11 +186,11 @@
 
   (drop-column pm2 0)
 
-  ;; 1s, a bit slow
+  ;; 600ms
   (dotimes [_ 10]
     (time
      (dotimes [_ 1e4]
-       (useful-matrix pm2))))
+       (necessary-column pm2))))
 
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
