@@ -8,7 +8,7 @@
 (def guard-priorities {'= 0
                        'isa? 1})
 
-(defn drop-nth [v idx]
+(defn vec-drop-nth [v idx]
   (into (subvec v 0 idx)
         (subvec v (clojure.core/inc idx) (count v))))
 
@@ -45,9 +45,10 @@
   (specialize [this c])
   (->dag [this])
   (compile [this])
-  (pattern-at [this x y])
-  (column [this n])
-  (row [this n])
+  (pattern-at [this i j])
+  (column [this i])
+  (drop-column [this i])
+  (row [this j])
   (necessary-column [this])
   (necessity-matrix [this])
   (swap [this idx])
@@ -60,9 +61,11 @@
   (specialize [this c])
   (->dag [this])
   (compile [this])
-  (pattern-at [_ n m] ((rows n) m))
-  (column [_ n] (map #(nth % n) rows))
-  (row [_ n] (nth rows n))
+  (pattern-at [_ i j] ((rows j) i))
+  (column [_ i] (map #(nth % i) rows))
+  (drop-column [_ i]
+     (PatternMatrix. (map #(vec-drop-nth % i) rows)))
+  (row [_ j] (nth rows j))
   (necessary-column [this]
     (let [c (count rows)]
       (loop [idx 0]
@@ -78,7 +81,7 @@
            (map (fn [row]
                   (let [p (nth row idx)]
                    (-> row
-                       (drop-nth idx)
+                       (vec-drop-nth idx)
                        (prepend p))))
                 rows))))
   (score [_] [])
@@ -91,14 +94,26 @@
 (defn score-p [pm i j]
   )
 
+(defn wildcard? [p]
+  (identical? p wildcard))
+
 (defn constructor? [p]
-  (not (identical? p wildcard)))
+  (not (wildcard? p)))
 
 (defn necessary? [column]
   (every? (fn [p]
             (or (literal? p)
                 (type-pred? p)))
           column))
+
+(defn useful-p? [pm j i]
+  (or (constructor? (pattern-at pm i j))
+      (let [col (column pm i)]
+        (every? #(not (wildcard? %))
+                (take col j)))))
+
+(defn useful? [pm j]
+  ())
 
 (defn sort-guards [[as] [bs]]
   (let [asi (get guard-priorities as 2)
@@ -147,8 +162,8 @@
                             [wildcard wildcard (pattern false)]
                             [wildcard wildcard (pattern true)]]))
 
-  (necessity-matrix pm2)
-  
+  (drop-column pm2 0)
+
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
   ;; read the accompanying paper on which rows can be considered useless
