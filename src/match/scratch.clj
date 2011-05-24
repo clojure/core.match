@@ -21,6 +21,11 @@
   (guard [this]))
 
 (deftype Pattern [p gs]
+  Object
+  ;; TODO: consider guards
+  (equals [this other]
+          (let [o ^Pattern other]
+            (= p (.p o))))
   IPattern
   (literal? [this]
     (or (number? p)))
@@ -42,6 +47,9 @@
 (def ^Pattern wildcard (pattern '_))
 
 (defprotocol IPatternMatrix
+  (width [this])
+  (height [this])
+  (dim [this])
   (specialize [this c])
   (->dag [this])
   (compile [this])
@@ -50,7 +58,7 @@
   (drop-column [this i])
   (row [this j])
   (necessary-column [this])
-  (necessity-matrix [this])
+  (useful-matrix [this])
   (swap [this idx])
   (score [this]))
 
@@ -58,32 +66,44 @@
 
 (deftype PatternMatrix [rows]
   IPatternMatrix
-  (specialize [this c])
+  (width [_] (count (rows 0)))
+  (height [_] (count rows))
+  (dim [this] [(width this) (height this)])
+  (specialize [this p]
+     (PatternMatrix.
+        (map #(vec-drop-nth % 0)
+             (filter (fn [[f]] (= f p))
+                     rows))))
   (->dag [this])
   (compile [this])
   (pattern-at [_ i j] ((rows j) i))
-  (column [_ i] (map #(nth % i) rows))
+  (column [_ i] (vec (map #(nth % i) rows)))
   (drop-column [_ i]
-     (PatternMatrix. (map #(vec-drop-nth % i) rows)))
+     (PatternMatrix. (vec (map #(vec-drop-nth % i) rows))))
   (row [_ j] (nth rows j))
   (necessary-column [this]
-    (let [c (count rows)]
-      (loop [idx 0]
-        (cond
-          (= idx c) 0
-          (necessary? (column this idx)) idx
-          :else (recur (inc idx))))))
-  (necessity-matrix [this]
-     (map #(map constructor? %) rows))
+     (reduce (fn [m [c i]]
+               (if (> c m) i m))
+             0 (map-indexed (fn [i col]
+                              [(reduce (fn [s b]
+                                         (if b (clojure.core/inc s) s))
+                                       0 col) i])
+                            (apply map vector
+                                   (useful-matrix this)))))
+  (useful-matrix [this]
+     (vec (map vec
+               (partition (width this)
+                          (for [j (range (height this))
+                                i (range (width this))]
+                            (useful-p? this i j))))))
   (swap [_ idx]
     (PatternMatrix.
-     (into []
-           (map (fn [row]
-                  (let [p (nth row idx)]
+     (vec (map (fn [row]
+                 (let [p (nth row idx)]
                    (-> row
                        (vec-drop-nth idx)
                        (prepend p))))
-                rows))))
+               rows))))
   (score [_] [])
   clojure.lang.ISeq
   (seq [_] (seq rows)))
@@ -106,14 +126,16 @@
                 (type-pred? p)))
           column))
 
-(defn useful-p? [pm j i]
-  (or (constructor? (pattern-at pm i j))
-      (let [col (column pm i)]
-        (every? #(not (wildcard? %))
-                (take col j)))))
+(defn useful-p? [pm i j]
+  (or (and (constructor? (pattern-at pm i j))
+           (every? #(not (wildcard? %))
+                   (take j (column pm i))))
+      (and (wildcard? (pattern-at pm i j))
+           (not (useful? (drop-column pm i) j)))))
 
 (defn useful? [pm j]
-  ())
+  (some #(useful-p? pm % j)
+        (range (count (row pm j)))))
 
 (defn sort-guards [[as] [bs]]
   (let [asi (get guard-priorities as 2)
@@ -132,11 +154,11 @@
                 [] gs)))
 
 (defn proc-row [[ps gs :as row]]
-  (into []
-        (map (fn [p]
-               (let [pgs (guards-for p gs)]
-                 (pattern p pgs)))
-             ps)))
+  (vec
+   (map (fn [p]
+          (let [pgs (guards-for p gs)]
+            (pattern p pgs)))
+        ps)))
 
 (defn ms->pm [ms]
   (pattern-matrix (map proc-row ms)))
@@ -163,6 +185,12 @@
                             [wildcard wildcard (pattern true)]]))
 
   (drop-column pm2 0)
+
+  ;; 1s, a bit slow
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e4]
+       (useful-matrix pm2))))
 
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
