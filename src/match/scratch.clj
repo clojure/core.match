@@ -59,6 +59,7 @@
   (row [this j])
   (necessary-column [this])
   (useful-matrix [this])
+  (select [this])
   (swap [this idx])
   (score [this]))
 
@@ -72,7 +73,9 @@
   (specialize [this p]
      (PatternMatrix.
         (map #(vec-drop-nth % 0)
-             (filter (fn [[f]] (= f p))
+             (filter (fn [[f]]
+                       (or (= f p)
+                           (wildcard? f)))
                      rows))))
   (->dag [this])
   (compile [this])
@@ -104,6 +107,8 @@
                        (vec-drop-nth idx)
                        (prepend p))))
                rows))))
+  (select [this]
+          (swap this (necessary-column this)))
   (score [_] [])
   clojure.lang.ISeq
   (seq [_] (seq rows)))
@@ -191,6 +196,11 @@
     (time
      (dotimes [_ 1e4]
        (necessary-column pm2))))
+
+  (seq (select pm2))
+
+  (specialize (select pm2) (pattern true))
+  (specialize (select pm2) (pattern false))
 
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
