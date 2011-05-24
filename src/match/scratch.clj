@@ -39,6 +39,8 @@
   ([p gs] {:pre [(or (sequential? gs) (nil? gs))]}
      (Pattern. p gs)))
 
+(def ^Pattern wildcard (pattern '_))
+
 (defprotocol IPatternMatrix
   (specialize [this c])
   (->dag [this])
@@ -47,7 +49,9 @@
   (column [this n])
   (row [this n])
   (necessary-column [this])
-  (swap [this idx]))
+  (necessity-matrix [this])
+  (swap [this idx])
+  (score [this]))
 
 (declare necessary?)
 
@@ -56,9 +60,9 @@
   (specialize [this c])
   (->dag [this])
   (compile [this])
-  (pattern-at [this n m] ((rows n) m))
-  (column [this n] (map #(nth % n) rows))
-  (row [this n] (nth rows n))
+  (pattern-at [_ n m] ((rows n) m))
+  (column [_ n] (map #(nth % n) rows))
+  (row [_ n] (nth rows n))
   (necessary-column [this]
     (let [c (count rows)]
       (loop [idx 0]
@@ -66,7 +70,9 @@
           (= idx c) 0
           (necessary? (column this idx)) idx
           :else (recur (inc idx))))))
-  (swap [this idx]
+  (necessity-matrix [this]
+     (map #(map constructor? %) rows))
+  (swap [_ idx]
     (PatternMatrix.
      (into []
            (map (fn [row]
@@ -75,11 +81,18 @@
                        (drop-nth idx)
                        (prepend p))))
                 rows))))
+  (score [_] [])
   clojure.lang.ISeq
-  (seq [this] (seq rows)))
+  (seq [_] (seq rows)))
 
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
+
+(defn score-p [pm i j]
+  )
+
+(defn constructor? [p]
+  (not (identical? p wildcard)))
 
 (defn necessary? [column]
   (every? (fn [p]
@@ -114,16 +127,31 @@
   (pattern-matrix (map proc-row ms)))
 
 (comment
-  (def pm (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
+  ;; create a pattern matrix
+  (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
 
+  ;; raw signatures and guards to pattern matrix
   (seq (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
                  [[a b 1] [(isa? A a) (isa? B b)]]]))
 
-  (seq pm)
-  (seq (swap pm 1))
+  ;; test the can look at the pm as a seq
+  (seq pm1)
+
+  (type pm1)
+  
+  (seq (swap pm1 1))
+
+  (def pm2 (pattern-matrix [[wildcard (pattern false) (pattern true)]
+                            [(pattern false) (pattern true) wildcard]
+                            [wildcard wildcard (pattern false)]
+                            [wildcard wildcard (pattern true)]]))
+
+  (necessity-matrix pm2)
   
   ;; need to reread the bit about necessity before moving ahead much further
   ;; looks like we need to think about scoring the column, we also need to
   ;; read the accompanying paper on which rows can be considered useless
+
+  ;; score
   )

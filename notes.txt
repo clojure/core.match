@@ -1,6 +1,46 @@
 Notes
 ================================================================================
 
+First Example
+--------------------------------------------------------------------------------
+
+(match [x y z]
+  [_     false true ] 1
+  [false true  _    ] 2
+  [_     _     false] 3
+  [_     _     _    ] 4)
+
+
+Heuristics
+--------------------------------------------------------------------------------
+
+First Row
+
+f(i) = 0 if _
+f(i) = 1 otherwise
+
+Small default
+
+-v(i) where i equal number of wildcard patterns in column i
+
+b(i) branching factor - negative number of switch nodes
+
+a(i) negation of the sum of the arities
+
+l(i) number of children of the emitted switch
+
+r(i)
+
+q constructor prefix
+
+qba
+
+q 1) avoid usefulness computations, 2) avoid pattern copies
+  p(j i) is a generalized constructor pattern test
+
+Hmm sounds like we don't need to do usefulness checks with qba?
+
+
 Useless clauses
 --------------------------------------------------------------------------------
 
