@@ -21,8 +21,10 @@
   Object
   ;; TODO: consider guards
   (equals [this other]
-          (let [o ^Pattern other]
-            (= p (.p o))))
+          (or (identical? this other)
+              (= p (.p ^Pattern other))))
+  (hashCode [this]
+            (hash p))
   IPattern
   (literal? [this]
     (or (number? p)))
@@ -63,6 +65,7 @@
   (column [this i])
   (drop-column [this i])
   (row [this j])
+  (rows [this])
   (necessary-column [this])
   (useful-matrix [this])
   (select [this])
@@ -84,7 +87,9 @@
                            (wildcard? f)))
                      rows))))
   (->dag [this])
-  (compile [this])
+  (compile [this]
+     (let [f (set (column (select this) 0))]
+       (map #(specialize this %) f)))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (drop-column [_ i]
@@ -116,8 +121,7 @@
   (select [this]
           (swap this (necessary-column this)))
   (score [_] [])
-  clojure.lang.ISeq
-  (seq [_] (seq rows)))
+  (rows [_] rows))
 
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
