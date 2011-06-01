@@ -2,182 +2,237 @@
   (:refer-clojure :exclude [reify == inc compile])
   (:use [logos minikanren tabled rel]))
 
-;; -----------------------------------------------------------------------------
-;; Tables
+;; TODO: add action to the row, this information needs to be passed along
+;; TODO: flesh out what a decision tree looks like, what remains to be compiled
+;; TODO: pattern matrix should take list of occurences
 
-(def method-table (atom {})) ;; storing methods
-(def pred-table (atom {}))   ;; tracking predicate symbols
-(def priority ['= 'isa])
+(defn vec-drop-nth [v idx]
+  (into (subvec v 0 idx)
+        (subvec v (clojure.core/inc idx) (count v))))
 
-;; -----------------------------------------------------------------------------
-;; Logic
+(defn prepend [v x]
+  (into [x] v))
 
-(defrel is a b)
+(defprotocol IDecisionTree
+  (->dag [this]))
 
-(def implies
-     (tabled [a b]
-       (conde
-         ((is a b))
-         ((exist [z]
-            (is a z)
-            (implies z b))))))
+(deftype DecisionTree [branches]
+  IDecisionTree
+  (->dag [this]))
 
-;; -----------------------------------------------------------------------------
-;; defm
+(defprotocol IPattern
+  (literal? [this])
+  (type-pred? [this])
+  (guard [this]))
 
-(defn var->sym [v]
-  (symbol (str (.ns v)) (name (.sym v))))
+(deftype Pattern [p gs]
+  Object
+  ;; TODO: consider guards
+  (equals [this other]
+    (or (identical? this other)
+        (= p (.p ^Pattern other))))
+  (hashCode [this]
+    (hash p))
+  IPattern
+  (literal? [this]
+    (or (number? p)))
+  (type-pred? [this]
+    (let [[pred] (first gs)]
+      (= pred 'isa?)))
+  (guard [this] (first gs)))
 
-(defn get-implied-pred-fns [predsym]
-  (map (comp var-get resolve)
-       (run* [q]
-         (implies predsym q))))
+(defmethod print-method Pattern [^Pattern x ^Writer writer]
+  (if-let [gs (.gs x)]
+    (.write writer (str "<Pattern: " (.p x) " guards: " gs ">"))
+    (.write writer (str "<Pattern: " (.p x) ">"))))
 
-(defn guards-for [p gs]
-  (reduce (fn [s g]
-              (if (contains? (set g) p)
-                (conj s g)
-                s))
-          [] gs))
+(defn ^Pattern pattern
+  ([p] (Pattern. p nil))
+  ([p gs] {:pre [(or (sequential? gs) (nil? gs))]}
+     (Pattern. p gs)))
 
-(defn index-guards [ps gs]
-  (reduce (fn [m p]
-            (assoc m p (guards-for p gs)))
-          {} ps))
+(def ^Pattern wildcard (pattern '_))
 
-;; TODO: these will come from the macro so will most like be namespaced
-(defn type-spec? [[p]]
-  (or (= p 'isa?)
-      (= p 'number?)))
+(defn wildcard? [p]
+  (identical? p wildcard))
 
-(defn literal? [p]
-  (or (number? p)))
+(defn constructor? [p]
+  (not (wildcard? p)))
 
-(defn is-pred? [[pa s] pb]
-  (= pa pb))
+(declare useful-p?)
+(declare useful?)
 
-(defn add-method [name ps gs body]
-  (swap! method-table update-in [name (count ps)]
-         (fnil (fn [xs]
-                 (conj xs {:pvector ps
-                           :guards (index-guards ps gs)}))
-               [])))
+(defprotocol IPatternRow
+  (action [this])
+  (patterns [this])
+  (drop-nth [this n]))
 
-(defn necessary? [pmatrix col-idx]
-  (every? (fn [{:keys [pvector guards]}]
-               (let [p (pvector col-idx)]
-                 (or (literal? p)
-                     (some (fn [g] (type-spec? g)) (guards p)))))
-          pmatrix))
+(deftype PatternRow [ps action]
+  IPatternRow
+  (action [this] action)
+  (patterns [this] ps)
+  (drop-nth [this n]
+    (PatternRow. (vec-drop-nth ps n) action)))
 
-(defn necessary-index [pmatrix arity]
-  (loop [col-idx 0]
-    (cond
-     (>= col-idx arity) 0
-     (necessary? pmatrix col-idx) col-idx
-     :else (recur (inc col-idx)))))
+(defprotocol IPatternMatrix
+  (width [this])
+  (height [this])
+  (dim [this])
+  (specialize [this c])
+  (compile [this])
+  (pattern-at [this i j])
+  (column [this i])
+  (drop-column [this i])
+  (row [this j])
+  (rows [this])
+  (necessary-column [this])
+  (useful-matrix [this])
+  (select [this])
+  (swap [this idx])
+  (score [this]))
 
-(defn specializer-for-pattern [p gs]
-  (cond
-   (literal? p) '=
-   :else (first (first gs))))
+(declare necessary?)
 
-(defn specializers [pmatrix col-idx]
-  (reduce (fn [s {:keys [pvector guards] :as row}]
-            (let [p (pvector col-idx)]
-             (conj s (specializer-for-pattern p (guards p)))))
-          #{} pmatrix))
+(deftype PatternMatrix [rows]
+  IPatternMatrix
+  (width [_] (count (rows 0)))
+  (height [_] (count rows))
+  (dim [this] [(width this) (height this)])
+  (specialize [this p]
+    (PatternMatrix.
+     (vec (map #(vec-drop-nth % 0)
+               (filter (fn [[f]]
+                         (or (= f p)
+                             (wildcard? f)))
+                       rows)))))
+  (compile [this]
+    (let [pm (select this)
+          f (set (column pm 0))]
+      (map compile (map #(specialize pm %) f))))
+  (pattern-at [_ i j] ((rows j) i))
+  (column [_ i] (vec (map #(nth % i) rows)))
+  (drop-column [_ i]
+    (PatternMatrix. (vec (map #(vec-drop-nth % i) rows))))
+  (row [_ j] (nth rows j))
+  (necessary-column [this]
+    (reduce (fn [m [c i]]
+              (if (> c m) i m))
+            0 (map-indexed (fn [i col]
+                             [(reduce (fn [s b]
+                                        (if b (clojure.core/inc s) s))
+                                      0 col) i])
+                           (apply map vector
+                                  (useful-matrix this)))))
+  (useful-matrix [this]
+    (vec (map vec
+              (partition (width this)
+                         (for [j (range (height this))
+                               i (range (width this))]
+                           (useful-p? this i j))))))
+  (swap [_ idx]
+    (PatternMatrix.
+     (vec (map (fn [row]
+                 (let [p (nth row idx)]
+                   (-> row
+                       (vec-drop-nth idx)
+                       (prepend p))))
+               rows))))
+  (select [this]
+    (swap this (necessary-column this)))
+  (score [_] [])
+  (rows [_] rows))
 
-;; destructuring would happen after we confirm the type, shazam!
-(defn specialize [pmatrix col-idx spec]
-  (reduce (fn [v row]
-            (let [p ((:pvector row) col-idx)
-                  gs (get-in row [:guards p])]
-              (if (some (fn [g] (is-pred? g spec)) gs)
-                (conj v
-                      (-> row
-                          (update-in [:pvector] (fn [v] (remove #(= % p) v)))
-                          (assoc-in [:guards p] (remove (fn [g]
-                                                          (is-pred? g spec))
-                                                        gs))))
-                v)))
-          [] pmatrix))
+(defn ^PatternMatrix pattern-matrix [rows]
+  (PatternMatrix. rows))
 
-(defn defpred* [& xs]
-  (let [[predsym predfn] (map (comp var->sym resolve) xs)]
-   `(swap! pred-table assoc '~predsym '~predfn)))
+(defn score-p [pm i j]
+  )
 
-(defmacro defpred [& xs]
-  (apply defpred* xs))
+(defn necessary? [column]
+  (every? (fn [p]
+            (or (literal? p)
+                (type-pred? p)))
+          column))
+
+(defn useful-p? [pm i j]
+  (or (and (constructor? (pattern-at pm i j))
+           (every? #(not (wildcard? %))
+                   (take j (column pm i))))
+      (and (wildcard? (pattern-at pm i j))
+           (not (useful? (drop-column pm i) j)))))
+
+(defn useful? [pm j]
+  (some #(useful-p? pm % j)
+        (range (count (row pm j)))))
+
+;; =============================================================================
+;; Active Work
 
 (comment
- (defn defm* [mname & [pvector & r']]
-   (let [mdata (mname @method-table)]
-     (cond
-      (vector? pvector) (let [[guards body] (if (= (first r') :guard)
-                                              [(second r') (drop 2 r')]
-                                              [nil (rest r')])]
-                          (handle-p mdata pvector guards body))
-      :else nil)))
+  ;; we're working with this at the moment, no guards, no implication
+  ;; just the basic Maranget algorithm. We'd like to be execute the following
+  ;;
+  ;; (match [x y z]
+  ;;   [_  f# t#] 1
+  ;;   [f# t# _ ] 2
+  ;;   [_  _  f#] 3
+  ;;   [_  _  t#] 4)
+  ;;
+  (def pm2 (pattern-matrix [[wildcard (pattern false) (pattern true)]
+                            [(pattern false) (pattern true) wildcard]
+                            [wildcard wildcard (pattern false)]
+                            [wildcard wildcard (pattern true)]]))
 
- (defmacro defm [& xs]
-   (apply defm* xs)))
+  ;; 600ms
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e4]
+       (necessary-column pm2))))
+
+  (specialize (select pm2) (pattern true))
+  (specialize (select pm2) (pattern false))
+  )
+
+;; =============================================================================
+;; On Hold
 
 (comment
-  ;; NOTES: one thing to think about is how to sort the guards and how to
-  ;; move that between specializations. Perhaps it makes sense to pair each
-  ;; occurence under consideration to the most relevant guard, however the
-  ;; remaining guards will be used at the next step? Hmm this does make sense
-  ;; what if
+  (def guard-priorities {'= 0
+                         'isa? 1})
 
-  [x] :guard [(number? x) (even? x)]
-  [x] :guard [(number? x) (even? x) (div3? x)]
+  (defn sort-guards [[as] [bs]]
+    (let [asi (get guard-priorities as 2)
+          bsi (get guard-priorities bs 2)]
+      (cond
+       (< asi bsi) -1
+       (> asi bsi) 1
+       :else 0)))
 
-  ;; Really each guard represents another specialization.
+  (defn guards-for [p gs]
+    (sort sort-guards
+          (reduce (fn [s g]
+                    (if (contains? (set g) p)
+                      (conj s g)
+                      s))
+                  [] gs)))
 
-  ;; guard relevance
-  ;; = isa? everything else
-  ;; isa? should be the most specific?
+  (defn proc-row [[ps gs :as row]]
+    (vec
+     (map (fn [p]
+            (let [pgs (guards-for p gs)]
+              (pattern p pgs)))
+          ps)))
+
+  (defn ms->pm [ms]
+    (pattern-matrix (map proc-row ms)))
   
-  (do
-    (reset! method-table {})
-    (add-method 'foo '[0 b] nil nil)
-    (add-method 'foo '[x _] '[(number? x)] nil)
-    (add-method 'foo '[a b] '[(isa? a A)] nil)
-    (add-method 'foo '[a b] '[(isa? a C) (isa? b D)] nil))
+  ;; create a pattern matrix
+  (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
+                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
 
-  (necessary? (get-in @method-table '[foo 2]) 0) ; true
-  (necessary? (get-in @method-table '[foo 2]) 1) ; false
+  ;; raw signatures and guards to pattern matrix
+  (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
+            [[a b 1] [(isa? A a) (isa? B b)]]])
 
-  ;; TODO: filter the one's that don't match spec?
-  (specialize (get-in @method-table '[foo 2]) 0 'isa?)
-
-  (count (get-in @method-table '[foo 2])) ; 4
-  (count (specialize (get-in @method-table '[foo 2]) 0 'isa?)) ; 2
-
-  (specializers (get-in @method-table '[foo 2]) 0) ; #{isa? = number?}
-
-  (defpred even? even?)
-
-  (defrecord Boo [])
-
-  ;; could fix this with a macro
-  ;; are there composability expectations?
-  (fact is `even? `integer?)
-  (fact is `integer? `number?)
-
-  (run* [q]
-    (implies `even? q))
-
-  (defm foo [x] :guard [(even? x)]
-    :two)
-  (defm foo [0] :one)
-
-  ;; more than one test, means we'll check things after the first dispatch?
-  ;; remaining guards for an argument
-
-  ;; how to communicate that pattern has been bound, we just need to process
-  ;; more guards?, we can just track that in some external way
-
-  ;; the dag is a recursive switch list
+  ;; test the can look at the pm as a seq
   )
