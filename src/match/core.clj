@@ -72,10 +72,19 @@
 
 (deftype PatternRow [ps action]
   IPatternRow
-  (action [this] action)
-  (patterns [this] ps)
-  (drop-nth [this n]
-    (PatternRow. (vec-drop-nth ps n) action)))
+  (action [_] action)
+  (patterns [_] ps)
+  (drop-nth [_ n]
+    (PatternRow. (vec-drop-nth ps n) action))
+  clojure.lang.Indexed
+  (nth [this i]
+    (nth ps i))
+  clojure.lang.IFn
+  (invoke [_ n]
+    (nth ps n)))
+
+(defn ^PatternRow pattern-row [ps action]
+  (PatternRow. ps action))
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -185,6 +194,13 @@
                             [(pattern false) (pattern true) wildcard]
                             [wildcard wildcard (pattern false)]
                             [wildcard wildcard (pattern true)]]))
+
+  (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
+
+  (def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
+                            (pattern-row [(pattern false) (pattern true) wildcard] :a2)
+                            (pattern-row [wildcard wildcard (pattern false)] :a3)
+                            (pattern-row [wildcard wildcard (pattern true)] :a4)]))
 
   ;; 600ms
   (dotimes [_ 10]
