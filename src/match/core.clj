@@ -10,9 +10,21 @@
 ;; TODO: flesh out what a decision tree looks like, what remains to be compiled
 ;; TODO: pattern matrix should take list of occurences
 
-(defn vec-drop-nth [v idx]
-  (into (subvec v 0 idx)
-        (subvec v (clojure.core/inc idx) (count v))))
+(defprotocol IVecMod
+  (prepend [this x])
+  (drop-nth [this n])
+  (swap [this n]))
+
+(extend-type clojure.lang.IPersistentVector
+  IVecMod
+  (prepend [this x]
+    (into [x] this))
+  (drop-nth [this n]
+    (into (subvec this 0 n)
+          (subvec this (clojure.core/inc n) (count this))))
+  (swap [this n]
+    (let [x (nth this n)]
+      (prepend (drop-nth this n) x))))
 
 (defprotocol IDecisionTree
   (->dag [this]))
@@ -67,18 +79,19 @@
 
 (defprotocol IPatternRow
   (action [this])
-  (patterns [this])
-  (drop-nth [this n])
-  (prepend [this x]))
+  (patterns [this]))
 
 (deftype PatternRow [ps action]
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
+  IVecMod
   (drop-nth [_ n]
     (PatternRow. (vec-drop-nth ps n) action))
   (prepend [_ x]
     (PatternRow. (into [x] ps) action))
+  (swap [_ n]
+    (PatternRow. (swap ps n) action))
   clojure.lang.Indexed
   (nth [_ i]
     (nth ps i))
@@ -116,12 +129,12 @@
   (necessary-column [this])
   (useful-matrix [this])
   (select [this])
-  (swap [this idx])
-  (score [this]))
+  (score [this])
+  (occurences [this]))
 
 (declare necessary?)
 
-(deftype PatternMatrix [rows]
+(deftype PatternMatrix [rows ocrs]
   IPatternMatrix
   (width [_] (count (rows 0)))
   (height [_] (count rows))
@@ -132,7 +145,8 @@
                (filter (fn [[f]]
                           (or (= f p)
                               (wildcard? f))))
-               (map #(drop-nth % 0))))))
+               (map #(drop-nth % 0))))
+     ocrs))
   (compile [this]
     (let [pm (select this)
           f (set (column pm 0))]
@@ -140,7 +154,7 @@
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (drop-column [_ i]
-    (PatternMatrix. (vec (map #(drop-nth % i) rows))))
+    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
   (row [_ j] (nth rows j))
   (necessary-column [this]
     (->> (apply map vector (useful-matrix this))
@@ -157,23 +171,20 @@
                 (useful-p? this i j))
               (partition (width this))
               (map vec))))
-  (swap [_ idx]
-    (PatternMatrix.
-     (vec (map (fn [row]
-                 (let [p (nth row idx)]
-                   (-> row
-                       (drop-nth idx)
-                       (prepend p))))
-               rows))))
   (select [this]
     (swap this (necessary-column this)))
   (score [_] [])
-  (rows [_] rows))
+  (rows [_] rows)
+  (occurences [_] ocrs)
+  IVecMod
+  (swap [_ idx]
+    (PatternMatrix. (vec (map #(swap % idx) rows))
+                    ocrs)))
 
 (prefer-method  print-method clojure.lang.IType clojure.lang.ISeq)
 
-(defn ^PatternMatrix pattern-matrix [rows]
-  (PatternMatrix. rows))
+(defn ^PatternMatrix pattern-matrix [rows ocrs]
+  (PatternMatrix. rows ocrs))
 
 (defn score-p [pm i j]
   )
@@ -207,6 +218,11 @@
   ([pm] (print-matrix pm 4))
   ([pm col-width]
      (binding [*out* (pp/get-pretty-writer *out*)]
+       (print "|")
+       (doseq [o (occurences pm)]
+         (pp/cl-format true "~4D~7,vT" o col-width))
+       (print "|")
+       (prn)
        (doseq [row (rows pm)]
          (print "|")
          (doseq [p (patterns row)]
@@ -227,17 +243,13 @@
   ;;   [_  _  f#] 3
   ;;   [_  _  t#] 4)
   ;;
-  (def pm2 (pattern-matrix [[wildcard (pattern false) (pattern true)]
-                            [(pattern false) (pattern true) wildcard]
-                            [wildcard wildcard (pattern false)]
-                            [wildcard wildcard (pattern true)]]))
-
   (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
 
   (def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
                             (pattern-row [(pattern false) (pattern true) wildcard] :a2)
                             (pattern-row [wildcard wildcard (pattern false)] :a3)
-                            (pattern-row [wildcard wildcard (pattern true)] :a4)]))
+                            (pattern-row [wildcard wildcard (pattern true)] :a4)]
+                           '[x y z]))
 
   (print-matrix pm2)
 
@@ -250,7 +262,6 @@
   (useful-matrix pm2)
 
   ;; TODO: don't use prepend on vector, add as method of PatternMatrix
-  (specialize (select pm2) (pattern true))
   (specialize (select pm2) (pattern false))
   )
 
