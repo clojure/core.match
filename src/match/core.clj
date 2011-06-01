@@ -132,8 +132,6 @@
   (occurences [this])
   (action-for-row [this j]))
 
-(declare necessary?)
-
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
   (width [_] (count (rows 0)))
@@ -183,19 +181,13 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-(prefer-method  print-method clojure.lang.IType clojure.lang.ISeq)
+(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
   (PatternMatrix. rows ocrs))
 
 (defn score-p [pm i j]
   )
-
-(defn necessary? [column]
-  (every? (fn [p]
-            (or (literal? p)
-                (type-pred? p)))
-          column))
 
 (defn useful-p? [pm i j]
   (or (and (constructor? (pattern-at pm i j))
@@ -265,9 +257,13 @@
 
   (useful-matrix pm2)
 
-  ;; TODO: don't use prepend on vector, add as method of PatternMatrix
+  (print-matrix pm2)
+  (print-matrix (select pm2))
   (print-matrix (specialize (select pm2) (pattern true)))
+  (print-matrix (specialize (select pm2) (pattern false)))
   (print-matrix (select (specialize (select pm2) (pattern false))))
+  (print-matrix (specialize (select (specialize (select pm2) (pattern false))) (pattern true)))
+  ;; ^ we can discard :a4
   )
 
 ;; =============================================================================
