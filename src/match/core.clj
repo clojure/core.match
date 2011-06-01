@@ -129,7 +129,8 @@
   (useful-matrix [this])
   (select [this])
   (score [this])
-  (occurences [this]))
+  (occurences [this])
+  (action-for-row [this j]))
 
 (declare necessary?)
 
@@ -173,6 +174,8 @@
   (score [_] [])
   (rows [_] rows)
   (occurences [_] ocrs)
+  (action-for-row [_ j]
+    (action (rows j)))
   IVecMod
   (drop-nth [_ i]
     (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
@@ -222,11 +225,12 @@
          (pp/cl-format true "~4D~7,vT" o col-width))
        (print "|")
        (prn)
-       (doseq [row (rows pm)]
+       (doseq [[i row] (map-indexed (fn [p i] [p i]) (rows pm))]
          (print "|")
          (doseq [p (patterns row)]
            (pp/cl-format true "~4D~7,vT" (print-pattern p) col-width))
          (print "|")
+         (print " " (action-for-row pm i))
          (prn))
        (println))))
 
