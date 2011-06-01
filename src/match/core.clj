@@ -123,7 +123,6 @@
   (compile [this])
   (pattern-at [this i j])
   (column [this i])
-  (drop-column [this i])
   (row [this j])
   (rows [this])
   (necessary-column [this])
@@ -146,15 +145,13 @@
                           (or (= f p)
                               (wildcard? f))))
                (map #(drop-nth % 0))))
-     ocrs))
+     (drop-nth ocrs 0)))
   (compile [this]
     (let [pm (select this)
           f (set (column pm 0))]
       (map compile (map #(specialize pm %) f))))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
-  (drop-column [_ i]
-    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
   (row [_ j] (nth rows j))
   (necessary-column [this]
     (->> (apply map vector (useful-matrix this))
@@ -177,9 +174,11 @@
   (rows [_] rows)
   (occurences [_] ocrs)
   IVecMod
+  (drop-nth [_ i]
+    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
   (swap [_ idx]
     (PatternMatrix. (vec (map #(swap % idx) rows))
-                    ocrs)))
+                    (swap ocrs idx))))
 
 (prefer-method  print-method clojure.lang.IType clojure.lang.ISeq)
 
@@ -200,7 +199,7 @@
            (every? #(not (wildcard? %))
                    (take j (column pm i))))
       (and (wildcard? (pattern-at pm i j))
-           (not (useful? (drop-column pm i) j)))))
+           (not (useful? (drop-nth pm i) j)))))
 
 (defn useful? [pm j]
   (some #(useful-p? pm % j)
@@ -228,7 +227,8 @@
          (doseq [p (patterns row)]
            (pp/cl-format true "~4D~7,vT" (print-pattern p) col-width))
          (print "|")
-         (prn)))))
+         (prn))
+       (println))))
 
 ;; =============================================================================
 ;; Active Work
@@ -262,7 +262,8 @@
   (useful-matrix pm2)
 
   ;; TODO: don't use prepend on vector, add as method of PatternMatrix
-  (specialize (select pm2) (pattern false))
+  (print-matrix (specialize (select pm2) (pattern true)))
+  (print-matrix (select (specialize (select pm2) (pattern false))))
   )
 
 ;; =============================================================================
