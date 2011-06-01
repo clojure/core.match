@@ -1,9 +1,13 @@
 (ns match.scratch
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [logos.minikanren :exclude [swap]]
-        [logos tabled rel])
+  (:use [clojure.core.logic.minikanren :exclude [swap]]
+        [clojure.core.logic prelude])
   (:use [clojure.pprint :only [pprint]])
   (:import [java.io Writer]))
+
+;; TODO: add action to the row, this information needs to be passed along
+;; TODO: flesh out what a decision tree looks like, what remains to be compiled
+;; TODO: pattern matrix should take list of occurences
 
 (defn vec-drop-nth [v idx]
   (into (subvec v 0 idx)
@@ -11,6 +15,13 @@
 
 (defn prepend [v x]
   (into [x] v))
+
+(defprotocol IDecisionTree
+  (->dag [this]))
+
+(deftype DecisionTree [branches]
+  IDecisionTree
+  (->dag [this]))
 
 (defprotocol IPattern
   (literal? [this])
@@ -21,10 +32,10 @@
   Object
   ;; TODO: consider guards
   (equals [this other]
-          (or (identical? this other)
-              (= p (.p ^Pattern other))))
+    (or (identical? this other)
+        (= p (.p ^Pattern other))))
   (hashCode [this]
-            (hash p))
+    (hash p))
   IPattern
   (literal? [this]
     (or (number? p)))
@@ -59,7 +70,6 @@
   (height [this])
   (dim [this])
   (specialize [this c])
-  (->dag [this])
   (compile [this])
   (pattern-at [this i j])
   (column [this i])
@@ -80,36 +90,35 @@
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
   (specialize [this p]
-     (PatternMatrix.
-        (map #(vec-drop-nth % 0)
-             (filter (fn [[f]]
-                       (or (= f p)
-                           (wildcard? f)))
-                     rows))))
-  (->dag [this])
+    (PatternMatrix.
+     (vec (map #(vec-drop-nth % 0)
+               (filter (fn [[f]]
+                         (or (= f p)
+                             (wildcard? f)))
+                       rows)))))
   (compile [this]
-     (let [f (set (column (select this) 0))]
-       (map #(specialize this %) f)))
+    (let [f (set (column (select this) 0))]
+      (map compile (map #(specialize this %) f))))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (drop-column [_ i]
-     (PatternMatrix. (vec (map #(vec-drop-nth % i) rows))))
+    (PatternMatrix. (vec (map #(vec-drop-nth % i) rows))))
   (row [_ j] (nth rows j))
   (necessary-column [this]
-     (reduce (fn [m [c i]]
-               (if (> c m) i m))
-             0 (map-indexed (fn [i col]
-                              [(reduce (fn [s b]
-                                         (if b (clojure.core/inc s) s))
-                                       0 col) i])
-                            (apply map vector
-                                   (useful-matrix this)))))
+    (reduce (fn [m [c i]]
+              (if (> c m) i m))
+            0 (map-indexed (fn [i col]
+                             [(reduce (fn [s b]
+                                        (if b (clojure.core/inc s) s))
+                                      0 col) i])
+                           (apply map vector
+                                  (useful-matrix this)))))
   (useful-matrix [this]
-     (vec (map vec
-               (partition (width this)
-                          (for [j (range (height this))
-                                i (range (width this))]
-                            (useful-p? this i j))))))
+    (vec (map vec
+              (partition (width this)
+                         (for [j (range (height this))
+                               i (range (width this))]
+                           (useful-p? this i j))))))
   (swap [_ idx]
     (PatternMatrix.
      (vec (map (fn [row]
@@ -119,7 +128,7 @@
                        (prepend p))))
                rows))))
   (select [this]
-          (swap this (necessary-column this)))
+    (swap this (necessary-column this)))
   (score [_] [])
   (rows [_] rows))
 
@@ -183,7 +192,7 @@
 
 (comment
   (def guard-priorities {'= 0
-                       'isa? 1})
+                         'isa? 1})
 
   (defn sort-guards [[as] [bs]]
     (let [asi (get guard-priorities as 2)
@@ -213,7 +222,7 @@
   
   ;; create a pattern matrix
   (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
-                           [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
+                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
 
   ;; raw signatures and guards to pattern matrix
   (seq (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
