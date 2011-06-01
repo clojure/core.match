@@ -77,8 +77,19 @@
   (drop-nth [_ n]
     (PatternRow. (vec-drop-nth ps n) action))
   clojure.lang.Indexed
-  (nth [this i]
+  (nth [_ i]
     (nth ps i))
+  clojure.lang.ISeq
+  (first [_] (first ps))
+  (next [_]
+    (if-let [nps (next ps)]
+      (PatternRow. nps action)))
+  (more [_]
+    (let [nps (next ps)]
+      (or (and nps (PatternRow. nps action))
+          '())))
+  (count [_]
+    (count ps))
   clojure.lang.IFn
   (invoke [_ n]
     (nth ps n)))
@@ -112,11 +123,11 @@
   (dim [this] [(width this) (height this)])
   (specialize [this p]
     (PatternMatrix.
-     (vec (map #(vec-drop-nth % 0)
+     (vec (->> rows
                (filter (fn [[f]]
-                         (or (= f p)
-                             (wildcard? f)))
-                       rows)))))
+                          (or (= f p)
+                              (wildcard? f))))
+               (map #(drop-nth % 0))))))
   (compile [this]
     (let [pm (select this)
           f (set (column pm 0))]
@@ -124,29 +135,29 @@
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (drop-column [_ i]
-    (PatternMatrix. (vec (map #(vec-drop-nth % i) rows))))
+    (PatternMatrix. (vec (map #(drop-nth % i) rows))))
   (row [_ j] (nth rows j))
   (necessary-column [this]
-    (reduce (fn [m [c i]]
-              (if (> c m) i m))
-            0 (map-indexed (fn [i col]
-                             [(reduce (fn [s b]
-                                        (if b (clojure.core/inc s) s))
-                                      0 col) i])
-                           (apply map vector
-                                  (useful-matrix this)))))
+    (->> (apply map vector (useful-matrix this))
+         (map-indexed (fn [i col]
+                        [(reduce (fn [s b]
+                                   (if b (clojure.core/inc s) s))
+                                 0 col) i]))
+         (reduce (fn [m [c i]]
+                   (if (> c m) i m))
+                 0)))
   (useful-matrix [this]
-    (vec (map vec
-              (partition (width this)
-                         (for [j (range (height this))
-                               i (range (width this))]
-                           (useful-p? this i j))))))
+    (vec (->> (for [j (range (height this))
+                    i (range (width this))]
+                (useful-p? this i j))
+              (partition (width this))
+              (map vec))))
   (swap [_ idx]
     (PatternMatrix.
      (vec (map (fn [row]
                  (let [p (nth row idx)]
                    (-> row
-                       (vec-drop-nth idx)
+                       (drop-nth idx)
                        (prepend p))))
                rows))))
   (select [this]
@@ -202,12 +213,15 @@
                             (pattern-row [wildcard wildcard (pattern false)] :a3)
                             (pattern-row [wildcard wildcard (pattern true)] :a4)]))
 
-  ;; 600ms
+  ;; 700ms
   (dotimes [_ 10]
     (time
      (dotimes [_ 1e4]
        (necessary-column pm2))))
 
+  (useful-matrix pm2)
+
+  ;; TODO: don't use prepend on vector, add as method of PatternMatrix
   (specialize (select pm2) (pattern true))
   (specialize (select pm2) (pattern false))
   )
