@@ -1,6 +1,9 @@
 (ns match.core
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [logos minikanren tabled rel]))
+  (:use [clojure.core.logic.minikanren :exclude [swap]]
+        [clojure.core.logic prelude])
+  (:use [clojure.pprint :only [pprint]])
+  (:import [java.io Writer]))
 
 ;; TODO: add action to the row, this information needs to be passed along
 ;; TODO: flesh out what a decision tree looks like, what remains to be compiled
