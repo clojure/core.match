@@ -3,6 +3,7 @@
   (:use [clojure.core.logic.minikanren :exclude [swap]]
         [clojure.core.logic prelude])
   (:use [clojure.pprint :only [pprint]])
+  (:require [clojure.pprint :as pp])
   (:import [java.io Writer]))
 
 ;; TODO: add action to the row, this information needs to be passed along
@@ -13,9 +14,6 @@
   (into (subvec v 0 idx)
         (subvec v (clojure.core/inc idx) (count v))))
 
-(defn prepend [v x]
-  (into [x] v))
-
 (defprotocol IDecisionTree
   (->dag [this]))
 
@@ -24,6 +22,7 @@
   (->dag [this]))
 
 (defprotocol IPattern
+  (term [this])
   (literal? [this])
   (type-pred? [this])
   (guard [this]))
@@ -37,6 +36,7 @@
   (hashCode [this]
     (hash p))
   IPattern
+  (term [_] p)
   (literal? [this]
     (or (number? p)))
   (type-pred? [this]
@@ -68,7 +68,8 @@
 (defprotocol IPatternRow
   (action [this])
   (patterns [this])
-  (drop-nth [this n]))
+  (drop-nth [this n])
+  (prepend [this x]))
 
 (deftype PatternRow [ps action]
   IPatternRow
@@ -76,9 +77,13 @@
   (patterns [_] ps)
   (drop-nth [_ n]
     (PatternRow. (vec-drop-nth ps n) action))
+  (prepend [_ x]
+    (PatternRow. (into [x] ps) action))
   clojure.lang.Indexed
   (nth [_ i]
     (nth ps i))
+  (nth [_ i x]
+    (nth ps i x))
   clojure.lang.ISeq
   (first [_] (first ps))
   (next [_]
@@ -165,6 +170,8 @@
   (score [_] [])
   (rows [_] rows))
 
+(prefer-method  print-method clojure.lang.IType clojure.lang.ISeq)
+
 (defn ^PatternMatrix pattern-matrix [rows]
   (PatternMatrix. rows))
 
@@ -187,6 +194,25 @@
 (defn useful? [pm j]
   (some #(useful-p? pm % j)
         (range (count (row pm j)))))
+
+(defmulti print-pattern (fn [x] (term x)))
+(defmethod print-pattern true
+   [x] 't#)
+(defmethod print-pattern false
+   [x] 'f#)
+(defmethod print-pattern :default
+   [x] (term x))
+
+(defn print-matrix
+  ([pm] (print-matrix pm 4))
+  ([pm col-width]
+     (binding [*out* (pp/get-pretty-writer *out*)]
+       (doseq [row (rows pm)]
+         (print "|")
+         (doseq [p (patterns row)]
+           (pp/cl-format true "~4D~7,vT" (print-pattern p) col-width))
+         (print "|")
+         (prn)))))
 
 ;; =============================================================================
 ;; Active Work
@@ -212,6 +238,8 @@
                             (pattern-row [(pattern false) (pattern true) wildcard] :a2)
                             (pattern-row [wildcard wildcard (pattern false)] :a3)
                             (pattern-row [wildcard wildcard (pattern true)] :a4)]))
+
+  (print-matrix pm2)
 
   ;; 700ms
   (dotimes [_ 10]
