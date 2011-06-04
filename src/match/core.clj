@@ -237,15 +237,6 @@
   ;;   [f# t# _ ] 2
   ;;   [_  _  f#] 3
   ;;   [_  _  t#] 4)
-  ;;
-
-  ;; (match [x y]
-  ;;   [[1 _] :foo] 1
-  ;;   [[2 _] :bar] 2
-  ;;   [[3 4] :baz] 3
-
-  ;; (match url
-  ;;   ["foo" #"date"]
 
   (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
 
@@ -256,12 +247,6 @@
                            '[x y z]))
 
   (print-matrix pm2)
-
-  ;; 700ms
-  (dotimes [_ 10]
-    (time
-     (dotimes [_ 1e4]
-       (necessary-column pm2))))
 
   (useful-matrix pm2)
 
