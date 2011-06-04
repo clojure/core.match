@@ -6,9 +6,7 @@
   (:require [clojure.pprint :as pp])
   (:import [java.io Writer]))
 
-;; TODO: add action to the row, this information needs to be passed along
 ;; TODO: flesh out what a decision tree looks like, what remains to be compiled
-;; TODO: pattern matrix should take list of occurences
 
 (defprotocol IVecMod
   (prepend [this x])
@@ -87,7 +85,7 @@
   (patterns [_] ps)
   IVecMod
   (drop-nth [_ n]
-    (PatternRow. (vec-drop-nth ps n) action))
+    (PatternRow. (drop-nth ps n) action))
   (prepend [_ x]
     (PatternRow. (into [x] ps) action))
   (swap [_ n]
@@ -152,6 +150,7 @@
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (row [_ j] (nth rows j))
+  ;; TODO: replace with more sophisticated scoring
   (necessary-column [this]
     (->> (apply map vector (useful-matrix this))
          (map-indexed (fn [i col]
@@ -239,6 +238,15 @@
   ;;   [_  _  f#] 3
   ;;   [_  _  t#] 4)
   ;;
+
+  ;; (match [x y]
+  ;;   [[1 _] :foo] 1
+  ;;   [[2 _] :bar] 2
+  ;;   [[3 4] :baz] 3
+
+  ;; (match url
+  ;;   ["foo" #"date"]
+
   (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
 
   (def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
@@ -260,6 +268,8 @@
   (print-matrix pm2)
   (print-matrix (select pm2))
   (print-matrix (specialize (select pm2) (pattern true)))
+  (print-matrix (select (specialize (select pm2) (pattern true))))
+  (print-matrix (specialize (select (specialize (select pm2) (pattern true))) (pattern false)))
   (print-matrix (specialize (select pm2) (pattern false)))
   (print-matrix (select (specialize (select pm2) (pattern false))))
   (print-matrix (specialize (select (specialize (select pm2) (pattern false))) (pattern true)))
