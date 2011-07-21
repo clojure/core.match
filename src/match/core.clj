@@ -77,12 +77,16 @@
 
 (defprotocol IPatternRow
   (action [this])
-  (patterns [this]))
+  (patterns [this])
+  (first-concrete-column-num [row]))
 
 (deftype PatternRow [ps action]
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
+  (first-concrete-column-num [this]
+    (first 
+      (filter (comp not second) (map-indexed wildcard? ps))))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action))
@@ -112,6 +116,39 @@
 
 (defn ^PatternRow pattern-row [ps action]
   (PatternRow. ps action))
+
+
+;; Decision tree nodes
+
+(defprotocol ILeafNode
+  (value [this]))
+
+(deftype LeafNode [value]
+  ILeafNode
+  (value [this] value))
+
+(defn ^LeafNode leaf-node [value]
+  (LeafNode. value))
+
+
+(deftype FailNode [])
+
+(defn ^FailNode fail-node []
+  (FailNode.))
+
+(deftype SwitchNode [ocr cases]
+  )
+
+(defn ^SwitchNode switch-node [ocr cases]
+  (SwitchNode. ocr cases))
+
+
+(deftype SwapNode [ocr]
+  )
+
+
+
+;; Pattern Matrix
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -144,9 +181,20 @@
                (map #(drop-nth % 0))))
      (drop-nth ocrs 0)))
   (compile [this]
-    (let [pm (select this)
-          f (set (column pm 0))]
-      (map compile (map #(specialize pm %) f))))
+    (cond
+      (empty? rows) (fail-node)
+      (every? wildcard? (first rows)) (leaf-node (action (first rows)))
+      :else (let [col (first-concrete-column-num (first rows))]
+              (if (= col 1)
+                (let [constrs (set (filter (comp not wildcard?) (column this col)))]
+                  (switch-node
+                    col
+                    (conj (into [] (map (fn [c]
+                                          (let [s (specialize this c)]
+                                            [c s]))
+                                        constrs))
+                          ['default (fail-node)]))) ;; Do we need the default case?
+                (compile (swap this col))))))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
   (row [_ j] (nth rows j))
@@ -180,7 +228,7 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+;(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
   (PatternMatrix. rows ocrs))
@@ -245,7 +293,7 @@
                             (pattern-row [wildcard wildcard (pattern false)] :a3)
                             (pattern-row [wildcard wildcard (pattern true)] :a4)]
                            '[x y z]))
-
+(compile pm2)
   (print-matrix pm2)
 
   (useful-matrix pm2)
