@@ -3,7 +3,7 @@
   (:use [match.core])
   (:use [clojure.test]))
 
-(deftest simple-compile-dag
+(deftest simple-boolean-compile-dag
          (is
            (= (compile (build-matrix []))
               (fail-node))
@@ -39,4 +39,47 @@
                                                        [wildcard  (fail-node)]])] 
                             [wildcard (fail-node)]]))))
 
+(deftest test-to-clj
+         (is 
+           (= (-> (leaf-node true)
+                to-clj)
+              true)
+           "Leaf node")
+         (is
+           (= (-> (fail-node)
+                to-clj)
+              '(throw (java.lang.Exception. "Found FailNode")))
+           "Fail node")
+         (is 
+           (= (-> (switch-node 'x
+                               [[wildcard (leaf-node 1)]])
+                to-clj)
+              '(clojure.core/cond 
+                 true 1))
+           "Switch node and wildcards")
+        (is 
+          (= (-> (switch-node 'x
+                              [[wildcard (leaf-node 1)]
+                               [wildcard (fail-node)]])
+               to-clj)
+             '(clojure.core/cond 
+                true 1 
+                true (throw (java.lang.Exception. "Found FailNode"))))
+          "Switch node with early match case"))
 
+(deftest simple-boolean-to-clj
+         (is
+           (= (-> (build-matrix [])
+                compile
+                to-clj)
+              '(throw (java.lang.Exception. "Found FailNode")))
+           "Simple failure")
+         (is
+           (= (-> (build-matrix [x]
+                                [_] 1)
+                compile
+                to-clj)
+              '(clojure.core/cond 
+                 true 1 
+                 true (throw (java.lang.Exception. "Found FailNode"))))
+           "Early match case"))

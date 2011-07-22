@@ -151,7 +151,7 @@
   (to-clj [this]
     (let [tests (map (fn [[disp _]]
                        (if (wildcard? disp)
-                         :else
+                         'true
                          `(= ~variable ~(term disp))))
                      cases)
           actions (map (fn [[_ act]]
