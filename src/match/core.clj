@@ -148,10 +148,10 @@
 
 
 (defn dag-clause-to-clj [variable dispatch action]
-  [(if (wildcard? dispatch)
-     'true
-     `(= ~variable ~(term dispatch)))
-   (to-clj action)])
+  (vector (if (wildcard? dispatch)
+            'true
+            `(= ~variable ~(term dispatch)))
+          (to-clj action)))
 
 (defrecord SwitchNode [variable cases]
   INodeCompile
