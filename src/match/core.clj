@@ -149,15 +149,13 @@
 (defrecord SwitchNode [variable cases]
   INodeCompile
   (to-clj [this]
-    (let [tests (map (fn [[disp _]]
-                       (if (wildcard? disp)
-                         'true
-                         `(= ~variable ~(term disp))))
-                     cases)
-          actions (map (fn [[_ act]]
-                         (to-clj act))
-                       cases)
-          clauses (interleave tests actions)]
+    (let [clauses (->> (map (fn [[dispatch act]]
+                              [(if (wildcard? dispatch)
+                                 'true
+                                 `(= ~variable ~(term dispatch)))
+                               (to-clj act)])
+                            cases)
+                    (apply concat))]
       `(cond ~@clauses))))
 
 (defn ^SwitchNode switch-node [variable cases]
