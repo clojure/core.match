@@ -292,7 +292,6 @@
 
 ;; =============================================================================
 ;; Active Work
-
 (comment
   ;; we're working with this at the moment, no guards, no implication
   ;; just the basic Maranget algorithm. We'd like to be execute the following
@@ -305,16 +304,29 @@
 
   (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
   (pattern-row [wildcard (pattern false) (pattern true)] :a1)
-  (def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
-                            (pattern-row [(pattern false) (pattern true) wildcard] :a2)
-                            (pattern-row [wildcard wildcard (pattern false)] :a3)
-                            (pattern-row [wildcard wildcard (pattern true)] :a4)]
-                           '[x y z]))
-  (print-matrix pm2)
+
+;; (match [x y z]
+;;   [_  f# t#] 1
+;;   [f# t# _ ] 2
+;;   [_  _  f#] 3
+;;   [_  _  t#] 4)
+  
+(def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
+                          (pattern-row [(pattern false) (pattern true) wildcard] :a2)
+                          (pattern-row [wildcard wildcard (pattern false)] :a3)
+                          (pattern-row [wildcard wildcard (pattern true)] :a4)]
+                         '[x y z]))
+(print-matrix pm2)
+
+; |   x     y       z    |
+; |   _    f#      t#    |  :a1
+; |  f#    t#       _    |  :a2
+; |   _     _      f#    |  :a3
+; |   _     _      t#    |  :a4
 
 
-  (compile pm2)
-;=>
+(compile pm2)
+  
 ;#match.core.SwitchNode[y, [[<Pattern: true> 
 ;                            #match.core.SwitchNode[x, [[<Pattern: false> 
 ;                                                        #match.core.LeafNode[:a2]] 
@@ -325,6 +337,20 @@
 ;                                                       [<Pattern: false> #match.core.LeafNode[:a3]] 
 ;                                                       [default17535 #match.core.FailNode[]]]]] 
 ;                           [default17536 #match.core.FailNode[]]]]
+
+(to-clj (compile pm2))
+
+; (clojure.core/cond 
+;   (clojure.core/= y true) (clojure.core/cond 
+;                             (clojure.core/= x false) :a2 
+;                             (clojure.core/= x _) (throw (java.lang.Exception. "Found FailNode"))) 
+;   (clojure.core/= y false) (clojure.core/cond 
+;                              (clojure.core/= z true) :a1 
+;                              (clojure.core/= z false) :a3 
+;                              (clojure.core/= z _) (throw (java.lang.Exception. "Found FailNode"))) 
+;   (clojure.core/= y _) (throw (java.lang.Exception. "Found FailNode")))
+
+
 
   (useful-matrix pm2)
 
