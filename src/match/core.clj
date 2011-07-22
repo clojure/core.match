@@ -126,31 +126,40 @@
 
 ;; Decision tree nodes
 
-(defprotocol ILeafNode
-  (value [this]))
+(defprotocol INodeCompile
+  (to-clj [this]))
 
 (deftype LeafNode [value]
-  ILeafNode
-  (value [this] value))
+  INodeCompile
+  (to-clj [this]
+    value))
 
 (defn ^LeafNode leaf-node [value]
   (LeafNode. value))
 
 
-(deftype FailNode [])
+(deftype FailNode []
+  INodeCompile
+  (to-clj [this]
+    `(throw (Exception. "Found FailNode"))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
 
 (deftype SwitchNode [variable cases]
-  )
+  INodeCompile
+  (to-clj [this]
+    (let [tests (map (fn [[disp _]]
+                          `(= ~variable ~(term disp)))
+                     cases)
+          actions (map (fn [[_ act]]
+                         (to-clj act))
+                       cases)
+          clauses (interleave tests actions)]
+      `(cond ~@clauses))))
 
 (defn ^SwitchNode switch-node [variable cases]
   (SwitchNode. variable cases))
-
-
-(deftype SwapNode [ocr]
-  )
 
 
 
@@ -201,7 +210,7 @@
                                                     compile)]
                                             [c s]))
                                         constrs))
-                          [(gensym 'default) (fail-node)]))) ;; Do we need the default case?
+                          [wildcard (fail-node)])))
                 (compile (swap this col))))))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
@@ -306,16 +315,16 @@
 
   (compile pm2)
 ;=>
-#match.core.SwitchNode[y, [[<Pattern: true> 
-                            #match.core.SwitchNode[x, [[<Pattern: false> 
-                                                        #match.core.LeafNode[:a2]] 
-                                                       [default17534 #match.core.FailNode[]]]]] 
-                           [<Pattern: false> 
-                            #match.core.SwitchNode[z, [[<Pattern: true> 
-                                                        #match.core.LeafNode[:a1]] 
-                                                       [<Pattern: false> #match.core.LeafNode[:a3]] 
-                                                       [default17535 #match.core.FailNode[]]]]] 
-                           [default17536 #match.core.FailNode[]]]]
+;#match.core.SwitchNode[y, [[<Pattern: true> 
+;                            #match.core.SwitchNode[x, [[<Pattern: false> 
+;                                                        #match.core.LeafNode[:a2]] 
+;                                                       [default17534 #match.core.FailNode[]]]]] 
+;                           [<Pattern: false> 
+;                            #match.core.SwitchNode[z, [[<Pattern: true> 
+;                                                        #match.core.LeafNode[:a1]] 
+;                                                       [<Pattern: false> #match.core.LeafNode[:a3]] 
+;                                                       [default17535 #match.core.FailNode[]]]]] 
+;                           [default17536 #match.core.FailNode[]]]]
 
   (useful-matrix pm2)
 
@@ -356,6 +365,7 @@
   (def cm5 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)]
                            '[x y z]))
   (compile cm5)
+  (to-clj (compile cm5))
 
   )
 
