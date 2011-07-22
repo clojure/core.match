@@ -296,7 +296,10 @@
 ;; Pattern matching interface
 
 (defn emit-clause [[pat action]]
-  (let [p (into [] (map pattern pat))]
+  (let [p (into [] (map #(if (= % (term wildcard))  ;; quick hack, will need to be modified for compound values
+                           wildcard
+                           (pattern %))
+                        pat))]
     (pattern-row p action)))
 
 (defn emit-matrix [vars clauses]

@@ -32,12 +32,7 @@
            (= (compile (build-matrix [x y]
                                      [_ _] 1
                                      [true true] 2))
-              (switch-node 'x 
-                           [[(pattern true) (switch-node 'y [[(pattern true) (leaf-node 2)] 
-                                                             [wildcard (fail-node)]])]
-                            [wildcard (switch-node 'y [[wildcard (leaf-node 1)] 
-                                                       [wildcard  (fail-node)]])] 
-                            [wildcard (fail-node)]]))))
+              (leaf-node 1))))
 
 (deftest test-to-clj
          (is 
@@ -76,10 +71,9 @@
            "Simple failure")
          (is
            (= (-> (build-matrix [x]
-                                [_] 1)
+                                [_] 1
+                                [_] 2)
                 compile
                 to-clj)
-              '(clojure.core/cond 
-                 true 1 
-                 true (throw (java.lang.Exception. "Found FailNode"))))
+              1)
            "Early match case"))
