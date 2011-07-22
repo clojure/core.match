@@ -3,25 +3,40 @@
   (:use [match.core])
   (:use [clojure.test]))
 
-(deftest simple-compile
-  (is
-    (= (compile (pattern-matrix [] '[]))
-       (fail-node)))
-  (is
-    (= (compile (pattern-matrix [] '[]))
-       (fail-node))))
+(deftest simple-compile-dag
+         (is
+           (= (compile (build-matrix []))
+              (fail-node))
+           "Base case")
+         (is
+           (= (compile (build-matrix [x]
+                                     [true] 1))
+              (switch-node 'x
+                           [[(pattern true) (leaf-node 1)]
+                            [wildcard (fail-node)]]))
+           "Simple leaf node")
+         (is
+           (= (compile (build-matrix [x y]
+                                     [true false] 1
+                                     [false true] 2))
+              (switch-node 'x
+                           [[(pattern true) (switch-node 'y
+                                               [[(pattern false) (leaf-node 1)]
+                                                [wildcard (fail-node)]])]
+                            [(pattern false) (switch-node 'y
+                                                [[(pattern true) (leaf-node 2)]
+                                                 [wildcard (fail-node)]])]
+                            [wildcard (fail-node)]]))
+           "Two rows")
+         (is
+           (= (compile (build-matrix [x y]
+                                     [_ _] 1
+                                     [true true] 2))
+              (switch-node 'x 
+                           [[(pattern true) (switch-node 'y [[(pattern true) (leaf-node 2)] 
+                                                             [wildcard (fail-node)]])]
+                            [wildcard (switch-node 'y [[wildcard (leaf-node 1)] 
+                                                       [wildcard  (fail-node)]])] 
+                            [wildcard (fail-node)]]))))
 
-(def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
-                          (pattern-row [(pattern false) (pattern true) wildcard] :a2)
-                          (pattern-row [wildcard wildcard (pattern false)] :a3)
-                          (pattern-row [wildcard wildcard (pattern true)] :a4)]
-                         '[x y z]))
 
-;(emit-matrix 
-;  '[x y]
-;  [[_ true] 1
-;   [_ false] 2
-;   [true _] 3
-;   [true _] 4
-;   ]
-;  )

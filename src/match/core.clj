@@ -303,158 +303,126 @@
         clause-sources (into [] (map emit-clause cs))]
     (pattern-matrix clause-sources vars)))
 
-(defmacro match [vars & clauses]
-  (let [matrix (emit-matrix vars clauses)
-        dag (compile matrix)]
-    `(fn ~vars
-       ~(to-clj dag))))
+(defmacro build-matrix [vars & clauses]
+  `(emit-matrix '~vars '~clauses))
 
 
-;; =============================================================================
-;; Active Work
-;(comment
-;  ;; we're working with this at the moment, no guards, no implication
-;  ;; just the basic Maranget algorithm. We'd like to be execute the following
-;  ;;
-;  ;; (match [x y z]
-;  ;;   [_  f# t#] 1
-;  ;;   [f# t# _ ] 2
-;  ;;   [_  _  f#] 3
-;  ;;   [_  _  t#] 4)
-;
-;  (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
-;  (pattern-row [wildcard (pattern false) (pattern true)] :a1)
-;
-;;; (match [x y z]
-;;;   [_  f# t#] 1
-;;;   [f# t# _ ] 2
-;;;   [_  _  f#] 3
-;;;   [_  _  t#] 4)
-;  
-;(def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
-;                          (pattern-row [(pattern false) (pattern true) wildcard] :a2)
-;                          (pattern-row [wildcard wildcard (pattern false)] :a3)
-;                          (pattern-row [wildcard wildcard (pattern true)] :a4)]
-;                         '[x y z]))
-;(print-matrix pm2)
-;
-;; |   x     y       z    |
-;; |   _    f#      t#    |  :a1
-;; |  f#    t#       _    |  :a2
-;; |   _     _      f#    |  :a3
-;; |   _     _      t#    |  :a4
-;
-;
-;(compile pm2)
-;  
-;;#match.core.SwitchNode[y, [[<Pattern: true> 
-;;                            #match.core.SwitchNode[x, [[<Pattern: false> 
-;;                                                        #match.core.LeafNode[:a2]] 
-;;                                                       [default17534 #match.core.FailNode[]]]]] 
-;;                           [<Pattern: false> 
-;;                            #match.core.SwitchNode[z, [[<Pattern: true> 
-;;                                                        #match.core.LeafNode[:a1]] 
-;;                                                       [<Pattern: false> #match.core.LeafNode[:a3]] 
-;;                                                       [default17535 #match.core.FailNode[]]]]] 
-;;                           [default17536 #match.core.FailNode[]]]]
-;
-;(to-clj (compile pm2))
-;
-;; (clojure.core/cond 
-;;   (clojure.core/= y true) (clojure.core/cond 
-;;                             (clojure.core/= x false) :a2 
-;;                             (clojure.core/= x _) (throw (java.lang.Exception. "Found FailNode"))) 
-;;   (clojure.core/= y false) (clojure.core/cond 
-;;                              (clojure.core/= z true) :a1 
-;;                              (clojure.core/= z false) :a3 
-;;                              (clojure.core/= z _) (throw (java.lang.Exception. "Found FailNode"))) 
-;;   (clojure.core/= y _) (throw (java.lang.Exception. "Found FailNode")))
-;
-;
-;
-;  (useful-matrix pm2)
-;
-;  (print-matrix pm2)
-;  (print-matrix (select pm2))
-;  (print-matrix (specialize (select pm2) (pattern true)))
-;  (print-matrix (select (specialize (select pm2) (pattern true))))
-;  (print-matrix (specialize (select (specialize (select pm2) (pattern true))) (pattern false)))
-;  (print-matrix (specialize (select pm2) (pattern false)))
-;  (print-matrix (select (specialize (select pm2) (pattern false))))
-;  (print-matrix (specialize (select (specialize (select pm2) (pattern false))) (pattern true)))
-;  ;; ^ we can discard :a4
-;  ;; 
-;
-;  ; fail node
-;;  (def cm1 (pattern-matrix []
-;;                           '[]))
-;;  (compile cm1)
-;;  ;=> #match.core.FailNode[]
-;;
-;;  ; leaf node - case m > 0, n = 0
-;;  (def cm2 (pattern-matrix [(pattern-row [] :a1)]
-;;                           '[]))
-;;  (compile cm2)
-;;  ;=> #match.core.LeafNode[:a1]
-;;
-;;  ; leaf node - case m > 0, n > 0
-;;  (def cm3 (pattern-matrix [(pattern-row [wildcard] :a1)]
-;;                           '[x]))
-;;  (compile cm3)
-;;  ;=> #match.core.LeafNode[:a1]
-;;
-;;  ; switch 
-;;  (def cm4 (pattern-matrix [(pattern-row [true] :a1)]
-;;                           '[x]))
-;;  (compile cm4)
-;;
-;;  (def cm5 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)]
-;;                           '[x y z]))
-;;  (compile cm5)
-;;  (to-clj (compile cm5))
-;;
-;  )
+; =============================================================================
+; Active Work
+(comment
+  ;; we're working with this at the moment, no guards, no implication
+  ;; just the basic Maranget algorithm. We'd like to be execute the following
+  ;;
+  ;; (match [x y z]
+  ;;   [_  f# t#] 1
+  ;;   [f# t# _ ] 2
+  ;;   [_  _  f#] 3
+  ;;   [_  _  t#] 4)
 
-;; =============================================================================
-;; On Hold
+  (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
+  (pattern-row [wildcard (pattern false) (pattern true)] :a1)
 
-;(comment
-;  (def guard-priorities {'= 0
-;                         'isa? 1})
-;
-;  (defn sort-guards [[as] [bs]]
-;    (let [asi (get guard-priorities as 2)
-;          bsi (get guard-priorities bs 2)]
-;      (cond
-;       (< asi bsi) -1
-;       (> asi bsi) 1
-;       :else 0)))
-;
-;  (defn guards-for [p gs]
-;    (sort sort-guards
-;          (reduce (fn [s g]
-;                    (if (contains? (set g) p)
-;                      (conj s g)
-;                      s))
-;                  [] gs)))
-;
-;  (defn proc-row [[ps gs :as row]]
-;    (vec
-;     (map (fn [p]
-;            (let [pgs (guards-for p gs)]
-;              (pattern p pgs)))
-;          ps)))
-;
-;  (defn ms->pm [ms]
-;    (pattern-matrix (map proc-row ms)))
-;  
-;  ;; create a pattern matrix
-;  (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
-;                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
-;
-;  ;; raw signatures and guards to pattern matrix
-;  (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
-;            [[a b 1] [(isa? A a) (isa? B b)]]])
-;
-;  ;; test the can look at the pm as a seq
-;  )
+;; (match [x y z]
+;;   [_  f# t#] 1
+;;   [f# t# _ ] 2
+;;   [_  _  f#] 3
+;;   [_  _  t#] 4)
+  
+(def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
+                          (pattern-row [(pattern false) (pattern true) wildcard] :a2)
+                          (pattern-row [wildcard wildcard (pattern false)] :a3)
+                          (pattern-row [wildcard wildcard (pattern true)] :a4)]
+                         '[x y z]))
+(print-matrix pm2)
+
+(compile pm2)
+  
+(to-clj (compile pm2))
+
+
+  (useful-matrix pm2)
+
+  (print-matrix pm2)
+  (print-matrix (select pm2))
+  (print-matrix (specialize (select pm2) (pattern true)))
+  (print-matrix (select (specialize (select pm2) (pattern true))))
+  (print-matrix (specialize (select (specialize (select pm2) (pattern true))) (pattern false)))
+  (print-matrix (specialize (select pm2) (pattern false)))
+  (print-matrix (select (specialize (select pm2) (pattern false))))
+  (print-matrix (specialize (select (specialize (select pm2) (pattern false))) (pattern true)))
+  ;; ^ we can discard :a4
+  ;; 
+
+ ; fail node
+  (def cm1 (pattern-matrix []
+                           '[]))
+  (compile cm1)
+  ;=> #match.core.FailNode[]
+
+  ; leaf node - case m > 0, n = 0
+  (def cm2 (pattern-matrix [(pattern-row [] :a1)]
+                           '[]))
+  (compile cm2)
+  ;=> #match.core.LeafNode[:a1]
+
+  ; leaf node - case m > 0, n > 0
+  (def cm3 (pattern-matrix [(pattern-row [wildcard] :a1)]
+                           '[x]))
+  (compile cm3)
+  ;=> #match.core.LeafNode[:a1]
+
+  ; switch 
+  (def cm4 (pattern-matrix [(pattern-row [true] :a1)]
+                           '[x]))
+  (compile cm4)
+
+  (def cm5 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)]
+                           '[x y z]))
+  (compile cm5)
+  (to-clj (compile cm5))
+
+  )
+
+; =============================================================================
+; On Hold
+
+(comment
+  (def guard-priorities {'= 0
+                         'isa? 1})
+
+  (defn sort-guards [[as] [bs]]
+    (let [asi (get guard-priorities as 2)
+          bsi (get guard-priorities bs 2)]
+      (cond
+       (< asi bsi) -1
+       (> asi bsi) 1
+       :else 0)))
+
+  (defn guards-for [p gs]
+    (sort sort-guards
+          (reduce (fn [s g]
+                    (if (contains? (set g) p)
+                      (conj s g)
+                      s))
+                  [] gs)))
+
+  (defn proc-row [[ps gs :as row]]
+    (vec
+     (map (fn [p]
+            (let [pgs (guards-for p gs)]
+              (pattern p pgs)))
+          ps)))
+
+  (defn ms->pm [ms]
+    (pattern-matrix (map proc-row ms)))
+  
+  ;; create a pattern matrix
+  (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
+                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
+
+  ;; raw signatures and guards to pattern matrix
+  (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
+            [[a b 1] [(isa? A a) (isa? B b)]]])
+
+  ;; test the can look at the pm as a seq
+  )
