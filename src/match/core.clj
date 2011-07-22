@@ -78,15 +78,21 @@
 (defprotocol IPatternRow
   (action [this])
   (patterns [this])
-  (first-concrete-column-num [row]))
+  (first-concrete-column-num [this])
+  (all-wildcards? [this]))
 
 (deftype PatternRow [ps action]
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
   (first-concrete-column-num [this]
-    (first 
-      (filter (comp not second) (map-indexed wildcard? ps))))
+    (->> (map wildcard? ps)
+         (map-indexed vector)
+         (filter (comp not second))
+         first
+         first))
+  (all-wildcards? [this]
+    (every? wildcard? ps))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action))
@@ -183,7 +189,7 @@
   (compile [this]
     (cond
       (empty? rows) (fail-node)
-      (every? wildcard? (first rows)) (leaf-node (action (first rows)))
+      (all-wildcards? (first rows)) (leaf-node (action (first rows)))
       :else (let [col (first-concrete-column-num (first rows))]
               (if (= col 1)
                 (let [constrs (set (filter (comp not wildcard?) (column this col)))]
@@ -228,7 +234,7 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-;(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
   (PatternMatrix. rows ocrs))
@@ -287,13 +293,13 @@
   ;;   [_  _  t#] 4)
 
   (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
-
+  (pattern-row [wildcard (pattern false) (pattern true)] :a1)
   (def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
                             (pattern-row [(pattern false) (pattern true) wildcard] :a2)
                             (pattern-row [wildcard wildcard (pattern false)] :a3)
                             (pattern-row [wildcard wildcard (pattern true)] :a4)]
                            '[x y z]))
-(compile pm2)
+  (compile pm2)
   (print-matrix pm2)
 
   (useful-matrix pm2)
