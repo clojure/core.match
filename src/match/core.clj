@@ -146,15 +146,18 @@
 (defn ^FailNode fail-node []
   (FailNode.))
 
+
+(defn dag-clause-to-clj [variable dispatch action]
+  [(if (wildcard? dispatch)
+     'true
+     `(= ~variable ~(term dispatch)))
+   (to-clj action)])
+
 (defrecord SwitchNode [variable cases]
   INodeCompile
   (to-clj [this]
-    (let [clauses (->> (map (fn [[dispatch act]]
-                              [(if (wildcard? dispatch)
-                                 'true
-                                 `(= ~variable ~(term dispatch)))
-                               (to-clj act)])
-                            cases)
+    (let [clauses (->> cases
+                    (map (partial apply dag-clause-to-clj variable))
                     (apply concat))]
       `(cond ~@clauses))))
 
