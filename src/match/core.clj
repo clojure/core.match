@@ -24,13 +24,6 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-(defprotocol IDecisionTree
-  (->dag [this]))
-
-(deftype DecisionTree [branches]
-  IDecisionTree
-  (->dag [this]))
-
 (defprotocol IPattern
   (term [this])
   (literal? [this])
