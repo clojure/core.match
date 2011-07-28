@@ -25,50 +25,79 @@
       (prepend (drop-nth this n) x))))
 
 (defprotocol IPattern
-  (term [this])
-  (literal? [this])
-  (type-pred? [this])
-  (guard [this]))
+  (match? [this c]))
 
-(deftype Pattern [p gs]
+;; TODO refactor with implementation inheritance
+
+(deftype WildcardPattern []
   Object
-  ;; TODO: consider guards
-  (equals [this other]
-    (let [po (.p ^Pattern other)]
-      (or (identical? this other)
-          (wildcard? p)
-          (wildcard? po)
-          (and (coll? p)
-               (coll? po))
-          (= p po))))
-  (hashCode [this]
-    (hash p))
+  (equals [this that]
+    (instance? WildcardPattern that))
+  (toString [_]
+    "_")
   IPattern
-  (term [_] p)
-  (literal? [this]
-    (or (number? p)))
-  (type-pred? [this]
-    (let [[pred] (first gs)]
-      (= pred 'isa?)))
-  (guard [this] (first gs)))
+  (match? [_ _]
+    true)
+  clojure.lang.IFn
+  (invoke [this n]
+    (match? this n)))
 
-(defmethod print-method Pattern [^Pattern x ^Writer writer]
-  (if-let [gs (.gs x)]
-    (.write writer (str "<Pattern: " (.p x) " guards: " gs ">"))
-    (.write writer (str "<Pattern: " (.p x) ">"))))
 
-(defn ^Pattern pattern
-  ([p] (Pattern. p nil))
-  ([p gs] {:pre [(or (sequential? gs) (nil? gs))]}
-     (Pattern. p gs)))
+(deftype LiteralPattern [l]
+  Object
+  (equals [this that]
+    (and (instance? LiteralPattern that)
+         (= (.l that)
+            l)))
+  (toString [_]
+    (str l))
+  IPattern
+  (match? [this c]
+    (= l c))
+  clojure.lang.IFn
+  (invoke [this n]
+    (match? this n)))
 
-(def ^Pattern wildcard (pattern '_))
+(deftype TypePattern [t]
+  Object
+  (equals [this that]
+    (and (instance? TypePattern that)
+         (= (.t that) ;; TODO handle inheritance? Should this be an isa? test?
+            t)))
+  (toString [_]
+    (str "(isa? " t ")"))
+  IPattern
+  (match? [this c]
+    (instance? t c))
+  clojure.lang.IFn
+  (invoke [this n]
+    (match? this n)))
 
-(defn wildcard? [p]
-  (identical? p wildcard))
+
+(defn ^WildcardPattern wildcard-pattern [] 
+  (WildcardPattern.))
+  
+(defn ^LiteralPattern literal-pattern [l] 
+  (LiteralPattern. l))
+
+(defn ^TypePattern type-pattern [t] 
+  (TypePattern. t))
+
+(def wildcard-pattern? (partial instance? WildcardPattern))
+(def literal-pattern?  (partial instance? LiteralPattern))
+(def type-pattern?     (partial instance? LiteralPattern))
+
+
+(defmethod print-method LiteralPattern [^LiteralPattern x ^Writer writer]
+  (.write writer (str "<LiteralPattern: " (.l x) ">")))
+(defmethod print-method WildcardPattern [^WildcardPattern x ^Writer writer]
+  (.write writer (str "<WildcardPattern: >")))
+(defmethod print-method TypePattern [^TypePattern x ^Writer writer]
+  (.write writer (str "<TypePattern: " (.t x) " >")))
+
 
 (defn constructor? [p]
-  (not (wildcard? p)))
+  (not (wildcard-pattern? p)))
 
 (declare useful-p?)
 (declare useful?)
@@ -84,13 +113,13 @@
   (action [_] action)
   (patterns [_] ps)
   (first-concrete-column-num [this]
-    (->> (map wildcard? ps)
+    (->> (map wildcard-pattern? ps)
          (map-indexed vector)
          (filter (comp not second))
          first
          first))
   (all-wildcards? [this]
-    (every? wildcard? ps))
+    (every? wildcard-pattern? ps))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action))
@@ -145,10 +174,8 @@
   (FailNode.))
 
 
-(defn dag-clause-to-clj [variable dispatch action]
-  (vector (if (wildcard? dispatch)
-            'true
-            `(= ~variable ~(term dispatch)))
+(defn dag-clause-to-clj [variable pattern action]
+  (vector `(~pattern ~variable) 
           (to-clj action)))
 
 (defrecord SwitchNode [variable cases]
@@ -201,7 +228,7 @@
       (all-wildcards? (first rows)) (leaf-node (action (first rows)))
       :else (let [col (first-concrete-column-num (first rows))]
               (if (= col 0)
-                (let [constrs (set (filter (comp not wildcard?) (column this col)))]
+                (let [constrs (set (filter (comp not wildcard-pattern?) (column this col)))]
                   (switch-node
                     (ocrs col)
                     (conj (into [] (map (fn [c]
@@ -210,7 +237,7 @@
                                                     compile)]
                                             [c s]))
                                         constrs))
-                          [wildcard (fail-node)])))
+                          [(wildcard-pattern) (fail-node)])))
                 (compile (swap this col))))))
   (pattern-at [_ i j] ((rows j) i))
   (column [_ i] (vec (map #(nth % i) rows)))
@@ -255,22 +282,14 @@
 
 (defn useful-p? [pm i j]
   (or (and (constructor? (pattern-at pm i j))
-           (every? #(not (wildcard? %))
+           (every? #(not (wildcard-pattern? %))
                    (take j (column pm i))))
-      (and (wildcard? (pattern-at pm i j))
+      (and (wildcard-pattern? (pattern-at pm i j))
            (not (useful? (drop-nth pm i) j)))))
 
 (defn useful? [pm j]
   (some #(useful-p? pm % j)
         (range (count (row pm j)))))
-
-(defmulti print-pattern (fn [x] (term x)))
-(defmethod print-pattern true
-   [x] 't#)
-(defmethod print-pattern false
-   [x] 'f#)
-(defmethod print-pattern :default
-   [x] (term x))
 
 (defn print-matrix
   ([pm] (print-matrix pm 4))
@@ -284,7 +303,7 @@
        (doseq [[i row] (map-indexed (fn [p i] [p i]) (rows pm))]
          (print "|")
          (doseq [p (patterns row)]
-           (pp/cl-format true "~4D~7,vT" (print-pattern p) col-width))
+           (pp/cl-format true "~4D~7,vT" (str p) col-width))
          (print "|")
          (print " " (action-for-row pm i))
          (prn))
@@ -292,11 +311,18 @@
 
 ;; Pattern matching interface
 
+(defn emit-pattern [pat]
+  (cond
+    (and (list? pat)
+         (= (count pat) 2)
+         (= (first pat) 'isa?)) 
+    (type-pattern (second pat))
+
+    (= pat '_) (wildcard-pattern)
+    :else (literal-pattern pat)))
+            
 (defn emit-clause [[pat action]]
-  (let [p (into [] (map #(if (= % (term wildcard))  ;; quick hack, will need to be modified for compound values
-                           wildcard
-                           (pattern %))
-                        pat))]
+  (let [p (into [] (map emit-pattern pat))]
     (pattern-row p action)))
 
 (defn emit-matrix [vars clauses]
@@ -320,8 +346,8 @@
   ;;   [_  _  f#] 3
   ;;   [_  _  t#] 4)
 
-  (def pr1 (pattern-row [wildcard (pattern false) (pattern true)] :a1))
-  (pattern-row [wildcard (pattern false) (pattern true)] :a1)
+  (def pr1 (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1))
+  (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
 
 ;; (match [x y z]
 ;;   [_  f# t#] 1
@@ -329,10 +355,10 @@
 ;;   [_  _  f#] 3
 ;;   [_  _  t#] 4)
   
-(def pm2 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)
-                          (pattern-row [(pattern false) (pattern true) wildcard] :a2)
-                          (pattern-row [wildcard wildcard (pattern false)] :a3)
-                          (pattern-row [wildcard wildcard (pattern true)] :a4)]
+(def pm2 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
+                          (pattern-row [(literal-pattern false) (literal-pattern true) (wildcard-pattern)] :a2)
+                          (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
+                          (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern true)] :a4)]
                          '[x y z]))
 (print-matrix pm2)
 
@@ -345,12 +371,12 @@
 
   (print-matrix pm2)
   (print-matrix (select pm2))
-  (print-matrix (specialize (select pm2) (pattern true)))
-  (print-matrix (select (specialize (select pm2) (pattern true))))
-  (print-matrix (specialize (select (specialize (select pm2) (pattern true))) (pattern false)))
-  (print-matrix (specialize (select pm2) (pattern false)))
-  (print-matrix (select (specialize (select pm2) (pattern false))))
-  (print-matrix (specialize (select (specialize (select pm2) (pattern false))) (pattern true)))
+  (print-matrix (specialize (select pm2) (literal-pattern true)))
+  (print-matrix (select (specialize (select pm2) (literal-pattern true))))
+  (print-matrix (specialize (select (specialize (select pm2) (literal-pattern true))) (literal-pattern false)))
+  (print-matrix (specialize (select pm2) (literal-pattern false)))
+  (print-matrix (select (specialize (select pm2) (literal-pattern false))))
+  (print-matrix (specialize (select (specialize (select pm2) (literal-pattern false))) (literal-pattern true)))
   ;; ^ we can discard :a4
   ;; 
 
@@ -367,7 +393,7 @@
   ;=> #match.core.LeafNode[:a1]
 
   ; leaf node - case m > 0, n > 0
-  (def cm3 (pattern-matrix [(pattern-row [wildcard] :a1)]
+  (def cm3 (pattern-matrix [(pattern-row [(wildcard-pattern)] :a1)]
                            '[x]))
   (compile cm3)
   ;=> #match.core.LeafNode[:a1]
@@ -377,7 +403,7 @@
                            '[x]))
   (compile cm4)
 
-  (def cm5 (pattern-matrix [(pattern-row [wildcard (pattern false) (pattern true)] :a1)]
+  (def cm5 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)]
                            '[x y z]))
   (compile cm5)
   (to-clj (compile cm5))
