@@ -127,8 +127,14 @@
        (wildcard-pattern)
        (literal-pattern (first v)))
      (if (next v)
-       (VectorPattern. (next v) (clojure.core/inc n))
-       (LiteralPattern. (next v)))]))
+       (VectorPattern. (into [] (next v)) (clojure.core/inc n))
+       (LiteralPattern. (next v)))])
+  IPattern
+  (match? [this n]
+    (vector? n))
+  clojure.lang.IFn
+  (invoke [this n]
+    (match? this n)))
 
 (defn vector-pattern 
   (^VectorPattern [v] 
