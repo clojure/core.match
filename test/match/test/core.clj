@@ -41,6 +41,18 @@
                             [(literal-pattern true) (leaf-node 1)]
                             [(wildcard-pattern) (fail-node)]]))))
 
+(deftest isa?-to-clj
+         (is
+           (= (-> (build-matrix [x]
+                                [true] 1
+                                [(isa? java.lang.Object)] 2)
+                compile
+                to-clj)
+              `(cond 
+                 (~(type-pattern Object) ~'x) 2 
+                 (~(literal-pattern true) ~'x) 1 
+                 (~(wildcard-pattern) ~'x) (throw (java.lang.Exception. "Found FailNode"))))))
+
 (deftest simple-boolean-compile-dag
          (is
            (= (compile (build-matrix []))
@@ -130,22 +142,30 @@
            (not= (literal-pattern 1)
                  (literal-pattern [1]))))
 
-;; TODO test these
-#_(deftest seq-pattern-match
+
+(deftest pattern-comparable-test
+         (is (-> (sorted-set (literal-pattern nil)
+                             (literal-pattern nil))
+               count
+               (= 1))))
+
+
+(deftest seq-pattern-match
          (is
            (= (-> (build-matrix [x]
                                 [[1]] 1
-                                1 2)
+                                [1] 2)
                 compile)
               (switch-node 'x
-                           [[(literal-pattern coll?) (switch-node 'x0
-                                                         [[(literal-pattern 1) (switch-node 'x1
-                                                                                    [[(literal-pattern nil) (leaf-node 1)]
-                                                                                     [(wildcard-pattern) (fail-node)]])]
-                                                          [(wildcard-pattern) (fail-node)]])]
+                           [[(type-pattern clojure.lang.Sequential) (switch-node 'x0
+                                                                                 [[(literal-pattern 1) (switch-node 'x1
+                                                                                                                    [[(literal-pattern nil) (leaf-node 1)]
+                                                                                                                     [(wildcard-pattern) (fail-node)]])]
+                                                                                  [(wildcard-pattern) (fail-node)]])]
                             [(literal-pattern 1) (leaf-node 2)]
                             [(wildcard-pattern) (fail-node)]])))
-         (is
+         ;; TODO enable
+         #_(is
            (= (-> (build-matrix [x]
                                 [[1]] 1
                                 [[1 2]] 2

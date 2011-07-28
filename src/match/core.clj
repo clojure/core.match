@@ -52,7 +52,12 @@
   java.lang.Comparable
   (compareTo [this that]
     (if (instance? LiteralPattern that)
-      (.compareTo l (.l that))
+      (cond 
+        (and (nil? l)
+             (nil? (.l that))) 0
+        (nil? l) -1
+        (nil? (.l that)) 1
+        :else (.compareTo l (.l that)))
       -1000))
   Object
   (equals [this that]
