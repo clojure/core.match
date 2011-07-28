@@ -50,15 +50,16 @@
 
 (deftype LiteralPattern [l]
   java.lang.Comparable
-  (compareTo [this that]
-    (if (instance? LiteralPattern that)
-      (cond 
-        (and (nil? l)
-             (nil? (.l that))) 0
-        (nil? l) -1
-        (nil? (.l that)) 1
-        :else (.compareTo l (.l that)))
-      -1000))
+  (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
+    (cond 
+      (instance? LiteralPattern that) (cond 
+                                        (and (not= l (.l that))) -1
+                                        (and (nil? l)
+                                             (nil? (.l that))) 0
+                                        (nil? l) -1
+                                        (nil? (.l that)) 1
+                                        :else (.compareTo l (.l that)))
+      :else -1000))
   Object
   (equals [this that]
     (and (instance? LiteralPattern that)
@@ -97,6 +98,45 @@
   (invoke [this n]
     (match? this n)))
 
+(defprotocol IVectorPattern
+  (current-index [this])
+  (split-pattern [this]))
+
+(declare wildcard-pattern literal-pattern)
+
+(deftype VectorPattern [v n]
+  java.lang.Comparable
+  (compareTo [this that]
+    (if (instance? VectorPattern that)
+      (.compareTo v (.v that))
+      -200))
+  Object
+  (equals [this that]
+    (instance? VectorPattern that))
+  (toString [_]
+    (str v))
+  (hashCode [_]
+    (hash v))
+  IVectorPattern
+  (current-index [_] ;; TODO possibly metadata, does not effect equality
+    n)
+  (split-pattern [_]
+    [(if (= (first v) '_)
+       (wildcard-pattern)
+       (literal-pattern (first v)))
+     (if (next v)
+       (VectorPattern. (next v) (inc n))
+       (LiteralPattern. (next v)))]))
+
+(defn vector-pattern 
+  (^VectorPattern [v] 
+     {:pre [(vector? v)]}
+     (VectorPattern. v 0))
+  (^VectorPattern [v n] 
+     {:pre [(vector? v)
+            (and (integer? n)
+                 (pos? n))]}
+     (VectorPattern. v n)))
 
 (defn ^WildcardPattern wildcard-pattern [] 
   (WildcardPattern.))
@@ -105,11 +145,13 @@
   (LiteralPattern. l))
 
 (defn ^TypePattern type-pattern [t] 
+  {:pre [(class? t)]}
   (TypePattern. t))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (def literal-pattern?  (partial instance? LiteralPattern))
-(def type-pattern?     (partial instance? LiteralPattern))
+(def type-pattern?     (partial instance? TypePattern))
+(def vector-pattern?   (partial instance? VectorPattern))
 
 
 (defmethod print-method LiteralPattern [^LiteralPattern x ^Writer writer]
@@ -242,11 +284,18 @@
   (dim [this] [(width this) (height this)])
   (specialize [this p]
     (PatternMatrix.
-     (vec (->> rows
-               (filter (fn [[f]]
-                          (= f p)))
-               (map #(drop-nth % 0))))
-     (drop-nth ocrs 0)))
+      (vec (->> rows
+             (filter (fn [[f]]
+                       (= f p)))
+             (map (fn [[f :as r]]
+                    (if (vector-pattern? f)
+                      (let [[h t] (split-pattern f)]
+                        (apply vector h t r))
+                      (drop-nth r 0))))))
+      (if (vector-pattern? p)
+        (cons (symbol (str (name p) (current-index p)))
+              ocrs)
+        (drop-nth ocrs 0))))
   (column-constructors [this i]
     (->> (column this i)
       (filter (comp not wildcard-pattern?))
@@ -255,7 +304,7 @@
   (compile [this]
     (cond
       (empty? rows) (fail-node)
-      (all-wildcards? (first rows)) (leaf-node (action (first rows)))
+      (all-wildcards? (first rows)) (leaf-node (action (first rows))) ;; TODO only makes sense if evaluated in typographical order
       :else (let [col (first-concrete-column-num (first rows))]
               (if (= col 0)
                 (let [constrs (column-constructors this col)]
@@ -347,6 +396,7 @@
          (= (first pat) 'isa?)) 
     (type-pattern (resolve (second pat)))
 
+    (vector? pat) (vector-pattern pat)
     (= pat '_) (wildcard-pattern)
     :else (literal-pattern pat)))
             

@@ -140,7 +140,16 @@
                  (literal-pattern [1 2])))
          (is
            (not= (literal-pattern 1)
-                 (literal-pattern [1]))))
+                 (literal-pattern [1])))
+         (is
+           (= (vector-pattern [1 2 3])
+              (vector-pattern [1])))
+         (is
+           (not= (literal-pattern [1 2])
+                 (vector-pattern  [1 2])))
+         (is
+           (not= (type-pattern clojure.lang.IPersistentVector)
+                 (vector-pattern  [1 2]))))
 
 
 (deftest pattern-comparable-test
@@ -148,6 +157,22 @@
                              (literal-pattern nil))
                count
                (= 1))))
+
+(deftest type-pattern-precondition-test
+         (is
+           (thrown? java.lang.AssertionError
+                    (type-pattern 1))))
+
+(deftest vector-pattern-precondition-test
+         (is
+           (thrown? java.lang.AssertionError
+                    (vector-pattern 1)))
+         (is
+           (thrown? java.lang.AssertionError
+                    (vector-pattern [1] -1)))
+         (is
+           (thrown? java.lang.AssertionError
+                    (vector-pattern [1] "a"))))
 
 
 (deftest seq-pattern-match
@@ -157,12 +182,12 @@
                                 [1] 2)
                 compile)
               (switch-node 'x
-                           [[(type-pattern clojure.lang.Sequential) (switch-node 'x0
+                           [[(literal-pattern 1) (leaf-node 2)]
+                            [(type-pattern clojure.lang.Sequential) (switch-node 'x0
                                                                                  [[(literal-pattern 1) (switch-node 'x1
                                                                                                                     [[(literal-pattern nil) (leaf-node 1)]
                                                                                                                      [(wildcard-pattern) (fail-node)]])]
                                                                                   [(wildcard-pattern) (fail-node)]])]
-                            [(literal-pattern 1) (leaf-node 2)]
                             [(wildcard-pattern) (fail-node)]])))
          ;; TODO enable
          #_(is
@@ -189,4 +214,21 @@
            (= (-> (build-matrix [x]
                                 [_] 1)
                 (column-constructors 0))
-              (sorted-set))))
+              (sorted-set)))
+         (is
+           (= (-> (build-matrix [x y]
+                                [1 1] 1
+                                [[1 2] 1] 2)
+                (column-constructors 0))
+              (sorted-set (literal-pattern 1)
+                          (vector-pattern [1 2])))))
+
+(deftest specialize-test
+         (is (= (-> (build-matrix [x y]
+                                  [true false] 1
+                                  [false true] 2)
+                  (specialize (literal-pattern true))
+                  compile)
+                (-> (build-matrix [y]
+                                  [false] 1)
+                  compile))))
