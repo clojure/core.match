@@ -30,15 +30,16 @@
            (= (fail-node)
               (fail-node))))
 
-;; TODO reenable
-#_(deftest isa?-compile-dag
+(deftest isa?-compile-dag
          (is
-           (= (build-matrix [x]
-                            [true] 1
-                            [(isa? Object)] 2)
+           (= (-> (build-matrix [x]
+                                [true] 1
+                                [(isa? java.lang.Object)] 2)
+                compile)
               (switch-node 'x
-                           [[(literal-pattern true) (leaf-node 1)]
-                            [(type-pattern Object)  (leaf-node 2)]]))))
+                           [[(type-pattern java.lang.Object)  (leaf-node 2)]
+                            [(literal-pattern true) (leaf-node 1)]
+                            [(wildcard-pattern) (fail-node)]]))))
 
 (deftest simple-boolean-compile-dag
          (is
@@ -52,18 +53,17 @@
                            [[(literal-pattern true) (leaf-node 1)]
                             [(wildcard-pattern) (fail-node)]]))
            "Simple leaf node")
-         ;; TODO reenable
-         #_(is
+         (is
            (= (compile (build-matrix [x y]
                                      [true false] 1
                                      [false true] 2))
               (switch-node 'x
-                           [[(literal-pattern true) (switch-node 'y
-                                               [[(literal-pattern false) (leaf-node 1)]
-                                                [(wildcard-pattern) (fail-node)]])]
-                            [(literal-pattern false) (switch-node 'y
+                           [[(literal-pattern false) (switch-node 'y
                                                 [[(literal-pattern true) (leaf-node 2)]
                                                  [(wildcard-pattern) (fail-node)]])]
+                            [(literal-pattern true) (switch-node 'y
+                                               [[(literal-pattern false) (leaf-node 1)]
+                                                [(wildcard-pattern) (fail-node)]])]
                             [(wildcard-pattern) (fail-node)]]))
            "Two rows")
          (is
@@ -88,16 +88,16 @@
                                [[(wildcard-pattern) (leaf-node 1)]])
                 to-clj)
               `(cond
-                 (~(wildcard-pattern) 1)))
+                 (~(wildcard-pattern) ~'x) 1))
            "Switch node and wildcards")
         (is 
           (= (-> (switch-node 'x
                               [[(wildcard-pattern) (leaf-node 1)]
                                [(wildcard-pattern) (fail-node)]])
                to-clj)
-             '(clojure.core/cond 
-                true 1 
-                true (throw (java.lang.Exception. "Found FailNode"))))
+             `(cond 
+                (~(wildcard-pattern) ~'x) 1 
+                (~(wildcard-pattern) ~'x) (throw (java.lang.Exception. "Found FailNode"))))
           "Switch node with early match case"))
 
 (deftest simple-boolean-to-clj
@@ -163,3 +163,10 @@
                                            [(wildcard-pattern) (fail-node)]])]
                             [(literal-pattern 1) (leaf-node 3)]
                             [(wildcard-pattern) (fail-node)]]))))
+
+(deftest column-constructors-test
+         (is
+           (= (-> (build-matrix [x]
+                                [_] 1)
+                (column-constructors 0))
+              (sorted-set))))

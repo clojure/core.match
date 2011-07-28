@@ -30,11 +30,16 @@
 ;; TODO refactor with implementation inheritance
 
 (deftype WildcardPattern []
+  java.lang.Comparable
+  (compareTo [this that]
+    1000)
   Object
   (equals [this that]
     (instance? WildcardPattern that))
   (toString [_]
     "_")
+  (hashCode [_]
+    2299)
   IPattern
   (match? [_ _]
     true)
@@ -44,6 +49,11 @@
 
 
 (deftype LiteralPattern [l]
+  java.lang.Comparable
+  (compareTo [this that]
+    (if (instance? LiteralPattern that)
+      (.compareTo l (.l that))
+      -1000))
   Object
   (equals [this that]
     (and (instance? LiteralPattern that)
@@ -51,6 +61,8 @@
             l)))
   (toString [_]
     (str l))
+  (hashCode [this]
+    (+ 1142 (hash l)))
   IPattern
   (match? [this c]
     (= l c))
@@ -59,13 +71,20 @@
     (match? this n)))
 
 (deftype TypePattern [t]
+  java.lang.Comparable
+  (compareTo [this that]
+    (if (instance? TypePattern that)
+      (.compareTo t (.t that))
+      -100))
   Object
   (equals [this that]
     (and (instance? TypePattern that)
          (= (.t that) ;; TODO handle inheritance? Should this be an isa? test?
             t)))
   (toString [_]
-    (str "(isa? " t ")"))
+    (str t))
+  (hashCode [this]
+    (+ 2242 (hash t)))
   IPattern
   (match? [this c]
     (instance? t c))
@@ -89,11 +108,11 @@
 
 
 (defmethod print-method LiteralPattern [^LiteralPattern x ^Writer writer]
-  (.write writer (str "<LiteralPattern: " (.l x) ">")))
+  (.write writer (str "<LiteralPattern: " x ">")))
 (defmethod print-method WildcardPattern [^WildcardPattern x ^Writer writer]
   (.write writer (str "<WildcardPattern: >")))
 (defmethod print-method TypePattern [^TypePattern x ^Writer writer]
-  (.write writer (str "<TypePattern: " (.t x) " >")))
+  (.write writer (str "<TypePattern: " x " >")))
 
 
 (defn constructor? [p]
@@ -200,6 +219,7 @@
   (specialize [this c])
   (compile [this])
   (pattern-at [this i j])
+  (column-constructors [this i])
   (column [this i])
   (row [this j])
   (rows [this])
@@ -222,13 +242,18 @@
                           (= f p)))
                (map #(drop-nth % 0))))
      (drop-nth ocrs 0)))
+  (column-constructors [this i]
+    (->> (column this i)
+      (filter (comp not wildcard-pattern?))
+      (apply sorted-set)))
+  (column [_ i] (vec (map #(nth % i) rows)))
   (compile [this]
     (cond
       (empty? rows) (fail-node)
       (all-wildcards? (first rows)) (leaf-node (action (first rows)))
       :else (let [col (first-concrete-column-num (first rows))]
               (if (= col 0)
-                (let [constrs (set (filter (comp not wildcard-pattern?) (column this col)))]
+                (let [constrs (column-constructors this col)]
                   (switch-node
                     (ocrs col)
                     (conj (into [] (map (fn [c]
@@ -240,7 +265,6 @@
                           [(wildcard-pattern) (fail-node)])))
                 (compile (swap this col))))))
   (pattern-at [_ i j] ((rows j) i))
-  (column [_ i] (vec (map #(nth % i) rows)))
   (row [_ j] (nth rows j))
   ;; TODO: replace with more sophisticated scoring
   (necessary-column [this]
@@ -316,7 +340,7 @@
     (and (list? pat)
          (= (count pat) 2)
          (= (first pat) 'isa?)) 
-    (type-pattern (second pat))
+    (type-pattern (resolve (second pat)))
 
     (= pat '_) (wildcard-pattern)
     :else (literal-pattern pat)))
