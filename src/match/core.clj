@@ -263,7 +263,14 @@
 (defn ^SwitchNode switch-node [variable cases]
   (SwitchNode. variable cases))
 
+(defrecord AssignmentNode [clauses node]
+  INodeCompile
+  (to-clj [this]
+    `(let [~@clauses]
+       ~(to-clj node))))
 
+(defn ^AssignmentNode assignment-node [clauses node]
+  (AssignmentNode. clauses node))
 
 ;; Pattern Matrix
 

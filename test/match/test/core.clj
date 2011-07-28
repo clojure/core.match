@@ -233,3 +233,29 @@
                 (-> (build-matrix [y]
                                   [false] 1)
                   compile))))
+
+(deftest let-binding-gen-test
+         (is 
+           (= (-> (build-matrix [x]
+                                [[1]] 1)
+                compile
+                to-clj)
+              `(cond 
+                 (~(vector-pattern [1]) ~'x) (let [~'x0 (and (vector? ~'x)
+                                                             (into [] (next ~'x)))]
+                                               (cond 
+                                                 (~(literal-pattern 1) ~'x0) (let [~'x1 (and (vector? ~'x0)
+                                                                                             (into [] (next ~'x0)))]
+                                                                               (cond 
+                                                                                 (~(literal-pattern nil) ~'x1) 1 
+                                                                                 (~(wildcard-pattern) ~'x1) (throw (java.lang.Exception. "Found FailNode")))) 
+                                                 (~(wildcard-pattern) ~'x0) (throw (java.lang.Exception. "Found FailNode"))))
+                 (~(wildcard-pattern) ~'x) (throw (java.lang.Exception. "Found FailNode"))))))
+
+
+(deftest assignment-node-test
+         (is
+           (= (->
+                (assignment-node '['x0 (and (vector? 'x))] (leaf-node 3))
+                to-clj)
+              true)))
