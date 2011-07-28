@@ -450,22 +450,22 @@
   (def pr1 (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1))
   (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
 
-;; (match [x y z]
-;;   [_  f# t#] 1
-;;   [f# t# _ ] 2
-;;   [_  _  f#] 3
-;;   [_  _  t#] 4)
+  ;; (match [x y z]
+  ;;   [_  f# t#] 1
+  ;;   [f# t# _ ] 2
+  ;;   [_  _  f#] 3
+  ;;   [_  _  t#] 4)
   
-(def pm2 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
-                          (pattern-row [(literal-pattern false) (literal-pattern true) (wildcard-pattern)] :a2)
-                          (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
-                          (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern true)] :a4)]
-                         '[x y z]))
-(print-matrix pm2)
+  (def pm2 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
+                            (pattern-row [(literal-pattern false) (literal-pattern true) (wildcard-pattern)] :a2)
+                            (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
+                            (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern true)] :a4)]
+                           '[x y z]))
+  (print-matrix pm2)
 
-(compile pm2)
+  (compile pm2)
   
-(to-clj (compile pm2))
+  (to-clj (compile pm2))
 
 
   (useful-matrix pm2)
@@ -481,25 +481,25 @@
   ;; ^ we can discard :a4
   ;; 
 
- ; fail node
+  ;; fail node
   (def cm1 (pattern-matrix []
                            '[]))
   (compile cm1)
-  ;=> #match.core.FailNode[]
+  ;;=> #match.core.FailNode[]
 
-  ; leaf node - case m > 0, n = 0
+  ;; leaf node - case m > 0, n = 0
   (def cm2 (pattern-matrix [(pattern-row [] :a1)]
                            '[]))
   (compile cm2)
-  ;=> #match.core.LeafNode[:a1]
+  ;;=> #match.core.LeafNode[:a1]
 
-  ; leaf node - case m > 0, n > 0
+  ;; leaf node - case m > 0, n > 0
   (def cm3 (pattern-matrix [(pattern-row [(wildcard-pattern)] :a1)]
                            '[x]))
   (compile cm3)
-  ;=> #match.core.LeafNode[:a1]
+  ;;=> #match.core.LeafNode[:a1]
 
-  ; switch 
+  ;; switch 
   (def cm4 (pattern-matrix [(pattern-row [true] :a1)]
                            '[x]))
   (compile cm4)
@@ -509,6 +509,16 @@
   (compile cm5)
   (to-clj (compile cm5))
 
+  (pprint (-> (build-matrix [x]
+                            [[1]] 1
+                            [(isa? Object)] 2)
+              compile))
+
+  (pprint (-> (build-matrix [x]
+                            [[1]] 1
+                            [(isa? Object)] 2)
+              compile
+              to-clj))
   )
 
 ; =============================================================================
