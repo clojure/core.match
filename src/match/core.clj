@@ -66,7 +66,9 @@
          (= (.l that)
             l)))
   (toString [_]
-    (str l))
+    (if (nil? l)
+      "nil"
+      (str l)))
   (hashCode [this]
     (+ 1142 (hash l)))
   IPattern
@@ -290,10 +292,11 @@
              (map (fn [[f :as r]]
                     (if (vector-pattern? f)
                       (let [[h t] (split-pattern f)]
-                        (apply vector h t r))
+                        (prepend (prepend r t) f))
                       (drop-nth r 0))))))
       (if (vector-pattern? p)
-        (cons (symbol (str (name p) (current-index p)))
+        (cons (symbol (str (name (first ocrs))
+                           (current-index p)))
               ocrs)
         (drop-nth ocrs 0))))
   (column-constructors [this i]

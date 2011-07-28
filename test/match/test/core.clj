@@ -176,6 +176,7 @@
 
 
 (deftest seq-pattern-match
+         ;; TODO
          (is
            (= (-> (build-matrix [x]
                                 [[1]] 1
