@@ -34,8 +34,13 @@
   Object
   ;; TODO: consider guards
   (equals [this other]
-    (or (identical? this other)
-        (= p (.p ^Pattern other))))
+    (let [po (.p ^Pattern other)]
+      (or (identical? this other)
+          (wildcard? p)
+          (wildcard? po)
+          (and (coll? p)
+               (coll? po))
+          (= p po))))
   (hashCode [this]
     (hash p))
   IPattern
@@ -187,8 +192,7 @@
     (PatternMatrix.
      (vec (->> rows
                (filter (fn [[f]]
-                          (or (= f p)
-                              (wildcard? f))))
+                          (= f p)))
                (map #(drop-nth % 0))))
      (drop-nth ocrs 0)))
   (compile [this]

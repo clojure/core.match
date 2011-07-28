@@ -77,3 +77,17 @@
                 to-clj)
               1)
            "Early match case"))
+
+(deftest pattern-equals-test
+         (is
+           (= (pattern true)
+              (pattern true)))
+         (is
+           (not= (pattern true)
+                 (pattern false)))
+         (is
+           (= (pattern [1])
+              (pattern [1 2])))
+         (is
+           (not= (pattern 1)
+                 (pattern [1]))))
