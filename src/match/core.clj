@@ -165,7 +165,7 @@
 (defmethod print-method LiteralPattern [^LiteralPattern x ^Writer writer]
   (.write writer (str "<LiteralPattern: " x ">")))
 (defmethod print-method WildcardPattern [^WildcardPattern x ^Writer writer]
-  (.write writer (str "<WildcardPattern: >")))
+  (.write writer (str "<WildcardPattern>")))
 (defmethod print-method TypePattern [^TypePattern x ^Writer writer]
   (.write writer (str "<TypePattern: " x " >")))
 
