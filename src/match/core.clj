@@ -127,7 +127,7 @@
        (wildcard-pattern)
        (literal-pattern (first v)))
      (if (next v)
-       (VectorPattern. (next v) (inc n))
+       (VectorPattern. (next v) (clojure.core/inc n))
        (LiteralPattern. (next v)))]))
 
 (defn vector-pattern 
@@ -292,12 +292,18 @@
              (map (fn [[f :as r]]
                     (if (vector-pattern? f)
                       (let [[h t] (split-pattern f)]
-                        (prepend (prepend r t) f))
+                        (-> r
+                          (drop-nth 0)
+                          (prepend t)
+                          (prepend h)))
                       (drop-nth r 0))))))
       (if (vector-pattern? p)
-        (cons (symbol (str (name (first ocrs))
-                           (current-index p)))
-              ocrs)
+        (apply vector 
+               (symbol (str (name (first ocrs))
+                            (current-index p)))
+               (symbol (str (name (first ocrs))
+                            (clojure.core/inc (current-index p))))
+               (drop-nth ocrs 0))
         (drop-nth ocrs 0))))
   (column-constructors [this i]
     (->> (column this i)
