@@ -210,20 +210,6 @@
                             [(literal-pattern 1) (leaf-node 3)]
                             [(wildcard-pattern) (fail-node)]]))))
 
-(deftest column-constructors-test
-         (is
-           (= (-> (build-matrix [x]
-                                [_] 1)
-                (column-constructors 0))
-              (sorted-set)))
-         (is
-           (= (-> (build-matrix [x y]
-                                [1 1] 1
-                                [[1 2] 1] 2)
-                (column-constructors 0))
-              (sorted-set (literal-pattern 1)
-                          (vector-pattern [1 2])))))
-
 (deftest specialize-test
          (is (= (-> (build-matrix [x y]
                                   [true false] 1

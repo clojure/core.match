@@ -282,11 +282,9 @@
   (width [this])
   (height [this])
   (dim [this])
-  (specialize-first-column [this p])
   (specialize [this c])
   (compile [this])
   (pattern-at [this i j])
-  (column-constructors [this i])
   (column [this i])
   (row [this j])
   (rows [this])
@@ -302,51 +300,57 @@
   (width [_] (count (rows 0)))
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
-  (specialize-first-column [this filtering-pattern]
-    (filter #(= (first %) filtering-pattern) rows))
   (specialize [this p]
-    (PatternMatrix.
-      (vec (->> rows
-             (filter (fn [[f]]
-                       (= f p)))
-             (map (fn [[f :as r]]
-                    (if (vector-pattern? f)
-                      (let [[h t] (split-pattern f)]
-                        (-> r
-                          (drop-nth 0)
-                          (prepend t)
-                          (prepend h)))
-                      (drop-nth r 0))))))
-      (if (vector-pattern? p)
-        (apply vector 
-               (symbol (str (name (first ocrs))
-                            (current-index p)))
-               (symbol (str (name (first ocrs))
-                            (clojure.core/inc (current-index p))))
-               (drop-nth ocrs 0))
-        (drop-nth ocrs 0))))
-  (column-constructors [this i]
-    (->> (column this i)
-      (filter (comp not wildcard-pattern?))
-      (apply sorted-set)))
+    (letfn [(filter-by-first-column [p rows]
+              (filter #(= (first %) p) rows))
+            (specialize-row [row]
+              (let [f (first row)]
+                (if (vector-pattern? f)
+                  (let [[h t] (split-pattern f)]
+                    (-> row
+                      (drop-nth 0)
+                      (prepend t)
+                      (prepend h)))
+                  (drop-nth row 0))))
+            (next-rows [p rows]
+              (->> rows
+                (filter-by-first-column p)
+                (map specialize-row)
+                vec))
+            (next-occurance-vector [p os]
+              (if (vector-pattern? p)
+                (apply vector 
+                       (symbol (str (name (first os))
+                                    (current-index p)))
+                       (symbol (str (name (first os))
+                                    (clojure.core/inc (current-index p))))
+                       (drop-nth os 0))
+                (drop-nth os 0)))]
+      (PatternMatrix.
+        (next-rows p rows)
+        (next-occurance-vector p ocrs))))
   (column [_ i] (vec (map #(nth % i) rows)))
   (compile [this]
-    (cond
-      (empty? rows) (fail-node)
-      (all-wildcards? (first rows)) (leaf-node (action (first rows))) ;; TODO only makes sense if evaluated in typographical order
-      :else (let [col (first-concrete-column-num (first rows))]
-              (if (= col 0)
-                (let [constrs (column-constructors this col)]
-                  (switch-node
-                    (ocrs col)
-                    (conj (into [] (map (fn [c]
-                                          (let [s (-> this 
-                                                    (specialize c) 
-                                                    compile)]
-                                            [c s]))
-                                        constrs))
-                          [(wildcard-pattern) (fail-node)])))
-                (compile (swap this col))))))
+    (letfn [(column-constructors [this i]
+              (->> (column this i)
+                (filter (comp not wildcard-pattern?))
+                (apply sorted-set)))]
+      (cond
+        (empty? rows) (fail-node)
+        (all-wildcards? (first rows)) (leaf-node (action (first rows))) ;; TODO only makes sense if evaluated in typographical order
+        :else (let [col (first-concrete-column-num (first rows))]
+                (if (= col 0)
+                  (let [constrs (column-constructors this col)]
+                    (switch-node
+                      (ocrs col)
+                      (conj (into [] (map (fn [c]
+                                            (let [s (-> this 
+                                                      (specialize c) 
+                                                      compile)]
+                                              [c s]))
+                                          constrs))
+                            [(wildcard-pattern) (fail-node)])))
+                  (compile (swap this col)))))))
   (pattern-at [_ i j] ((rows j) i))
   (row [_ j] (nth rows j))
   ;; TODO: replace with more sophisticated scoring
