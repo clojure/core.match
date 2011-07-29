@@ -1,9 +1,6 @@
 (ns match.loader
   (:refer-clojure :exclude [reify == inc intern])
-  (:use logos.minikanren
-        logos.rel
-        logos.match
-        logos.tabled))
+  (:use [clojure.core.logic minikanren prelude tabled]))
 
 (def cl (ClassLoader/getSystemClassLoader))
 
@@ -25,7 +22,7 @@
 ;; erg, we need to fix match
 (def is
   (tabled [a b]
-    (cond-e
+    (conde
       ((is* a b))
       ((exist [c]
         (is* a c)
@@ -33,7 +30,7 @@
 
 (comment
   ;; FIXME
-  (defn-e is [a b]
+  (defne is [a b]
     ([_ _] (is* a b))
     ([_ _] (exist [c]
              (is* a c)
