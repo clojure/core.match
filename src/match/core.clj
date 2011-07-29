@@ -82,13 +82,12 @@
   java.lang.Comparable
   (compareTo [this that]
     (if (instance? TypePattern that)
-      (.compareTo t (.t that))
+      (compare (hash t) (hash (.t that))) ;; NOTE: see note about inheritance below. pontential hash collisions? - David
       -100))
   Object
   (equals [this that]
     (and (instance? TypePattern that)
-         (= (.t that) ;; TODO handle inheritance? Should this be an isa? test?
-            t)))
+         (= (.t that) t))) ;; NOTE: inheritance/implication should be handled by logic engine - David
   (toString [_]
     (str t))
   (hashCode [this]
@@ -531,8 +530,8 @@
                             [[1]] 1
                             [(isa? String)] 2
                             [(isa? Object)] 3)
-              compile))
-  ;; FIXME: the above doesn't work
+              compile
+              to-clj))
 )
 
 ; =============================================================================
