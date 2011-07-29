@@ -532,6 +532,12 @@
                             [(isa? Object)] 3)
               compile
               to-clj))
+  ;; NOTE: we should sideline type patterns for now, focus on literal
+  ;; patterns. We design doc about how to deal with types as they
+  ;; pose a lot of challenges in terms of coming with a good syntax
+  ;; that works with types, records, *and* Java classes.
+  ;; perhaps punt on classes and force people to use field checks
+  ;; in guards?
 )
 
 ; =============================================================================
