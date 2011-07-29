@@ -417,15 +417,15 @@
 ;; Pattern matching interface
 
 (defn emit-pattern [pat]
-  (cond
-    (and (list? pat)
-         (= (count pat) 2)
-         (= (first pat) 'isa?)) 
-    (type-pattern (resolve (second pat)))
-
+  (letfn [(type-pattern? [pat]
+            (and (list? pat)
+                 (= (count pat) 2)
+                 (= (first pat) 'isa?)))]
+   (cond
+    (type-pattern? pat) (type-pattern (resolve (second pat)))
     (vector? pat) (vector-pattern pat)
     (= pat '_) (wildcard-pattern)
-    :else (literal-pattern pat)))
+    :else (literal-pattern pat))))
             
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
@@ -527,10 +527,12 @@
 
   ;; NOTE: we support any kind of type in any column, the very first test
   ;; needs to be on the types of the constructors in a given column
-  (column-constructors (build-matrix [x]
-                                     [[1]] 1
-                                     [(isa? Object)] 2)
-                        0)
+  (pprint (-> (build-matrix [x]
+                            [[1]] 1
+                            [(isa? String)] 2
+                            [(isa? Object)] 3)
+              compile))
+  ;; FIXME: the above doesn't work
 )
 
 ; =============================================================================
