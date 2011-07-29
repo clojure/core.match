@@ -337,7 +337,7 @@
                 (apply sorted-set)))]
       (cond
         (empty? rows) (fail-node)
-        (all-wildcards? (first rows)) (leaf-node (action (first rows))) ;; TODO only makes sense if evaluated in typographical order
+        (all-wildcards? (first rows)) (leaf-node (action (first rows)))
         :else (let [col (first-concrete-column-num (first rows))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)]
