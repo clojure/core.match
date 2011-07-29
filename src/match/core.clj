@@ -317,15 +317,15 @@
                 (filter-by-first-column p)
                 (map specialize-row)
                 vec))
-            (next-occurance-vector [p os]
+            (next-occurance-vector [p ocrs]
               (if (vector-pattern? p)
                 (apply vector 
-                       (symbol (str (name (first os))
+                       (symbol (str (name (first ocrs))
                                     (current-index p)))
-                       (symbol (str (name (first os))
+                       (symbol (str (name (first ocrs))
                                     (clojure.core/inc (current-index p))))
-                       (drop-nth os 0))
-                (drop-nth os 0)))]
+                       (drop-nth ocrs 0))
+                (drop-nth ocrs 0)))]
       (PatternMatrix.
         (next-rows p rows)
         (next-occurance-vector p ocrs))))
