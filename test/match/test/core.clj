@@ -234,7 +234,8 @@
                                   [false] 1)
                   compile))))
 
-(deftest let-binding-gen-test
+;;TODO enable
+#_(deftest let-binding-gen-test
          (is 
            (= (-> (build-matrix [x]
                                 [[1]] 1)

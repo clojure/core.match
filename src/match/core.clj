@@ -282,6 +282,7 @@
   (width [this])
   (height [this])
   (dim [this])
+  (specialize-first-column [this p])
   (specialize [this c])
   (compile [this])
   (pattern-at [this i j])
@@ -301,6 +302,8 @@
   (width [_] (count (rows 0)))
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
+  (specialize-first-column [this filtering-pattern]
+    (filter #(= (first %) filtering-pattern) rows))
   (specialize [this p]
     (PatternMatrix.
       (vec (->> rows
