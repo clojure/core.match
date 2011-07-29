@@ -162,12 +162,17 @@
 (def vector-pattern?   (partial instance? VectorPattern))
 
 
-(defmethod print-method LiteralPattern [^LiteralPattern x ^Writer writer]
-  (.write writer (str "<LiteralPattern: " x ">")))
-(defmethod print-method WildcardPattern [^WildcardPattern x ^Writer writer]
+(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
+  (.write writer (str "<LiteralPattern: " p ">")))
+
+(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
   (.write writer (str "<WildcardPattern>")))
-(defmethod print-method TypePattern [^TypePattern x ^Writer writer]
-  (.write writer (str "<TypePattern: " x ">")))
+
+(defmethod print-method TypePattern [^TypePattern p ^Writer writer]
+  (.write writer (str "<TypePattern: " p ">")))
+
+(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
+  (.write writer (str "<VectorPattern: " p ">")))
 
 
 (defn constructor? [p]
