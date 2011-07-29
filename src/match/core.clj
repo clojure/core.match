@@ -524,7 +524,14 @@
                             [(isa? Object)] 2)
               compile
               to-clj))
-  )
+
+  ;; NOTE: we support any kind of type in any column, the very first test
+  ;; needs to be on the types of the constructors in a given column
+  (column-constructors (build-matrix [x]
+                                     [[1]] 1
+                                     [(isa? Object)] 2)
+                        0)
+)
 
 ; =============================================================================
 ; On Hold
