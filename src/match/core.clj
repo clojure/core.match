@@ -100,8 +100,7 @@
     (match? this n)))
 
 (defprotocol IVectorPattern
-  (current-index [this])
-  (split-pattern [this]))
+  (current-index [this]))
 
 (declare wildcard-pattern literal-pattern)
 
@@ -121,13 +120,6 @@
   IVectorPattern
   (current-index [_] ;; TODO possibly metadata, does not effect equality
     n)
-  (split-pattern [_]
-    [(if (= (first v) '_)
-       (wildcard-pattern)
-       (literal-pattern (first v)))
-     (if (next v)
-       (VectorPattern. (into [] (next v)) (clojure.core/inc n))
-       (LiteralPattern. (next v)))])
   IPattern
   (match? [this n]
     (vector? n))
@@ -301,17 +293,15 @@
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
   (specialize [this p]
-    (letfn [(filter-by-first-column [p rows]
-              (filter #(= (first %) p) rows))
+    (letfn [(filter-by-first-column [p rows]  ;; TODO: we do not filter by equality to the pattern
+              (filter #(= (first %) p) rows)) ;; we filter by constructors. - David
             (specialize-row [row]
-              (let [f (first row)]
-                (if (vector-pattern? f)
-                  (let [[h t] (split-pattern f)]
-                    (-> row
-                      (drop-nth 0)
-                      (prepend t)
-                      (prepend h)))
-                  (drop-nth row 0))))
+              (let [p (first row)]
+                (cond
+                 (vector-pattern? p) (let [v (.v ^VectorPattern p)
+                                           r (drop-nth row 0)]
+                                       (reduce prepend (drop-nth row 0) (reverse (conj v nil)))) ;; TODO: nil pattern?
+                 :else (drop-nth row 0))))
             (next-rows [p rows]
               (->> rows
                 (filter-by-first-column p)
@@ -429,7 +419,7 @@
                  (= (first pat) 'isa?)))]
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
-    (vector? pat) (vector-pattern pat)
+    (vector? pat) (vector-pattern (into [] (map emit-pattern pat)))
     (= pat '_) (wildcard-pattern)
     :else (literal-pattern pat))))
             
@@ -545,6 +535,13 @@
   ;; that works with types, records, *and* Java classes.
   ;; perhaps punt on classes and force people to use field checks
   ;; in guards?
+
+  (def m1 (build-matrix [x y z]
+                        [1 2 3] 1
+                        [[1 2] 3 4] 2
+                        [[2 3] 4 5] 3))
+
+ (pprint (specialize m1 (vector-pattern [1 2])))
 )
 
 ; =============================================================================
