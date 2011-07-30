@@ -39,8 +39,6 @@
   (compareTo [this that]
     1000)
   Object
-  (equals [this that]
-    (instance? WildcardPattern that))
   (toString [_]
     "_")
   (hashCode [_]
@@ -57,8 +55,6 @@
   (compareTo [this that]
     2000)
   Object
-  (equals [this that]
-    (instance? CrashPattern that))
   (toString [_]
     "CRASH")
   (hashCode [_]
@@ -83,10 +79,6 @@
                                         :else (.compareTo l (.l that)))
       :else -1000))
   Object
-  (equals [this that]
-    (and (instance? LiteralPattern that)
-         (= (.l that)
-            l)))
   (toString [_]
     (if (nil? l)
       "nil"
@@ -107,9 +99,6 @@
       (compare (hash t) (hash (.t that))) ;; NOTE: see note about inheritance below. pontential hash collisions? - David
       -100))
   Object
-  (equals [this that]
-    (and (instance? TypePattern that)
-         (= (.t that) t))) ;; NOTE: inheritance/implication should be handled by logic engine - David
   (toString [_]
     (str t))
   (hashCode [this]
@@ -133,8 +122,6 @@
       (.compareTo v (.v that))
       -200))
   Object
-  (equals [this that]
-    (instance? VectorPattern that))
   (toString [_]
     (str v))
   (hashCode [_]
@@ -177,6 +164,23 @@
 (def literal-pattern?  (partial instance? LiteralPattern))
 (def type-pattern?     (partial instance? TypePattern))
 (def vector-pattern?   (partial instance? VectorPattern))
+
+(defmulti pattern-equals (fn [a b] [(type a) (type b)]))
+
+(defmethod pattern-equals [Object WildcardPattern]
+  [a b] true)
+
+(defmethod pattern-equals [LiteralPattern LiteralPattern]
+  [^LiteralPattern a ^LiteralPattern b] (= (.l a) (.l b)))
+
+(defmethod pattern-equals [VectorPattern VectorPattern]
+  [a b] true)
+
+(defmethod pattern-equals [TypePattern TypePattern]
+  [^TypePattern a ^TypePattern b] (= (.t a) (.t b)))
+
+(defmethod pattern-equals :default 
+  [a b] false)
 
 (defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
   (.write writer "<WildcardPattern>"))
@@ -272,20 +276,24 @@
   (vector `(~pattern ~occurrence) 
           (to-clj action)))
 
-(defrecord SwitchNode [occurrence cases]
+(defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (to-clj [this]
-    (let [clauses (->> cases
-                    (map (partial apply dag-clause-to-clj occurrence))
-                    (apply concat))
+    (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr `(cond ~@clauses)]
+          cond-expr `(cond ~@clauses)
+          cond-expr (if default
+                      (concat cond-expr `(:else ~(to-clj default)))
+                      cond-expr)]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
 
-(defn ^SwitchNode switch-node [occurrence cases]
-  (SwitchNode. occurrence cases))
+(defn ^SwitchNode switch-node
+  ([occurrence cases]
+     (SwitchNode. occurrence cases nil))
+  ([occurrence cases default]
+     (SwitchNode. occurrence cases default)))
 
 ;; Pattern Matrix
 
@@ -309,14 +317,18 @@
 ;; TODO: probably should break out the conds into multimethods to allow for a clean
 ;; extension point - David
 
+(declare empty-matrix?)
+
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
-  (width [_] (count (rows 0)))
+  (width [_] (if (not (empty? rows))
+               (count (rows 0))
+               0))
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
   (specialize [this p]
     (letfn [(filter-by-first-column [p rows] 
-              (filter #(= (first %) p) rows))
+              (filter #(pattern-equals (first %) p) rows))
             (specialize-row [row]
               (let [p (first row)]
                 (cond
@@ -355,22 +367,27 @@
     (letfn [(column-constructors [this i]
               (->> (column this i)
                 (filter (comp not wildcard-pattern?))
-                (apply sorted-set)))]
+                (apply sorted-set)))
+            (default-matrix []
+              )]
       (cond
         (empty? rows) (fail-node)
         (all-wildcards? (first rows)) (leaf-node (action (first rows)))
         :else (let [col (first-concrete-column-num (first rows))]
                 (if (= col 0)
-                  (let [constrs (column-constructors this col)]
+                  (let [constrs (column-constructors this col)
+                        default (let [m (specialize this (wildcard-pattern))]
+                                  (when-not (empty-matrix? m)
+                                    (compile m)))]
                     (switch-node
                       (ocrs col)
-                      (conj (into [] (map (fn [c]
-                                            (let [s (-> this 
-                                                      (specialize c) 
-                                                      compile)]
-                                              [c s]))
-                                          constrs))
-                            [(wildcard-pattern) (fail-node)])))
+                      (into [] (map (fn [c]
+                                      (let [s (-> this 
+                                                  (specialize c) 
+                                                  compile)]
+                                        [c s]))
+                                    constrs))
+                      default))
                   (compile (swap this col)))))))
   (pattern-at [_ i j] ((rows j) i))
   (row [_ j] (nth rows j))
@@ -403,6 +420,9 @@
   (swap [_ idx]
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
+
+(defn empty-matrix? [pm]
+  (= (dim pm) [0 0]))
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
@@ -492,18 +512,25 @@
                             (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
                             (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern true)] :a4)]
                            '[x y z]))
+
   (print-matrix pm2)
 
-  (compile pm2)
-  
-  (to-clj (compile pm2))
+  (specialize pm2 (wildcard-pattern))
 
+  (pprint (compile pm2))
+  
+  ;; FIXME: this result should match Maranget's, it does not - David
+  ;; 1. we're not computing the default matrix
+  ;; 2. specialization should not eliminate wildcard patterns
+  (source-pprint (to-clj (compile pm2)))
 
   (useful-matrix pm2)
 
   (print-matrix pm2)
   (print-matrix (select pm2))
+  (print-matrix (specialize (select pm2) (wildcard-pattern)))
   (print-matrix (specialize (select pm2) (literal-pattern true)))
+  (print-matrix (specialize (select pm2) (literal-pattern false)))
   (print-matrix (select (specialize (select pm2) (literal-pattern true))))
   (print-matrix (specialize (select (specialize (select pm2) (literal-pattern true))) (literal-pattern false)))
   (print-matrix (specialize (select pm2) (literal-pattern false)))
@@ -571,11 +598,17 @@
                         [[1 2 3] 4 5] 2
                         [[2 3 4] 5 6] 3))
 
+  (def m2 (build-matrix [x]
+                        [[1 2 3]] 1
+                        [[1 2 4]] 2))
+
   (pprint (specialize m1 (vector-pattern [1 2 3])))
 
   (pprint (compile m1))
 
   (source-pprint (-> m1 compile to-clj))
+
+  (source-pprint (-> m2 compile to-clj))
 
   (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
       first
