@@ -298,9 +298,9 @@
             (specialize-row [row]
               (let [p (first row)]
                 (cond
-                 (vector-pattern? p) (let [v (.v ^VectorPattern p)
-                                           r (drop-nth row 0)]
-                                       (reduce prepend (drop-nth row 0) (reverse (conj v nil)))) ;; TODO: nil pattern?
+                 (vector-pattern? p) (let [v (.v ^VectorPattern p)]
+                                       (reduce prepend (drop-nth row 0)
+                                               (reverse (conj v nil)))) ;; TODO: nil pattern?
                  :else (drop-nth row 0))))
             (next-rows [p rows]
               (->> rows
