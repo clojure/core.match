@@ -328,7 +328,7 @@
   (dim [this] [(width this) (height this)])
   (specialize [this p]
     (letfn [(filter-by-first-column [p rows] 
-              (filter #(pattern-equals (first %) p) rows))
+              (filter #(pattern-equals p (first %)) rows))
             (specialize-row [row]
               (let [p (first row)]
                 (cond
@@ -519,9 +519,6 @@
 
   (pprint (compile pm2))
   
-  ;; FIXME: this result should match Maranget's, it does not - David
-  ;; 1. we're not computing the default matrix
-  ;; 2. specialization should not eliminate wildcard patterns
   (source-pprint (to-clj (compile pm2)))
 
   (useful-matrix pm2)
