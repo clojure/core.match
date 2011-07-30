@@ -263,20 +263,20 @@
 (defn ^FailNode fail-node []
   (FailNode.))
 
-(defn dag-clause-to-clj [variable pattern action]
-  (vector `(~pattern ~variable) 
+(defn dag-clause-to-clj [occurrence pattern action]
+  (vector `(~pattern ~occurrence) 
           (to-clj action)))
 
-(defrecord SwitchNode [variable cases]
+(defrecord SwitchNode [occurrence cases]
   INodeCompile
   (to-clj [this]
     (let [clauses (->> cases
-                    (map (partial apply dag-clause-to-clj variable))
+                    (map (partial apply dag-clause-to-clj occurrence))
                     (apply concat))]
       `(cond ~@clauses))))
 
-(defn ^SwitchNode switch-node [variable cases]
-  (SwitchNode. variable cases))
+(defn ^SwitchNode switch-node [occurrence cases]
+  (SwitchNode. occurrence cases))
 
 (defrecord AssignmentNode [clauses node]
   INodeCompile
@@ -312,8 +312,8 @@
   (height [_] (count rows))
   (dim [this] [(width this) (height this)])
   (specialize [this p]
-    (letfn [(filter-by-first-column [p rows]  ;; TODO: we do not filter by equality to the pattern
-              (filter #(= (first %) p) rows)) ;; we filter by constructors. - David
+    (letfn [(filter-by-first-column [p rows] 
+              (filter #(= (first %) p) rows))
             (specialize-row [row]
               (let [p (first row)]
                 (cond
@@ -564,6 +564,8 @@
                         [[2 3 4] 5 6] 3))
 
  (pprint (specialize m1 (vector-pattern [1 2 3])))
+
+ (pprint (compile m1))
 
  (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
      first
