@@ -310,13 +310,15 @@
             (next-occurrences [p ocrs]
               (cond
                (vector-pattern? p) (let [ocr-str (name (first ocrs))
-                                         ocr-sym (fn ocr-sym [i]
+                                         ocr-sym (fn ocr-sym [x]
                                                    (with-meta
-                                                     (symbol (str ocr-str i))
+                                                     (symbol (str ocr-str x))
                                                      {:seq-occurrence true}))]
-                                     (into [] (concat (map ocr-sym
-                                                           (range (count (.v ^VectorPattern p))))
-                                                      (drop-nth ocrs 0))))
+                                     (into (conj (into []
+                                                       (map ocr-sym
+                                                            (range (count (.v ^VectorPattern p)))))
+                                                 (ocr-sym "r"))
+                                           (drop-nth ocrs 0)))
                 :else (drop-nth ocrs 0)))]
       (PatternMatrix.
         (next-rows p rows)
