@@ -47,6 +47,23 @@
   (invoke [this n]
     (match? this n)))
 
+(deftype CrashPattern []
+  java.lang.Comparable
+  (compareTo [this that]
+    2000)
+  Object
+  (equals [this that]
+    (instance? CrashPattern that))
+  (toString [_]
+    "CRASH")
+  (hashCode [_]
+    2399)
+  IPattern
+  (match? [_ _]
+    true)
+  clojure.lang.IFn
+  (invoke [this n]
+    (match? this n)))
 
 (deftype LiteralPattern [l]
   java.lang.Comparable
@@ -127,6 +144,19 @@
   (invoke [this n]
     (match? this n)))
 
+(defn ^WildcardPattern wildcard-pattern [] 
+  (WildcardPattern.))
+  
+(defn ^WildcardPattern crash-pattern [] 
+  (CrashPattern.))
+
+(defn ^LiteralPattern literal-pattern [l] 
+  (LiteralPattern. l))
+
+(defn ^TypePattern type-pattern [t] 
+  {:pre [(class? t)]}
+  (TypePattern. t))
+
 (defn vector-pattern 
   (^VectorPattern [v] 
      {:pre [(vector? v)]}
@@ -137,34 +167,26 @@
                  (pos? n))]}
      (VectorPattern. v n)))
 
-(defn ^WildcardPattern wildcard-pattern [] 
-  (WildcardPattern.))
-  
-(defn ^LiteralPattern literal-pattern [l] 
-  (LiteralPattern. l))
-
-(defn ^TypePattern type-pattern [t] 
-  {:pre [(class? t)]}
-  (TypePattern. t))
-
 (def wildcard-pattern? (partial instance? WildcardPattern))
+(def crash-pattern?    (partial instance? CrashPattern))
 (def literal-pattern?  (partial instance? LiteralPattern))
 (def type-pattern?     (partial instance? TypePattern))
 (def vector-pattern?   (partial instance? VectorPattern))
 
+(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
+  (.write writer "<WildcardPattern>"))
+
+(defmethod print-method CrashPattern [^CrashPattern p ^Writer writer]
+  (.write writer "<CrashPattern>"))
 
 (defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
   (.write writer (str "<LiteralPattern: " p ">")))
-
-(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer "<WildcardPattern>"))
 
 (defmethod print-method TypePattern [^TypePattern p ^Writer writer]
   (.write writer (str "<TypePattern: " p ">")))
 
 (defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
   (.write writer (str "<VectorPattern: " p ">")))
-
 
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
@@ -220,7 +242,6 @@
 (defn ^PatternRow pattern-row [ps action]
   (PatternRow. ps action))
 
-
 ;; Decision tree nodes
 
 (defprotocol INodeCompile
@@ -234,7 +255,6 @@
 (defn ^LeafNode leaf-node [value]
   (LeafNode. value))
 
-
 (defrecord FailNode []
   INodeCompile
   (to-clj [this]
@@ -242,7 +262,6 @@
 
 (defn ^FailNode fail-node []
   (FailNode.))
-
 
 (defn dag-clause-to-clj [variable pattern action]
   (vector `(~pattern ~variable) 
@@ -300,7 +319,7 @@
                 (cond
                  (vector-pattern? p) (let [v (.v ^VectorPattern p)]
                                        (reduce prepend (drop-nth row 0)
-                                               (reverse (conj v nil)))) ;; TODO: nil pattern?
+                                               (reverse (conj v (crash-pattern)))))
                  :else (drop-nth row 0))))
             (next-rows [p rows]
               (->> rows
@@ -438,7 +457,6 @@
 
 (defmacro build-matrix [vars & clauses]
   `(emit-matrix '~vars '~clauses))
-
 
 ; =============================================================================
 ; Active Work
