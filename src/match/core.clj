@@ -307,18 +307,20 @@
                 (filter-by-first-column p)
                 (map specialize-row)
                 vec))
-            (next-occurance-vector [p ocrs]
+            (next-occurrences [p ocrs]
               (cond
-               (vector-pattern? p) (apply vector 
-                                          (symbol (str (name (first ocrs))
-                                                       (current-index p)))
-                                          (symbol (str (name (first ocrs))
-                                                       (clojure.core/inc (current-index p))))
-                                          (drop-nth ocrs 0))
+               (vector-pattern? p) (let [ocr-str (name (first ocrs))
+                                         ocr-sym (fn ocr-sym [i]
+                                                   (with-meta
+                                                     (symbol (str ocr-str i))
+                                                     {:seq-occurrence true}))]
+                                     (into [] (concat (map ocr-sym
+                                                           (range (count (.v ^VectorPattern p))))
+                                                      (drop-nth ocrs 0))))
                 :else (drop-nth ocrs 0)))]
       (PatternMatrix.
         (next-rows p rows)
-        (next-occurance-vector p ocrs))))
+        (next-occurrences p ocrs))))
   (column [_ i] (vec (map #(nth % i) rows)))
   (compile [this]
     (letfn [(column-constructors [this i]
@@ -538,10 +540,15 @@
 
   (def m1 (build-matrix [x y z]
                         [1 2 3] 1
-                        [[1 2] 3 4] 2
-                        [[2 3] 4 5] 3))
+                        [[1 2 3] 4 5] 2
+                        [[2 3 4] 5 6] 3))
 
- (pprint (specialize m1 (vector-pattern [1 2])))
+ (pprint (specialize m1 (vector-pattern [1 2 3])))
+
+ (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
+     first
+     meta)
+ ;; {:seq-occurence true}
 )
 
 ; =============================================================================
