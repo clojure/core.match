@@ -309,3 +309,30 @@
   ;; whether expanding to if or case statements is really an implementation detail
   ;; but even so, unless the 
   )
+
+(comment
+  (defn foo1 [x]
+    (if (= x 10000000)
+      x
+      (recur (inc x))))
+
+  (defn foo2 [x]
+    (let [a (atom nil)
+          b (reset! a x)]
+     (if (= x 10000000)
+       x
+       (recur (inc x)))))
+
+  ;; 117ms
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1]
+       (foo1 0))))
+
+  ;; 160ms
+  ;; 600ms, not bad
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1]
+       (foo2 0))))
+  )

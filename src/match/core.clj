@@ -6,6 +6,11 @@
   (:require [clojure.pprint :as pp])
   (:import [java.io Writer]))
 
+(defn source-pprint [source]
+  (binding [pp/*print-pprint-dispatch* pp/code-dispatch
+            pp/*print-suppress-namespaces* true]
+    (pprint source)))
+
 ;; TODO: flesh out what a decision tree looks like, what remains to be compiled
 
 (defprotocol IVecMod
@@ -570,7 +575,7 @@
 
   (pprint (compile m1))
 
-  (pprint (-> m1 compile to-clj))
+  (source-pprint (-> m1 compile to-clj))
 
   (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
       first
