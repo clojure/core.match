@@ -6,6 +6,14 @@
   (:require [clojure.pprint :as pp])
   (:import [java.io Writer]))
 
+;; TODO: consider converting to multimethods to avoid this nonsense - David
+
+(defprotocol INodeCompile
+  (to-clj [this]))
+
+(defprotocol IPatternCompile
+  (p-to-clj [this ocr]))
+
 (defn source-pprint [source]
   (binding [pp/*print-pprint-dispatch* pp/code-dispatch
             pp/*print-suppress-namespaces* true]
@@ -51,6 +59,9 @@
     (match? this n)))
 
 (deftype CrashPattern []
+  IPatternCompile
+  (p-to-clj [this ocr]
+    `(= ~ocr nil))
   java.lang.Comparable
   (compareTo [this that]
     2000)
@@ -67,6 +78,9 @@
     (match? this n)))
 
 (deftype LiteralPattern [l]
+  IPatternCompile
+  (p-to-clj [this ocr]
+    `(= ~ocr ~l))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
     (cond 
@@ -93,6 +107,9 @@
     (match? this n)))
 
 (deftype TypePattern [t]
+  IPatternCompile
+  (p-to-clj [this ocr]
+    `(instance? ~t ~ocr))
   java.lang.Comparable
   (compareTo [this that]
     (if (instance? TypePattern that)
@@ -116,6 +133,9 @@
 (declare wildcard-pattern literal-pattern)
 
 (deftype VectorPattern [v n]
+  IPatternCompile
+  (p-to-clj [this ocr]
+    `(vector? ~ocr))
   java.lang.Comparable
   (compareTo [this that]
     (if (instance? VectorPattern that)
@@ -253,9 +273,6 @@
 
 ;; Decision tree nodes
 
-(defprotocol INodeCompile
-  (to-clj [this]))
-
 (defrecord LeafNode [value]
   INodeCompile
   (to-clj [this]
@@ -273,7 +290,7 @@
   (FailNode.))
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector `(~pattern ~occurrence) 
+  (vector (p-to-clj pattern occurrence) 
           (to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
@@ -518,7 +535,8 @@
   (specialize pm2 (wildcard-pattern))
 
   (pprint (compile pm2))
-  
+
+  ;; YES
   (source-pprint (to-clj (compile pm2)))
 
   (useful-matrix pm2)
