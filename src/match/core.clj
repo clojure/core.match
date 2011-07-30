@@ -335,9 +335,8 @@
             (next-occurrences [p ocrs]
               (cond
                (vector-pattern? p) (let [seq-ocr (first ocrs)
-                                         ocr-str (name seq-ocr)
                                          ocr-sym (fn ocr-sym [x]
-                                                   (let [ocr (symbol (str ocr-str x))]
+                                                   (let [ocr (symbol (str (name seq-ocr) x))]
                                                     (with-meta
                                                       ocr
                                                       {:seq-occurrence true
@@ -572,14 +571,14 @@
                         [[1 2 3] 4 5] 2
                         [[2 3 4] 5 6] 3))
 
- (pprint (specialize m1 (vector-pattern [1 2 3])))
+  (pprint (specialize m1 (vector-pattern [1 2 3])))
 
- (pprint (compile m1))
+  (pprint (compile m1))
 
- (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
-     first
-     meta)
- ;; {:seq-occurence true}
+  (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
+      first
+      meta)
+  ;; {:seq-occurence true}
 )
 
 ; =============================================================================
