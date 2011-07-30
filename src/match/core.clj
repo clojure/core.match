@@ -272,8 +272,12 @@
   (to-clj [this]
     (let [clauses (->> cases
                     (map (partial apply dag-clause-to-clj occurrence))
-                    (apply concat))]
-      `(cond ~@clauses))))
+                    (apply concat))
+          bind-expr (-> occurrence meta :bind-expr)
+          cond-expr `(cond ~@clauses)]
+      (if bind-expr
+        (concat bind-expr (list cond-expr))
+        cond-expr))))
 
 (defn ^SwitchNode switch-node [occurrence cases]
   (SwitchNode. occurrence cases))
@@ -565,6 +569,8 @@
   (pprint (specialize m1 (vector-pattern [1 2 3])))
 
   (pprint (compile m1))
+
+  (pprint (-> m1 compile to-clj))
 
   (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
       first
