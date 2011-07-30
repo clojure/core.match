@@ -73,12 +73,13 @@ More [crazy ideas here](https://github.com/swannodette/match/wiki/Crazy-Ideas).
 Resources
 ----
 
-The three most relevant papers:
+The four most relevant papers:
 
 * [Efficient Predicate Dispatch](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553)
 * [Compiling Pattern Matching to Good Decision Trees](http://pauillac.inria.fr/~maranget/papers/ml05e-maranget.p
 df)
 * [Warning for Pattern Matching](http://moscova.inria.fr/~maranget/papers/warn/index.html)
+* [Type-Safe Modular Hash-Consing](http://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf)
 
 Further reading:
 
