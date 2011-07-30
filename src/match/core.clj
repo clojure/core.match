@@ -306,6 +306,9 @@
   (occurences [this])
   (action-for-row [this j]))
 
+;; TODO: probably should break out the conds into multimethods to allow for a clean
+;; extension point - David
+
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
   (width [_] (count (rows 0)))
@@ -326,13 +329,19 @@
                 (filter-by-first-column p)
                 (map specialize-row)
                 vec))
+            (seq-bind-expr [ocr seq-ocr]
+              `(let [~ocr (first ~seq-ocr)
+                     ~seq-ocr (next ~seq-ocr)]))
             (next-occurrences [p ocrs]
               (cond
-               (vector-pattern? p) (let [ocr-str (name (first ocrs))
+               (vector-pattern? p) (let [seq-ocr (first ocrs)
+                                         ocr-str (name seq-ocr)
                                          ocr-sym (fn ocr-sym [x]
-                                                   (with-meta
-                                                     (symbol (str ocr-str x))
-                                                     {:seq-occurrence true}))]
+                                                   (let [ocr (symbol (str ocr-str x))]
+                                                    (with-meta
+                                                      ocr
+                                                      {:seq-occurrence true
+                                                       :bind-expr (seq-bind-expr ocr seq-ocr)})))]
                                      (into (conj (into []
                                                        (map ocr-sym
                                                             (range (count (.v ^VectorPattern p)))))
