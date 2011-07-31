@@ -384,9 +384,7 @@
     (letfn [(column-constructors [this i]
               (->> (column this i)
                 (filter (comp not wildcard-pattern?))
-                (apply sorted-set)))
-            (default-matrix []
-              )]
+                (apply sorted-set)))]
       (cond
         (empty? rows) (fail-node)
         (all-wildcards? (first rows)) (leaf-node (action (first rows)))
