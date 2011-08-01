@@ -37,9 +37,6 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-(defprotocol IPattern
-  (match? [this c]))
-
 ;; TODO refactor with implementation inheritance
 
 (deftype WildcardPattern []
@@ -50,13 +47,7 @@
   (toString [_]
     "_")
   (hashCode [_]
-    2299)
-  IPattern
-  (match? [_ _]
-    true)
-  clojure.lang.IFn
-  (invoke [this n]
-    (match? this n)))
+    2299))
 
 (deftype CrashPattern []
   IPatternCompile
@@ -69,13 +60,7 @@
   (toString [_]
     "CRASH")
   (hashCode [_]
-    2399)
-  IPattern
-  (match? [_ _]
-    true)
-  clojure.lang.IFn
-  (invoke [this n]
-    (match? this n)))
+    2399))
 
 (deftype LiteralPattern [l]
   IPatternCompile
@@ -98,13 +83,7 @@
       "nil"
       (str l)))
   (hashCode [this]
-    (+ 1142 (hash l)))
-  IPattern
-  (match? [this c]
-    (= l c))
-  clojure.lang.IFn
-  (invoke [this n]
-    (match? this n)))
+    (+ 1142 (hash l))))
 
 (deftype TypePattern [t]
   IPatternCompile
@@ -119,20 +98,11 @@
   (toString [_]
     (str t))
   (hashCode [this]
-    (+ 2242 (hash t)))
-  IPattern
-  (match? [this c]
-    (instance? t c))
-  clojure.lang.IFn
-  (invoke [this n]
-    (match? this n)))
-
-(defprotocol IVectorPattern
-  (current-index [this]))
+    (+ 2242 (hash t))))
 
 (declare wildcard-pattern literal-pattern)
 
-(deftype VectorPattern [v n]
+(deftype VectorPattern [v]
   IPatternCompile
   (p-to-clj [this ocr]
     `(vector? ~ocr))
@@ -145,16 +115,7 @@
   (toString [_]
     (str v))
   (hashCode [_]
-    (hash v))
-  IVectorPattern
-  (current-index [_] ;; TODO possibly metadata, does not effect equality
-    n)
-  IPattern
-  (match? [this n]
-    (vector? n))
-  clojure.lang.IFn
-  (invoke [this n]
-    (match? this n)))
+    (hash v)))
 
 (defn ^WildcardPattern wildcard-pattern [] 
   (WildcardPattern.))
@@ -169,15 +130,9 @@
   {:pre [(class? t)]}
   (TypePattern. t))
 
-(defn vector-pattern 
-  (^VectorPattern [v] 
-     {:pre [(vector? v)]}
-     (VectorPattern. v 0))
-  (^VectorPattern [v n] 
-     {:pre [(vector? v)
-            (and (integer? n)
-                 (pos? n))]}
-     (VectorPattern. v n)))
+(defn ^VectorPattern vector-pattern [v]
+  {:pre [(vector? v)]}
+  (VectorPattern. v))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (def crash-pattern?    (partial instance? CrashPattern))
@@ -278,16 +233,10 @@
   (to-clj [this]
     value))
 
-(defn ^LeafNode leaf-node [value]
-  (LeafNode. value))
-
 (defrecord FailNode []
   INodeCompile
   (to-clj [this]
     `(throw (Exception. "Found FailNode"))))
-
-(defn ^FailNode fail-node []
-  (FailNode.))
 
 (defn dag-clause-to-clj [occurrence pattern action]
   (vector (p-to-clj pattern occurrence) 
@@ -305,6 +254,12 @@
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
+
+(defn ^LeafNode leaf-node [value]
+  (LeafNode. value))
+
+(defn ^FailNode fail-node []
+  (FailNode.))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases]
