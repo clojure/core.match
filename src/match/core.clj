@@ -501,8 +501,16 @@
 (defmacro build-matrix [vars & clauses]
   `(emit-matrix '~vars '~clauses))
 
+(defmacro defmatch [name vars & clauses]
+  (let [clj-form (-> (emit-matrix vars clauses)
+                   compile
+                   to-clj)]
+    `(defn ~name ~vars 
+       ~clj-form)))
+
+
 ; =============================================================================
-; Active Work
+; Activ Work
 (comment
   ;; we're working with this at the moment, no guards, no implication
   ;; just the basic Maranget algorithm. We'd like to be execute the following
