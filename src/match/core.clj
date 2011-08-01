@@ -159,7 +159,7 @@
 (defn ^WildcardPattern wildcard-pattern [] 
   (WildcardPattern.))
   
-(defn ^WildcardPattern crash-pattern [] 
+(defn ^CrashPattern crash-pattern []
   (CrashPattern.))
 
 (defn ^LiteralPattern literal-pattern [l] 
