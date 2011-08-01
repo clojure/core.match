@@ -508,6 +508,10 @@
     `(defn ~name ~vars 
        ~clj-form)))
 
+(defmacro match [vars & clauses]
+  `~(-> (emit-matrix vars clauses)
+      compile
+      to-clj))
 
 ; =============================================================================
 ; Activ Work
