@@ -108,15 +108,17 @@
   (p-to-clj [this ocr]
     `(vector? ~ocr))
   java.lang.Comparable
-  (compareTo [this that]
+  (compareTo [_ that]
     (if (instance? VectorPattern that)
-      (.compareTo v (.v that))
+      0
       -200))
   Object
   (toString [_]
     (str v))
+  (equals [_ that]
+    (instance? VectorPattern that))
   (hashCode [_]
-    (hash v)))
+    3331))
 
 (defn ^WildcardPattern wildcard-pattern [] 
   (WildcardPattern.))
@@ -252,10 +254,7 @@
   (to-clj [this]
     (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr `(cond ~@clauses)
-          cond-expr (if default
-                      (concat cond-expr `(:else ~(to-clj default)))
-                      cond-expr)]
+          cond-expr (concat `(cond ~@clauses) `(:else ~(to-clj default)))]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
@@ -268,7 +267,7 @@
 
 (defn ^SwitchNode switch-node
   ([occurrence cases]
-     (SwitchNode. occurrence cases nil))
+     (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
      (SwitchNode. occurrence cases default)))
 
@@ -334,7 +333,8 @@
                                                        (map ocr-sym
                                                             (range (count (.v ^VectorPattern p)))))
                                                  (with-meta (ocr-sym "r")
-                                                   {:seq-sym seq-ocr}))
+                                                   {:seq-occurence true
+                                                    :seq-sym seq-ocr}))
                                            (drop-nth ocrs 0)))
                :else (drop-nth ocrs 0)))]
       (PatternMatrix.
@@ -357,8 +357,9 @@
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
-                                  (when-not (empty-matrix? m)
-                                    (compile m)))]
+                                  (if-not (empty-matrix? m)
+                                    (compile m)
+                                    (fail-node)))]
                     (switch-node
                       (ocrs col)
                       (into [] (map (fn [c]
@@ -600,6 +601,15 @@
   (source-pprint (-> m1 compile to-clj))
 
   (source-pprint (-> m2 compile to-clj))
+
+  ;; WORKS
+  (let [x [1 2 4]]
+    (match [x]
+           [[1 2 3]] :a0
+           [[1 2 4]] :a1))
+
+  ;; this looks perfect
+  (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
 
   (source-pprint (-> m3 compile to-clj))
 
