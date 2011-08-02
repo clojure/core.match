@@ -1,4 +1,8 @@
 * Todo List [4/13]
+  - [ ] When introducing wild card patterns into seq pattern Maranget's
+        algo kicks in which is undesirable unless we have PersistentVectors
+        we need to enforce choosing column until the seq occurences are
+        cleared
   - [ ] Deal with varying length seq patterns
   - [ ] Deal with rest seq patterns
   - [ ] Rest seq pattern should themselves be pattern matchable this is

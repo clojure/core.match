@@ -326,14 +326,15 @@
                                          ocr-sym (fn ocr-sym [x]
                                                    (let [ocr (symbol (str (name seq-ocr) x))]
                                                     (with-meta ocr
-                                                      {:seq-occurrence true ;; TODO: remove? - David
+                                                      {:seq-occurrence true
                                                        :seq-sym seq-ocr
                                                        :bind-expr (seq-bind-expr ocr seq-ocr)})))]
                                      (into (conj (into []
                                                        (map ocr-sym
                                                             (range (count (.v ^VectorPattern p)))))
                                                  (with-meta (ocr-sym "r")
-                                                   {:seq-sym seq-ocr}))
+                                                   {:seq-occurence true
+                                                    :seq-sym seq-ocr}))
                                            (drop-nth ocrs 0)))
                :else (drop-nth ocrs 0)))]
       (PatternMatrix.
