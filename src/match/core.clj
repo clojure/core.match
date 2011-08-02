@@ -19,8 +19,6 @@
             pp/*print-suppress-namespaces* true]
     (pprint source)))
 
-;; TODO: flesh out what a decision tree looks like, what remains to be compiled
-
 (defprotocol IVecMod
   (prepend [this x])
   (drop-nth [this n])
@@ -36,8 +34,6 @@
   (swap [this n]
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
-
-;; TODO refactor with implementation inheritance
 
 (deftype WildcardPattern []
   java.lang.Comparable
@@ -254,7 +250,8 @@
   (to-clj [this]
     (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr (concat `(cond ~@clauses) `(:else ~(to-clj default)))]
+          cond-expr (concat `(cond ~@clauses)
+                            `(:else ~(to-clj default)))]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
@@ -270,8 +267,6 @@
      (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
      (SwitchNode. occurrence cases default)))
-
-;; Pattern Matrix
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -300,8 +295,11 @@
   (width [_] (if (not (empty? rows))
                (count (rows 0))
                0))
+
   (height [_] (count rows))
+
   (dim [this] [(width this) (height this)])
+
   (specialize [this p]
     (letfn [(filter-by-first-column [p rows] 
               (filter #(pattern-equals p (first %)) rows))
@@ -340,7 +338,9 @@
       (PatternMatrix.
         (next-rows p rows)
         (next-occurrences p ocrs))))
+
   (column [_ i] (vec (map #(nth % i) rows)))
+
   (compile [this]
     (letfn [(column-constructors [this i]
               (->> (column this i)
@@ -370,8 +370,11 @@
                                     constrs))
                       default))
                   (compile (swap this col)))))))
+
   (pattern-at [_ i j] ((rows j) i))
+
   (row [_ j] (nth rows j))
+
   ;; TODO: replace with more sophisticated scoring
   (necessary-column [this]
     (->> (apply map vector (useful-matrix this))
@@ -382,22 +385,30 @@
          (reduce (fn [m [c i]]
                    (if (> c m) i m))
                  0)))
+
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
                     i (range (width this))]
                 (useful-p? this i j))
               (partition (width this))
               (map vec))))
+
   (select [this]
     (swap this (necessary-column this)))
+
   (score [_] [])
+
   (rows [_] rows)
+
   (occurences [_] ocrs)
+
   (action-for-row [_ j]
     (action (rows j)))
+
   IVecMod
   (drop-nth [_ i]
     (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
+
   (swap [_ idx]
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
@@ -569,20 +580,12 @@
               compile
               to-clj))
 
-  ;; NOTE: we support any kind of type in any column, the very first test
-  ;; needs to be on the types of the constructors in a given column
   (pprint (-> (build-matrix [x]
                             [[1]] 1
                             [(isa? String)] 2
                             [(isa? Object)] 3)
               compile
               to-clj))
-  ;; NOTE: we should sideline type patterns for now, focus on literal
-  ;; patterns. We design doc about how to deal with types as they
-  ;; pose a lot of challenges in terms of coming with a good syntax
-  ;; that works with types, records, *and* Java classes.
-  ;; perhaps punt on classes and force people to use field checks
-  ;; in guards?
 
   (def m1 (build-matrix [x y z]
                         [1 2 3] :a0
@@ -592,9 +595,6 @@
   (def m2 (build-matrix [x]
                         [[1 2 3]] :a0
                         [[1 2 4]] :a1))
-
-  (def m3 (build-matrix [x]
-                        [[1 2 3]] :a0))
 
   (pprint (compile m1))
 
@@ -610,55 +610,4 @@
 
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
-
-  (source-pprint (-> m3 compile to-clj))
-
-  (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
-      first
-      meta)
-  ;; {:seq-occurence true}
 )
-
-; =============================================================================
-; On Hold
-
-(comment
-  (def guard-priorities {'= 0
-                         'isa? 1})
-
-  (defn sort-guards [[as] [bs]]
-    (let [asi (get guard-priorities as 2)
-          bsi (get guard-priorities bs 2)]
-      (cond
-       (< asi bsi) -1
-       (> asi bsi) 1
-       :else 0)))
-
-  (defn guards-for [p gs]
-    (sort sort-guards
-          (reduce (fn [s g]
-                    (if (contains? (set g) p)
-                      (conj s g)
-                      s))
-                  [] gs)))
-
-  (defn proc-row [[ps gs :as row]]
-    (vec
-     (map (fn [p]
-            (let [pgs (guards-for p gs)]
-              (pattern p pgs)))
-          ps)))
-
-  (defn ms->pm [ms]
-    (pattern-matrix (map proc-row ms)))
-  
-  ;; create a pattern matrix
-  (def pm1 (pattern-matrix [[(pattern 'a '[(isa? B a)]) (pattern 0)]
-                            [(pattern 'a '[(isa? C a)]) (pattern 1)]]))
-
-  ;; raw signatures and guards to pattern matrix
-  (ms->pm '[[[a b 0] [(isa? A a) (isa? B b)]]
-            [[a b 1] [(isa? A a) (isa? B b)]]])
-
-  ;; test the can look at the pm as a seq
-  )
