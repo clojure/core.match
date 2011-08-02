@@ -52,10 +52,11 @@
 (deftype CrashPattern []
   IPatternCompile
   (p-to-clj [this ocr]
-    `(= ~ocr nil))
+    (let [seq-sym (-> ocr meta :seq-sym)]
+      `(= ~seq-sym nil)))
   java.lang.Comparable
   (compareTo [this that]
-    2000)
+    -2000)
   Object
   (toString [_]
     "CRASH")
@@ -151,6 +152,9 @@
 (defmethod pattern-equals [VectorPattern VectorPattern]
   [a b] true)
 
+(defmethod pattern-equals [CrashPattern CrashPattern]
+  [a b] true)
+
 (defmethod pattern-equals [TypePattern TypePattern]
   [^TypePattern a ^TypePattern b] (= (.t a) (.t b)))
 
@@ -214,9 +218,10 @@
     (if-let [nps (next ps)]
       (PatternRow. nps action)))
   (more [_]
-    (let [nps (next ps)]
-      (or (and nps (PatternRow. nps action))
-          '())))
+    (if (empty? ps)
+      '()
+      (let [nps (rest ps)]
+        (PatternRow. nps action))))
   (count [_]
     (count ps))
   clojure.lang.IFn
@@ -321,16 +326,17 @@
                (vector-pattern? p) (let [seq-ocr (first ocrs)
                                          ocr-sym (fn ocr-sym [x]
                                                    (let [ocr (symbol (str (name seq-ocr) x))]
-                                                    (with-meta
-                                                      ocr
+                                                    (with-meta ocr
                                                       {:seq-occurrence true
+                                                       :seq-sym seq-ocr
                                                        :bind-expr (seq-bind-expr ocr seq-ocr)})))]
                                      (into (conj (into []
                                                        (map ocr-sym
                                                             (range (count (.v ^VectorPattern p)))))
-                                                 (ocr-sym "r"))
+                                                 (with-meta (ocr-sym "r")
+                                                   {:seq-sym seq-ocr}))
                                            (drop-nth ocrs 0)))
-                :else (drop-nth ocrs 0)))]
+               :else (drop-nth ocrs 0)))]
       (PatternMatrix.
         (next-rows p rows)
         (next-occurrences p ocrs))))
@@ -341,9 +347,13 @@
                 (filter (comp not wildcard-pattern?))
                 (apply sorted-set)))]
       (cond
-        (empty? rows) (fail-node)
-        (all-wildcards? (first rows)) (leaf-node (action (first rows)))
-        :else (let [col (first-concrete-column-num (first rows))]
+       (empty? rows) (fail-node)
+       (let [f (first rows) ;; TODO: A big gross, cleanup - David
+             ps (patterns f)]
+         (and (not (nil? ps))
+              (empty? ps))) (leaf-node (action (first rows)))
+       (all-wildcards? (first rows)) (leaf-node (action (first rows)))
+       :else (let [col (first-concrete-column-num (first rows))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
@@ -574,21 +584,24 @@
   ;; in guards?
 
   (def m1 (build-matrix [x y z]
-                        [1 2 3] 1
-                        [[1 2 3] 4 5] 2
-                        [[2 3 4] 5 6] 3))
+                        [1 2 3] :a0
+                        [[1 2 3] 4 5] :a1
+                        [[2 3 4] 5 6] :a2))
 
   (def m2 (build-matrix [x]
-                        [[1 2 3]] 1
-                        [[1 2 4]] 2))
+                        [[1 2 3]] :a0
+                        [[1 2 4]] :a1))
 
-  (pprint (specialize m1 (vector-pattern [1 2 3])))
+  (def m3 (build-matrix [x]
+                        [[1 2 3]] :a0))
 
   (pprint (compile m1))
 
   (source-pprint (-> m1 compile to-clj))
 
   (source-pprint (-> m2 compile to-clj))
+
+  (source-pprint (-> m3 compile to-clj))
 
   (-> (.ocrs (specialize m1 (vector-pattern [1 2 3])))
       first
