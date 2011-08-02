@@ -1,8 +1,14 @@
-* Todo List [2/9]
-  - [ ] Need to detect seq patterns early, flatten and then call compile
+* Todo List [4/13]
+  - [ ] Deal with varying length seq patterns
+  - [ ] Deal with rest seq patterns
+  - [ ] Rest seq pattern should themselves be pattern matchable this is
+        mostly to support :as - introduce a binding
+  - [X] Need to detect seq patterns early, flatten and then call compile
         with flattened pattern matrix
+  - [ ] Rename all instances of vector pattern to seq pattern since thats
+        what it actually is
   - [X] Fix how we deal with seq pattern tails / crash pattern
-  - [ ] For cases where there is the default matrix is empty we need
+  - [X] For cases where there is the default matrix is empty we need
         to insert fail nodes
   - [ ] Use gensym in seq pattern occurrence introduction
   - [X] write basic match macro
