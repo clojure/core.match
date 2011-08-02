@@ -4,6 +4,10 @@
         we need to enforce choosing column until the seq occurences are
         cleared
   - [ ] Deal with varying length seq patterns
+        when we've selected the rows that match seq pattern we need to first
+        determine what the largest seq pattern is, we then need to fill
+        the seq pattern with crash for the occurences that are out of a
+        pattern's bounds
   - [ ] Deal with rest seq patterns
   - [ ] Rest seq pattern should themselves be pattern matchable this is
         mostly to support :as - introduce a binding
