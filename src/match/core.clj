@@ -252,10 +252,7 @@
   (to-clj [this]
     (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr `(cond ~@clauses)
-          cond-expr (if default
-                      (concat cond-expr `(:else ~(to-clj default)))
-                      cond-expr)]
+          cond-expr (concat `(cond ~@clauses) `(:else ~(to-clj default)))]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
@@ -268,7 +265,7 @@
 
 (defn ^SwitchNode switch-node
   ([occurrence cases]
-     (SwitchNode. occurrence cases nil))
+     (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
      (SwitchNode. occurrence cases default)))
 
@@ -357,8 +354,9 @@
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
-                                  (when-not (empty-matrix? m)
-                                    (compile m)))]
+                                  (if-not (empty-matrix? m)
+                                    (compile m)
+                                    (fail-node)))]
                     (switch-node
                       (ocrs col)
                       (into [] (map (fn [c]
