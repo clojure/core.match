@@ -108,15 +108,17 @@
   (p-to-clj [this ocr]
     `(vector? ~ocr))
   java.lang.Comparable
-  (compareTo [this that]
+  (compareTo [_ that]
     (if (instance? VectorPattern that)
-      (.compareTo v (.v that))
+      0
       -200))
   Object
   (toString [_]
     (str v))
+  (equals [_ that]
+    (instance? VectorPattern that))
   (hashCode [_]
-    (hash v)))
+    3331))
 
 (defn ^WildcardPattern wildcard-pattern [] 
   (WildcardPattern.))
@@ -324,7 +326,7 @@
                                          ocr-sym (fn ocr-sym [x]
                                                    (let [ocr (symbol (str (name seq-ocr) x))]
                                                     (with-meta ocr
-                                                      {:seq-occurrence true
+                                                      {:seq-occurrence true ;; TODO: remove? - David
                                                        :seq-sym seq-ocr
                                                        :bind-expr (seq-bind-expr ocr seq-ocr)})))]
                                      (into (conj (into []
@@ -598,6 +600,15 @@
   (source-pprint (-> m1 compile to-clj))
 
   (source-pprint (-> m2 compile to-clj))
+
+  ;; WORKS
+  (let [x [1 2 4]]
+    (match [x]
+           [[1 2 3]] :a0
+           [[1 2 4]] :a1))
+
+  ;; this looks perfect
+  (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
 
   (source-pprint (-> m3 compile to-clj))
 
