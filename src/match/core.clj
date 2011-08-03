@@ -62,7 +62,11 @@
 (deftype LiteralPattern [l]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(= ~ocr ~l))
+    (let [m (-> ocr meta)]
+      (if (:seq-occurrence m)
+        `(and (not (nil? ~(symbol (str (name (:seq-sym m)) "-prev"))))
+              (= ~ocr ~l))
+            `(= ~ocr ~l))))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
     (cond 
@@ -405,6 +409,7 @@
                                     {:seq-occurrence true
                                      :seq-sym seq-ocr
                                      :bind-expr `(let [~ocr (first ~seq-ocr)
+                                                       ~(symbol (str (name seq-ocr) "-prev")) ~seq-ocr
                                                        ~seq-ocr (next ~seq-ocr)])})))]
                   (into (conj (into []
                                     (map ocr-sym (range width)))
@@ -647,11 +652,14 @@
       (specialize (crash-pattern))
       print-matrix)
 
-  (let [x [1]]
+  ;; false positive here
+  ;; the problem is
+  ;; (first nil) => nil
+  (let [x [1 2 nil nil nil]]
     (match [x]
            [[1]]     :a0
            [[1 2]]   :a1
-           [[1 2 3]] :a2))
+           [[1 2 nil nil nil]] :a2))
 
   (let [x 1 y 2 z 4]
     (match [x y z]
