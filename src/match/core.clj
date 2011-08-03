@@ -416,6 +416,20 @@
       (pattern-matrix nrows nocrs))))
 
 
+(extend-type CrashPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)]
+      (if (empty? nrows)
+        (pattern-matrix [] [])
+        (pattern-matrix [(pattern-row [] (action (first nrows)))] [])))))
+
+
 (extend-type Object
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -627,7 +641,13 @@
 
   (-> m3 (specialize (vector-pattern [])) print-matrix)
 
-  (let [x [1 2 3]]
+  (-> m3
+      (specialize (vector-pattern []))
+      (specialize (literal-pattern 1))
+      (specialize (crash-pattern))
+      print-matrix)
+
+  (let [x [1]]
     (match [x]
            [[1]]     :a0
            [[1 2]]   :a1
