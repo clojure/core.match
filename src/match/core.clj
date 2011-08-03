@@ -703,13 +703,7 @@
            [1 _ 3] :a0
            [_ 2 4] :a1))
 
-  ;; DOES NOT WORK
-  (def m4 (build-matrix [x]
-                        [[1 a 1]] :a0
-                        [[1 b 2]] :a1))
-
-  (-> m4 (specialize (vector-pattern)) (specialize (literal-pattern 1)) pprint)
-  
+  ;; WORKS
   (let [x 1 y 2 z 4]
     (match [x y z]
            [1 2 b] b
