@@ -35,7 +35,7 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-(deftype WildcardPattern []
+(deftype WildcardPattern [sym]
   java.lang.Comparable
   (compareTo [this that]
     1000)
@@ -120,8 +120,9 @@
   (hashCode [_]
     3331))
 
-(defn ^WildcardPattern wildcard-pattern [] 
-  (WildcardPattern.))
+(defn ^WildcardPattern wildcard-pattern
+  ([] (WildcardPattern. '_))
+  ([sym] (WildcardPattern. sym)))
   
 (defn ^CrashPattern crash-pattern []
   (CrashPattern.))
@@ -164,7 +165,7 @@
   [a b] false)
 
 (defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer "<WildcardPattern>"))
+  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
 
 (defmethod print-method CrashPattern [^CrashPattern p ^Writer writer]
   (.write writer "<CrashPattern>"))
@@ -498,7 +499,7 @@
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
     (vector? pat) (vector-pattern (into [] (map emit-pattern pat)))
-    (= pat '_) (wildcard-pattern)
+    (symbol? pat) (wildcard-pattern)
     :else (literal-pattern pat))))
             
 (defn emit-clause [[pat action]]
@@ -636,11 +637,18 @@
                         [[1 2]]   :a1
                         [[1 2 3]] :a2))
 
+  (def m3 (build-matrix [x]
+                        [[1 _ 1]] :a0
+                        [[1 _ 2]] :a1
+                        [[1 _ 3]] :a2))
+
   (pprint (compile m1))
   (source-pprint (-> m1 compile to-clj))
 
   (pprint (compile m2))
   (source-pprint (-> m2 compile to-clj))
+
+  (pprint (compile m3))
 
   (-> m2 (specialize (vector-pattern [])) print-matrix)
 
@@ -665,6 +673,11 @@
     (match [x y z]
            [1 _ 3] :a0
            [_ 2 4] :a1))
+
+  (let [x 1 y 2 z 4]
+    (match [x y z]
+           [1 a 3] :a0
+           [a 2 4] :a1))
 
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
