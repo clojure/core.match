@@ -64,8 +64,11 @@
   (p-to-clj [this ocr]
     (let [m (-> ocr meta)]
       (if (:seq-occurrence m)
-        `(and (not (nil? ~(symbol (str (name (:seq-sym m)) "-prev"))))
-              (= ~ocr ~l))
+        (let [seq-sym (-> m :seq-sym
+                          name (str "-prev")
+                          symbol)]
+         `(and (not (nil? ~seq-sym))
+               (= ~ocr ~l)))
             `(= ~ocr ~l))))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
