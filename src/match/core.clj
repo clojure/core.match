@@ -134,9 +134,11 @@
   {:pre [(class? t)]}
   (TypePattern. t))
 
-(defn ^VectorPattern vector-pattern [v]
-  {:pre [(vector? v)]}
-  (VectorPattern. v))
+(defn ^VectorPattern vector-pattern
+  ([] (VectorPattern. []))
+  ([v]
+     {:pre [(vector? v)]}
+     (VectorPattern. v)))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (defn named-wildcard-pattern? [x]
@@ -215,7 +217,7 @@
         (let [sym (.sym ^WildcardPattern p)]
           (PatternRow. (drop-nth ps n) action
                        (conj (or bindings [])
-                             [p ocr])))
+                             [sym ocr])))
         (drop-nth this n))))
   IVecMod
   (drop-nth [_ n]
@@ -253,7 +255,10 @@
   INodeCompile
   (to-clj [this]
     (if (not (empty? bindings))
-      `(let [~@bindings]
+      `(let [~@(apply concat
+                      (remove (fn [[sym _]]
+                                (= sym '_))
+                       bindings))]
          ~value)
       value)))
 
@@ -342,8 +347,11 @@
          (and (not (nil? ps))
               (empty? ps))) (let [f (first rows)]
                              (leaf-node (action f) (bindings f)))
-       (all-wildcards? (first rows)) (let [f (first rows)]
-                                       (leaf-node (action f) (bindings f)))
+       (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
+                                           wsyms (map #(.sym ^WildcardPattern %) (.ps f))]
+                                       (leaf-node (action f)
+                                                  (concat (bindings f)
+                                                          (map vector wsyms ocrs))))
        :else (let [col (first-concrete-column-num (first rows))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
@@ -442,6 +450,8 @@
       (pattern-matrix nrows nocrs))))
 
 
+;; TODO: remove redundancy below? - David
+
 (extend-type CrashPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -455,15 +465,15 @@
         (pattern-matrix [] [])
         (pattern-matrix [(pattern-row [] (action (first nrows)))] [])))))
 
-
 (extend-type Object
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
+          focr (first ocrs)
           nrows (->> rows
                      (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth % 0))
+                     (map #(drop-nth-bind % 0 focr))
                      vec)
           nocrs (drop-nth ocrs 0)]
       (pattern-matrix nrows nocrs))))
@@ -519,7 +529,7 @@
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
     (vector? pat) (vector-pattern (into [] (map emit-pattern pat)))
-    (symbol? pat) (wildcard-pattern)
+    (symbol? pat) (wildcard-pattern pat)
     :else (literal-pattern pat))))
             
 (defn emit-clause [[pat action]]
@@ -694,9 +704,15 @@
            [_ 2 4] :a1))
 
   ;; DOES NOT WORK
+  (def m4 (build-matrix [x]
+                        [[1 a 1]] :a0
+                        [[1 b 2]] :a1))
+
+  (-> m4 (specialize (vector-pattern)) (specialize (literal-pattern 1)) pprint)
+  
   (let [x 1 y 2 z 4]
     (match [x y z]
-           [1 a 3] a
+           [1 2 b] b
            [a 2 4] a))
 
   ;; we can push aliases down to the very end!
