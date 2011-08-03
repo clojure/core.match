@@ -191,13 +191,16 @@
 (defprotocol IPatternRow
   (action [this])
   (patterns [this])
-  (first-concrete-column-num [this])
-  (all-wildcards? [this]))
+  (bindings [this])
+  (first-concrete-column-num [this]) ;; TODO: needs better name - David
+  (all-wildcards? [this])
+  (drop-nth-bind [this n ocr])) ;; TODO: needs better name - David
 
 (deftype PatternRow [ps action bindings]
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
+  (bindings [_] bindings)
   (first-concrete-column-num [this]
     (->> (map wildcard-pattern? ps)
          (map-indexed vector)
@@ -206,6 +209,14 @@
          first))
   (all-wildcards? [this]
     (every? wildcard-pattern? ps))
+  (drop-nth-bind [this n ocr]
+    (let [p (ps n)]
+      (if (named-wildcard-pattern? p)
+        (let [sym (.sym ^WildcardPattern p)]
+          (PatternRow. (drop-nth ps n) action
+                       (conj (or bindings [])
+                             [p ocr])))
+        (drop-nth this n))))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action bindings))
@@ -238,12 +249,13 @@
   ([ps action] (PatternRow. ps action nil))
   ([ps action bindings] (PatternRow. ps action bindings)))
 
-;; Decision tree nodes
-
-(defrecord LeafNode [value]
+(defrecord LeafNode [value bindings]
   INodeCompile
   (to-clj [this]
-    value))
+    (if (not (empty? bindings))
+      `(let [~@bindings]
+         ~value)
+      value)))
 
 (defrecord FailNode []
   INodeCompile
@@ -265,8 +277,9 @@
         (concat bind-expr (list cond-expr))
         cond-expr))))
 
-(defn ^LeafNode leaf-node [value]
-  (LeafNode. value))
+(defn ^LeafNode leaf-node
+  ([value] (LeafNode. value []))
+  ([value bindings] (LeafNode. value bindings)))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -327,8 +340,10 @@
        (let [f (first rows) ;; TODO: A big gross, cleanup - David
              ps (patterns f)]
          (and (not (nil? ps))
-              (empty? ps))) (leaf-node (action (first rows)))
-       (all-wildcards? (first rows)) (leaf-node (action (first rows)))
+              (empty? ps))) (let [f (first rows)]
+                             (leaf-node (action f) (bindings f)))
+       (all-wildcards? (first rows)) (let [f (first rows)]
+                                       (leaf-node (action f) (bindings f)))
        :else (let [col (first-concrete-column-num (first rows))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
@@ -395,19 +410,20 @@
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
+          focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           width (reduce max (map #(-> % first .v count) srows))
           nrows (->> srows
                      (map (fn [row]
                             (let [^VectorPattern p (first row)
                                   v (.v p)] ;; NOTE: use the pattern that actually belongs to the row - David
-                             (reduce prepend (drop-nth row 0)
-                                     (reverse (into v
-                                                    (repeat (clojure.core/inc
-                                                             (- width (count v)))
-                                                            (crash-pattern))))))))
+                              (reduce prepend (drop-nth-bind row 0 focr)
+                                      (reverse (into v
+                                                     (repeat (clojure.core/inc
+                                                              (- width (count v)))
+                                                             (crash-pattern))))))))
                      vec)
-          nocrs (let [seq-ocr (first ocrs)
+          nocrs (let [seq-ocr focr
                       ocr-sym (fn ocr-sym [x]
                                 (let [ocr (symbol (str (name seq-ocr) x))]
                                   (with-meta ocr
