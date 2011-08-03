@@ -191,7 +191,7 @@
   (first-concrete-column-num [this])
   (all-wildcards? [this]))
 
-(deftype PatternRow [ps action]
+(deftype PatternRow [ps action bindings]
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
@@ -205,11 +205,11 @@
     (every? wildcard-pattern? ps))
   IVecMod
   (drop-nth [_ n]
-    (PatternRow. (drop-nth ps n) action))
+    (PatternRow. (drop-nth ps n) action bindings))
   (prepend [_ x]
-    (PatternRow. (into [x] ps) action))
+    (PatternRow. (into [x] ps) action bindings))
   (swap [_ n]
-    (PatternRow. (swap ps n) action))
+    (PatternRow. (swap ps n) action bindings))
   clojure.lang.Indexed
   (nth [_ i]
     (nth ps i))
@@ -219,20 +219,21 @@
   (first [_] (first ps))
   (next [_]
     (if-let [nps (next ps)]
-      (PatternRow. nps action)))
+      (PatternRow. nps action bindings)))
   (more [_]
     (if (empty? ps)
       '()
       (let [nps (rest ps)]
-        (PatternRow. nps action))))
+        (PatternRow. nps action bindings))))
   (count [_]
     (count ps))
   clojure.lang.IFn
   (invoke [_ n]
     (nth ps n)))
 
-(defn ^PatternRow pattern-row [ps action]
-  (PatternRow. ps action))
+(defn ^PatternRow pattern-row
+  ([ps action] (PatternRow. ps action nil))
+  ([ps action bindings] (PatternRow. ps action bindings)))
 
 ;; Decision tree nodes
 
@@ -679,6 +680,9 @@
            [1 a 3] a
            [a 2 4] a))
 
+  ;; we can push aliases down to the very end!
+  ;; we bind names when we succeed
+  
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
 )
