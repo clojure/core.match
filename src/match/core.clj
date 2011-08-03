@@ -301,9 +301,7 @@
   (dim [this] [(width this) (height this)])
 
   (specialize [this p]
-    (letfn [(filter-by-first-column [p rows] 
-              (filter #(pattern-equals p (first %)) rows))
-            (specialize-row [row]
+    (letfn [(specialize-row [row]
               (let [p (first row)]
                 (cond
                  (vector-pattern? p) (let [v (.v ^VectorPattern p)]
@@ -312,7 +310,7 @@
                  :else (drop-nth row 0))))
             (next-rows [p rows]
               (->> rows
-                (filter-by-first-column p)
+                (filter #(pattern-equals p (first %)))
                 (map specialize-row)
                 vec))
             (seq-bind-expr [ocr seq-ocr]
