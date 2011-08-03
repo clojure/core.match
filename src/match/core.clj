@@ -386,12 +386,17 @@
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
+          srows (filter #(pattern-equals this (first %)) rows)
+          width (reduce max (map #(-> % first .v count) srows))
+          nrows (->> srows
                      (map (fn [row]
-                            (let [^VectorPattern p (first row)] ;; NOTE: use the rows pattern
+                            (let [^VectorPattern p (first row)
+                                  v (.v p)] ;; NOTE: use the rows pattern
                              (reduce prepend (drop-nth row 0)
-                                     (reverse (conj (.v p) (crash-pattern)))))))
+                                     (reverse (into v
+                                                    (repeat (clojure.core/inc
+                                                             (- width (count v)))
+                                                            (crash-pattern))))))))
                      vec)
           nocrs (let [seq-ocr (first ocrs)
                       ocr-sym (fn ocr-sym [x]
@@ -402,12 +407,12 @@
                                      :bind-expr `(let [~ocr (first ~seq-ocr)
                                                        ~seq-ocr (next ~seq-ocr)])})))]
                   (into (conj (into []
-                                    (map ocr-sym
-                                         (range (count (.v this)))))
+                                    (map ocr-sym (range width)))
                               (with-meta (ocr-sym "r")
                                 {:seq-occurence true
                                  :seq-sym seq-ocr}))
                         (drop-nth ocrs 0)))]
+
       (pattern-matrix nrows nocrs))))
 
 
@@ -607,6 +612,11 @@
                         [[1 2 3]] :a0
                         [[1 2 4]] :a1))
 
+  (def m3 (build-matrix [x]
+                        [[1]]     :a0
+                        [[1 2]]   :a1
+                        [[1 2 3]] :a2))
+
   (pprint (compile m1))
   (source-pprint (-> m1 compile to-clj))
 
@@ -615,10 +625,13 @@
 
   (-> m2 (specialize (vector-pattern [])) print-matrix)
 
-  (let [x [1 2 4]]
+  (-> m3 (specialize (vector-pattern [])) print-matrix)
+
+  (let [x [1 2 3]]
     (match [x]
-           [[1 2 3]] :a0
-           [[1 2 4]] :a1))
+           [[1]]     :a0
+           [[1 2]]   :a1
+           [[1 2 3]] :a2))
 
   (let [x 1 y 2 z 4]
     (match [x y z]
