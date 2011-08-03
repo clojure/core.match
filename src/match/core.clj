@@ -450,8 +450,6 @@
       (pattern-matrix nrows nocrs))))
 
 
-;; TODO: remove redundancy below? - David
-
 (extend-type CrashPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -463,7 +461,9 @@
                      vec)]
       (if (empty? nrows)
         (pattern-matrix [] [])
-        (pattern-matrix [(pattern-row [] (action (first nrows)))] [])))))
+        (let [row (first nrows)]
+         (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
+
 
 (extend-type Object
   ISpecializeMatrix
@@ -666,15 +666,12 @@
                         [(1 z 2)] z
                         [(a b c)] b))
 
-  ;; DOES NOT WORK
+  ;; DOES NOT QUITE WORK
+  ;; we need to enforce seq order
   (let [x '(1 2 3)]
     (match [x]
            [(1 z 2)] z
            [(a b c)] a))
 
-  ;; we can push aliases down to the very end!
-  ;; we bind names when we succeed
-  
-  ;; this looks perfect
-  (source-pprint (-> m2 (specialize (seq-pattern '(1 2 3))) compile to-clj))
+  (-> m5 (specialize (seq-pattern)) (specialize (literal-pattern 1)) pprint)
 )
