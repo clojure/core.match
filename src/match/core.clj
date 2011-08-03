@@ -650,16 +650,6 @@
            [(1 2)]   :a1
            [(1 2 nil nil nil)] :a2))
 
-  ;; FAST, 90ms
-  (let [x '(1 2 nil nil nil)]
-    (dotimes [_ 10]
-      (time
-       (dotimes [_ 1e6]
-         (match [x]
-                [(1)]     :a0
-                [(1 2)]   :a1
-                [(1 2 nil nil nil)] :a2)))))
-
   ;; WORKS
   (let [x 1 y 2 z 4]
     (match [x y z]
@@ -671,6 +661,16 @@
     (match [x y z]
            [1 2 b] b
            [a 2 4] a))
+
+  (def m5 (build-matrix [x]
+                        [(1 z 2)] z
+                        [(a b c)] b))
+
+  ;; DOES NOT WORK
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1 z 2)] z
+           [(a b c)] a))
 
   ;; we can push aliases down to the very end!
   ;; we bind names when we succeed
