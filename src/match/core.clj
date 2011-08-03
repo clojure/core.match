@@ -290,6 +290,51 @@
 
 (declare empty-matrix?)
 
+(defprotocol ISpecializeMatrix
+  (specialize-matrix [this matrix]))
+
+(extend-type VectorPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [^PatternMatrix matrix matrix
+          rows (.rows matrix)
+          ocrs (.ocrs matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map (fn [row]
+                            (reduce prepend (drop-nth row 0)
+                                    (reverse (conj (.v this) (crash-pattern))))))
+                     vec)
+          nocrs (let [seq-ocr (first ocrs)
+                      ocr-sym (fn ocr-sym [x]
+                                (let [ocr (symbol (str (name seq-ocr) x))]
+                                  (with-meta ocr
+                                    {:seq-occurrence true
+                                     :seq-sym seq-ocr
+                                     :bind-expr `(let [~ocr (first ~seq-ocr)
+                                                       ~seq-ocr (next ~seq-ocr)])})))]
+                  (into (conj (into []
+                                    (map ocr-sym
+                                         (range (count (.v this)))))
+                              (with-meta (ocr-sym "r")
+                                {:seq-occurence true
+                                 :seq-sym seq-ocr}))
+                        (drop-nth ocrs 0)))]
+      (PatternMatrix. nrows nocrs))))
+
+(extend-type Object
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [^PatternMatrix matrix matrix
+          rows (.rows matrix)
+          ocrs (.ocrs matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)
+          nocrs (drop-nth ocrs 0)]
+      (PatternMatrix. nrows nocrs))))
+
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
   (width [_] (if (not (empty? rows))
