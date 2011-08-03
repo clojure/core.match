@@ -139,6 +139,9 @@
   (VectorPattern. v))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
+(defn named-wildcard-pattern? [x]
+  (when (instance? WildcardPattern x)
+    (not= (.sym ^WildcardPattern x) '_)))
 (def crash-pattern?    (partial instance? CrashPattern))
 (def literal-pattern?  (partial instance? LiteralPattern))
 (def type-pattern?     (partial instance? TypePattern))
