@@ -400,7 +400,7 @@
           nrows (->> srows
                      (map (fn [row]
                             (let [^VectorPattern p (first row)
-                                  v (.v p)] ;; NOTE: use the rows pattern
+                                  v (.v p)] ;; NOTE: use the pattern that actually belongs to the row - David
                              (reduce prepend (drop-nth row 0)
                                      (reverse (into v
                                                     (repeat (clojure.core/inc
