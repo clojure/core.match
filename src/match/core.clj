@@ -282,58 +282,16 @@
   (useful-matrix [this])
   (select [this])
   (score [this])
-  (occurences [this])
+  (occurrences [this])
   (action-for-row [this j]))
-
-;; TODO: probably should break out the conds into multimethods to allow for a clean
-;; extension point - David
 
 (declare empty-matrix?)
 
 (defprotocol ISpecializeMatrix
   (specialize-matrix [this matrix]))
 
-(extend-type VectorPattern
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [^PatternMatrix matrix matrix
-          rows (.rows matrix)
-          ocrs (.ocrs matrix)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map (fn [row]
-                            (reduce prepend (drop-nth row 0)
-                                    (reverse (conj (.v this) (crash-pattern))))))
-                     vec)
-          nocrs (let [seq-ocr (first ocrs)
-                      ocr-sym (fn ocr-sym [x]
-                                (let [ocr (symbol (str (name seq-ocr) x))]
-                                  (with-meta ocr
-                                    {:seq-occurrence true
-                                     :seq-sym seq-ocr
-                                     :bind-expr `(let [~ocr (first ~seq-ocr)
-                                                       ~seq-ocr (next ~seq-ocr)])})))]
-                  (into (conj (into []
-                                    (map ocr-sym
-                                         (range (count (.v this)))))
-                              (with-meta (ocr-sym "r")
-                                {:seq-occurence true
-                                 :seq-sym seq-ocr}))
-                        (drop-nth ocrs 0)))]
-      (PatternMatrix. nrows nocrs))))
+(declare pattern-matrix)
 
-(extend-type Object
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [^PatternMatrix matrix matrix
-          rows (.rows matrix)
-          ocrs (.ocrs matrix)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth % 0))
-                     vec)
-          nocrs (drop-nth ocrs 0)]
-      (PatternMatrix. nrows nocrs))))
 
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
@@ -346,41 +304,7 @@
   (dim [this] [(width this) (height this)])
 
   (specialize [this p]
-    (letfn [(specialize-row [row]
-              (let [p (first row)]
-                (cond
-                 (vector-pattern? p) (let [v (.v ^VectorPattern p)]
-                                       (reduce prepend (drop-nth row 0)
-                                               (reverse (conj v (crash-pattern)))))
-                 :else (drop-nth row 0))))
-            (next-rows [p rows]
-              (->> rows
-                (filter #(pattern-equals p (first %)))
-                (map specialize-row)
-                vec))
-            (seq-bind-expr [ocr seq-ocr]
-              `(let [~ocr (first ~seq-ocr)
-                     ~seq-ocr (next ~seq-ocr)]))
-            (next-occurrences [p ocrs]
-              (cond
-               (vector-pattern? p) (let [seq-ocr (first ocrs)
-                                         ocr-sym (fn ocr-sym [x]
-                                                   (let [ocr (symbol (str (name seq-ocr) x))]
-                                                    (with-meta ocr
-                                                      {:seq-occurrence true
-                                                       :seq-sym seq-ocr
-                                                       :bind-expr (seq-bind-expr ocr seq-ocr)})))]
-                                     (into (conj (into []
-                                                       (map ocr-sym
-                                                            (range (count (.v ^VectorPattern p)))))
-                                                 (with-meta (ocr-sym "r")
-                                                   {:seq-occurence true
-                                                    :seq-sym seq-ocr}))
-                                           (drop-nth ocrs 0)))
-               :else (drop-nth ocrs 0)))]
-      (PatternMatrix.
-        (next-rows p rows)
-        (next-occurrences p ocrs))))
+    (specialize-matrix p this))
 
   (column [_ i] (vec (map #(nth % i) rows)))
 
@@ -443,7 +367,7 @@
 
   (rows [_] rows)
 
-  (occurences [_] ocrs)
+  (occurrences [_] ocrs)
 
   (action-for-row [_ j]
     (action (rows j)))
@@ -456,13 +380,57 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-(defn empty-matrix? [pm]
-  (= (dim pm) [0 0]))
+
+(extend-type VectorPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map (fn [row]
+                            (let [^VectorPattern p (first row)] ;; NOTE: use the rows pattern
+                             (reduce prepend (drop-nth row 0)
+                                     (reverse (conj (.v p) (crash-pattern)))))))
+                     vec)
+          nocrs (let [seq-ocr (first ocrs)
+                      ocr-sym (fn ocr-sym [x]
+                                (let [ocr (symbol (str (name seq-ocr) x))]
+                                  (with-meta ocr
+                                    {:seq-occurrence true
+                                     :seq-sym seq-ocr
+                                     :bind-expr `(let [~ocr (first ~seq-ocr)
+                                                       ~seq-ocr (next ~seq-ocr)])})))]
+                  (into (conj (into []
+                                    (map ocr-sym
+                                         (range (count (.v this)))))
+                              (with-meta (ocr-sym "r")
+                                {:seq-occurence true
+                                 :seq-sym seq-ocr}))
+                        (drop-nth ocrs 0)))]
+      (pattern-matrix nrows nocrs))))
+
+
+(extend-type Object
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)
+          nocrs (drop-nth ocrs 0)]
+      (pattern-matrix nrows nocrs))))
+
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
   (PatternMatrix. rows ocrs))
+
+(defn empty-matrix? [pm]
+  (= (dim pm) [0 0]))
 
 (defn score-p [pm i j]
   )
@@ -483,7 +451,7 @@
   ([pm col-width]
      (binding [*out* (pp/get-pretty-writer *out*)]
        (print "|")
-       (doseq [o (occurences pm)]
+       (doseq [o (occurrences pm)]
          (pp/cl-format true "~4D~7,vT" o col-width))
        (print "|")
        (prn)
@@ -640,16 +608,22 @@
                         [[1 2 4]] :a1))
 
   (pprint (compile m1))
-
   (source-pprint (-> m1 compile to-clj))
 
+  (pprint (compile m2))
   (source-pprint (-> m2 compile to-clj))
 
-  ;; WORKS
+  (-> m2 (specialize (vector-pattern [])) print-matrix)
+
   (let [x [1 2 4]]
     (match [x]
            [[1 2 3]] :a0
            [[1 2 4]] :a1))
+
+  (let [x 1 y 2 z 4]
+    (match [x y z]
+           [1 _ 3] :a0
+           [_ 2 4] :a1))
 
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
