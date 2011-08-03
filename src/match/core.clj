@@ -35,7 +35,7 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-(deftype WildcardPattern []
+(deftype WildcardPattern [sym]
   java.lang.Comparable
   (compareTo [this that]
     1000)
@@ -62,7 +62,11 @@
 (deftype LiteralPattern [l]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(= ~ocr ~l))
+    (let [m (-> ocr meta)]
+      (if (:seq-occurrence m)
+        `(and (not (nil? ~(symbol (str (name (:seq-sym m)) "-prev"))))
+              (= ~ocr ~l))
+            `(= ~ocr ~l))))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
     (cond 
@@ -116,8 +120,9 @@
   (hashCode [_]
     3331))
 
-(defn ^WildcardPattern wildcard-pattern [] 
-  (WildcardPattern.))
+(defn ^WildcardPattern wildcard-pattern
+  ([] (WildcardPattern. '_))
+  ([sym] (WildcardPattern. sym)))
   
 (defn ^CrashPattern crash-pattern []
   (CrashPattern.))
@@ -160,7 +165,7 @@
   [a b] false)
 
 (defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer "<WildcardPattern>"))
+  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
 
 (defmethod print-method CrashPattern [^CrashPattern p ^Writer writer]
   (.write writer "<CrashPattern>"))
@@ -282,13 +287,16 @@
   (useful-matrix [this])
   (select [this])
   (score [this])
-  (occurences [this])
+  (occurrences [this])
   (action-for-row [this j]))
 
-;; TODO: probably should break out the conds into multimethods to allow for a clean
-;; extension point - David
-
 (declare empty-matrix?)
+
+(defprotocol ISpecializeMatrix
+  (specialize-matrix [this matrix]))
+
+(declare pattern-matrix)
+
 
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
@@ -301,43 +309,7 @@
   (dim [this] [(width this) (height this)])
 
   (specialize [this p]
-    (letfn [(filter-by-first-column [p rows] 
-              (filter #(pattern-equals p (first %)) rows))
-            (specialize-row [row]
-              (let [p (first row)]
-                (cond
-                 (vector-pattern? p) (let [v (.v ^VectorPattern p)]
-                                       (reduce prepend (drop-nth row 0)
-                                               (reverse (conj v (crash-pattern)))))
-                 :else (drop-nth row 0))))
-            (next-rows [p rows]
-              (->> rows
-                (filter-by-first-column p)
-                (map specialize-row)
-                vec))
-            (seq-bind-expr [ocr seq-ocr]
-              `(let [~ocr (first ~seq-ocr)
-                     ~seq-ocr (next ~seq-ocr)]))
-            (next-occurrences [p ocrs]
-              (cond
-               (vector-pattern? p) (let [seq-ocr (first ocrs)
-                                         ocr-sym (fn ocr-sym [x]
-                                                   (let [ocr (symbol (str (name seq-ocr) x))]
-                                                    (with-meta ocr
-                                                      {:seq-occurrence true
-                                                       :seq-sym seq-ocr
-                                                       :bind-expr (seq-bind-expr ocr seq-ocr)})))]
-                                     (into (conj (into []
-                                                       (map ocr-sym
-                                                            (range (count (.v ^VectorPattern p)))))
-                                                 (with-meta (ocr-sym "r")
-                                                   {:seq-occurence true
-                                                    :seq-sym seq-ocr}))
-                                           (drop-nth ocrs 0)))
-               :else (drop-nth ocrs 0)))]
-      (PatternMatrix.
-        (next-rows p rows)
-        (next-occurrences p ocrs))))
+    (specialize-matrix p this))
 
   (column [_ i] (vec (map #(nth % i) rows)))
 
@@ -400,7 +372,7 @@
 
   (rows [_] rows)
 
-  (occurences [_] ocrs)
+  (occurrences [_] ocrs)
 
   (action-for-row [_ j]
     (action (rows j)))
@@ -413,13 +385,77 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-(defn empty-matrix? [pm]
-  (= (dim pm) [0 0]))
+
+(extend-type VectorPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          srows (filter #(pattern-equals this (first %)) rows)
+          width (reduce max (map #(-> % first .v count) srows))
+          nrows (->> srows
+                     (map (fn [row]
+                            (let [^VectorPattern p (first row)
+                                  v (.v p)] ;; NOTE: use the rows pattern
+                             (reduce prepend (drop-nth row 0)
+                                     (reverse (into v
+                                                    (repeat (clojure.core/inc
+                                                             (- width (count v)))
+                                                            (crash-pattern))))))))
+                     vec)
+          nocrs (let [seq-ocr (first ocrs)
+                      ocr-sym (fn ocr-sym [x]
+                                (let [ocr (symbol (str (name seq-ocr) x))]
+                                  (with-meta ocr
+                                    {:seq-occurrence true
+                                     :seq-sym seq-ocr
+                                     :bind-expr `(let [~ocr (first ~seq-ocr)
+                                                       ~(symbol (str (name seq-ocr) "-prev")) ~seq-ocr
+                                                       ~seq-ocr (next ~seq-ocr)])})))]
+                  (into (conj (into []
+                                    (map ocr-sym (range width)))
+                              (with-meta (ocr-sym "r")
+                                {:seq-occurence true
+                                 :seq-sym seq-ocr}))
+                        (drop-nth ocrs 0)))]
+
+      (pattern-matrix nrows nocrs))))
+
+
+(extend-type CrashPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)]
+      (if (empty? nrows)
+        (pattern-matrix [] [])
+        (pattern-matrix [(pattern-row [] (action (first nrows)))] [])))))
+
+
+(extend-type Object
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)
+          nocrs (drop-nth ocrs 0)]
+      (pattern-matrix nrows nocrs))))
+
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
   (PatternMatrix. rows ocrs))
+
+(defn empty-matrix? [pm]
+  (= (dim pm) [0 0]))
 
 (defn score-p [pm i j]
   )
@@ -440,7 +476,7 @@
   ([pm col-width]
      (binding [*out* (pp/get-pretty-writer *out*)]
        (print "|")
-       (doseq [o (occurences pm)]
+       (doseq [o (occurrences pm)]
          (pp/cl-format true "~4D~7,vT" o col-width))
        (print "|")
        (prn)
@@ -463,7 +499,7 @@
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
     (vector? pat) (vector-pattern (into [] (map emit-pattern pat)))
-    (= pat '_) (wildcard-pattern)
+    (symbol? pat) (wildcard-pattern)
     :else (literal-pattern pat))))
             
 (defn emit-clause [[pat action]]
@@ -596,17 +632,52 @@
                         [[1 2 3]] :a0
                         [[1 2 4]] :a1))
 
-  (pprint (compile m1))
+  (def m3 (build-matrix [x]
+                        [[1]]     :a0
+                        [[1 2]]   :a1
+                        [[1 2 3]] :a2))
 
+  (def m3 (build-matrix [x]
+                        [[1 _ 1]] :a0
+                        [[1 _ 2]] :a1
+                        [[1 _ 3]] :a2))
+
+  (pprint (compile m1))
   (source-pprint (-> m1 compile to-clj))
 
+  (pprint (compile m2))
   (source-pprint (-> m2 compile to-clj))
 
+  (pprint (compile m3))
+
+  (-> m2 (specialize (vector-pattern [])) print-matrix)
+
+  (-> m3 (specialize (vector-pattern [])) print-matrix)
+
+  (-> m3
+      (specialize (vector-pattern []))
+      (specialize (literal-pattern 1))
+      (specialize (crash-pattern))
+      print-matrix)
+
   ;; WORKS
-  (let [x [1 2 4]]
+  (let [x [1 2 nil nil nil]]
     (match [x]
-           [[1 2 3]] :a0
-           [[1 2 4]] :a1))
+           [[1]]     :a0
+           [[1 2]]   :a1
+           [[1 2 nil nil nil]] :a2))
+
+  ;; WORKS
+  (let [x 1 y 2 z 4]
+    (match [x y z]
+           [1 _ 3] :a0
+           [_ 2 4] :a1))
+
+  ;; DOES NOT WORK
+  (let [x 1 y 2 z 4]
+    (match [x y z]
+           [1 a 3] a
+           [a 2 4] a))
 
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
