@@ -103,20 +103,20 @@
 
 (declare wildcard-pattern literal-pattern)
 
-(deftype VectorPattern [v]
+(deftype SeqPattern [v]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(vector? ~ocr))
+    `(sequential? ~ocr))
   java.lang.Comparable
   (compareTo [_ that]
-    (if (instance? VectorPattern that)
+    (if (instance? SeqPattern that)
       0
       -200))
   Object
   (toString [_]
     (str v))
   (equals [_ that]
-    (instance? VectorPattern that))
+    (instance? SeqPattern that))
   (hashCode [_]
     3331))
 
@@ -134,20 +134,20 @@
   {:pre [(class? t)]}
   (TypePattern. t))
 
-(defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. []))
+(defn ^SeqPattern seq-pattern
+  ([] (SeqPattern. ()))
   ([v]
-     {:pre [(vector? v)]}
-     (VectorPattern. v)))
+     {:pre [(sequential? v)]}
+     (SeqPattern. v)))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (defn named-wildcard-pattern? [x]
   (when (instance? WildcardPattern x)
     (not= (.sym ^WildcardPattern x) '_)))
-(def crash-pattern?    (partial instance? CrashPattern))
-(def literal-pattern?  (partial instance? LiteralPattern))
-(def type-pattern?     (partial instance? TypePattern))
-(def vector-pattern?   (partial instance? VectorPattern))
+(def crash-pattern?   (partial instance? CrashPattern))
+(def literal-pattern? (partial instance? LiteralPattern))
+(def type-pattern?    (partial instance? TypePattern))
+(def seq-pattern?     (partial instance? SeqPattern))
 
 (defmulti pattern-equals (fn [a b] [(type a) (type b)]))
 
@@ -157,7 +157,7 @@
 (defmethod pattern-equals [LiteralPattern LiteralPattern]
   [^LiteralPattern a ^LiteralPattern b] (= (.l a) (.l b)))
 
-(defmethod pattern-equals [VectorPattern VectorPattern]
+(defmethod pattern-equals [SeqPattern SeqPattern]
   [a b] true)
 
 (defmethod pattern-equals [CrashPattern CrashPattern]
@@ -181,8 +181,8 @@
 (defmethod print-method TypePattern [^TypePattern p ^Writer writer]
   (.write writer (str "<TypePattern: " p ">")))
 
-(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
-  (.write writer (str "<VectorPattern: " p ">")))
+(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
+  (.write writer (str "<SeqPattern: " p ">")))
 
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
@@ -413,7 +413,7 @@
                     (swap ocrs idx))))
 
 
-(extend-type VectorPattern
+(extend-type SeqPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
@@ -423,13 +423,13 @@
           width (reduce max (map #(-> % first .v count) srows))
           nrows (->> srows
                      (map (fn [row]
-                            (let [^VectorPattern p (first row)
+                            (let [^SeqPattern p (first row)
                                   v (.v p)] ;; NOTE: use the pattern that actually belongs to the row - David
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (reverse (into v
-                                                     (repeat (clojure.core/inc
-                                                              (- width (count v)))
-                                                             (crash-pattern))))))))
+                                      (into v
+                                            (repeat (clojure.core/inc
+                                                     (- width (count v)))
+                                                    (crash-pattern)))))))
                      vec)
           nocrs (let [seq-ocr focr
                       ocr-sym (fn ocr-sym [x]
@@ -528,7 +528,7 @@
                  (= (first pat) 'isa?)))]
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
-    (vector? pat) (vector-pattern (into [] (map emit-pattern pat)))
+    (seq? pat) (seq-pattern (into () (map emit-pattern pat)))
     (symbol? pat) (wildcard-pattern pat)
     :else (literal-pattern pat))))
             
@@ -605,72 +605,25 @@
   (print-matrix (select (specialize (select pm2) (literal-pattern false))))
   (print-matrix (specialize (select (specialize (select pm2) (literal-pattern false))) (literal-pattern true)))
   ;; ^ we can discard :a4
-  ;; 
-
-  ;; fail node
-  (def cm1 (pattern-matrix []
-                           '[]))
-  (compile cm1)
-  ;;=> #match.core.FailNode[]
-
-  ;; leaf node - case m > 0, n = 0
-  (def cm2 (pattern-matrix [(pattern-row [] :a1)]
-                           '[]))
-  (compile cm2)
-  ;;=> #match.core.LeafNode[:a1]
-
-  ;; leaf node - case m > 0, n > 0
-  (def cm3 (pattern-matrix [(pattern-row [(wildcard-pattern)] :a1)]
-                           '[x]))
-  (compile cm3)
-  ;;=> #match.core.LeafNode[:a1]
-
-  ;; switch 
-  (def cm4 (pattern-matrix [(pattern-row [true] :a1)]
-                           '[x]))
-  (compile cm4)
-
-  (def cm5 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)]
-                           '[x y z]))
-  (compile cm5)
-  (to-clj (compile cm5))
-
-  (pprint (-> (build-matrix [x]
-                            [[1]] 1
-                            [(isa? Object)] 2)
-              compile))
-
-  (pprint (-> (build-matrix [x]
-                            [[1]] 1
-                            [(isa? Object)] 2)
-              compile
-              to-clj))
-
-  (pprint (-> (build-matrix [x]
-                            [[1]] 1
-                            [(isa? String)] 2
-                            [(isa? Object)] 3)
-              compile
-              to-clj))
 
   (def m1 (build-matrix [x y z]
                         [1 2 3] :a0
-                        [[1 2 3] 4 5] :a1
-                        [[2 3 4] 5 6] :a2))
+                        [(1 2 3) 4 5] :a1
+                        [(2 3 4) 5 6] :a2))
 
   (def m2 (build-matrix [x]
-                        [[1 2 3]] :a0
-                        [[1 2 4]] :a1))
+                        [(1 2 3)] :a0
+                        [(1 2 4)] :a1))
 
   (def m3 (build-matrix [x]
-                        [[1]]     :a0
-                        [[1 2]]   :a1
-                        [[1 2 3]] :a2))
+                        [(1)]     :a0
+                        [(1 2)]   :a1
+                        [(1 2 3)] :a2))
 
   (def m3 (build-matrix [x]
-                        [[1 _ 1]] :a0
-                        [[1 _ 2]] :a1
-                        [[1 _ 3]] :a2))
+                        [(1 _ 1)] :a0
+                        [(1 _ 2)] :a1
+                        [(1 _ 3)] :a2))
 
   (pprint (compile m1))
   (source-pprint (-> m1 compile to-clj))
@@ -680,12 +633,12 @@
 
   (pprint (compile m3))
 
-  (-> m2 (specialize (vector-pattern [])) print-matrix)
+  (-> m2 (specialize (seq-pattern)) print-matrix)
 
-  (-> m3 (specialize (vector-pattern [])) print-matrix)
+  (-> m3 (specialize (seq-pattern)) print-matrix)
 
   (-> m3
-      (specialize (vector-pattern []))
+      (specialize (seq-pattern))
       (specialize (literal-pattern 1))
       (specialize (crash-pattern))
       print-matrix)
@@ -693,9 +646,19 @@
   ;; WORKS
   (let [x [1 2 nil nil nil]]
     (match [x]
-           [[1]]     :a0
-           [[1 2]]   :a1
-           [[1 2 nil nil nil]] :a2))
+           [(1)]     :a0
+           [(1 2)]   :a1
+           [(1 2 nil nil nil)] :a2))
+
+  ;; FAST, 90ms
+  (let [x '(1 2 nil nil nil)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e6]
+         (match [x]
+                [(1)]     :a0
+                [(1 2)]   :a1
+                [(1 2 nil nil nil)] :a2)))))
 
   ;; WORKS
   (let [x 1 y 2 z 4]
@@ -713,5 +676,5 @@
   ;; we bind names when we succeed
   
   ;; this looks perfect
-  (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
+  (source-pprint (-> m2 (specialize (seq-pattern '(1 2 3))) compile to-clj))
 )
