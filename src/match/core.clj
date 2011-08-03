@@ -660,24 +660,24 @@
       (specialize (crash-pattern))
       print-matrix)
 
-  ;; false positive here
-  ;; the problem is
-  ;; (first nil) => nil
+  ;; WORKS
   (let [x [1 2 nil nil nil]]
     (match [x]
            [[1]]     :a0
            [[1 2]]   :a1
            [[1 2 nil nil nil]] :a2))
 
+  ;; WORKS
   (let [x 1 y 2 z 4]
     (match [x y z]
            [1 _ 3] :a0
            [_ 2 4] :a1))
 
+  ;; DOES NOT WORK
   (let [x 1 y 2 z 4]
     (match [x y z]
-           [1 a 3] :a0
-           [a 2 4] :a1))
+           [1 a 3] a
+           [a 2 4] a))
 
   ;; this looks perfect
   (source-pprint (-> m2 (specialize (vector-pattern [1 2 3])) compile to-clj))
