@@ -379,14 +379,18 @@
 
   ;; TODO: replace with more sophisticated scoring
   (necessary-column [this]
-    (->> (apply map vector (useful-matrix this))
-         (map-indexed (fn [i col]
-                        [(reduce (fn [s b]
-                                   (if b (clojure.core/inc s) s))
-                                 0 col) i]))
-         (reduce (fn [m [c i]]
-                   (if (> c m) i m))
-                 0)))
+    (first
+     (->> (apply map vector (useful-matrix this))
+          (map-indexed (fn [i col]
+                         [i (reduce (fn [score useful]
+                                      (if useful
+                                        (clojure.core/inc score)
+                                        score))
+                                    0 col)]))
+          (reduce (fn [[col score :as curr]
+                       [ocol oscore :as cand]]
+                    (if (> oscore score) cand curr))
+                  [0 0]))))
 
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
@@ -662,11 +666,7 @@
                         [false true _ ] 2
                         [_ _ false] 3
                         [_ _ true] 4))
-
-  (-> m5
-      (specialize (literal-pattern true))
-      necessary-column)
-
+  
   ;; WORKS
   (let [x [1 2 nil nil nil]]
     (match [x]
