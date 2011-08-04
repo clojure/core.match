@@ -623,7 +623,7 @@
                         [(1 2)]   :a1
                         [(1 2 3)] :a2))
 
-  (def m3 (build-matrix [x]
+  (def m4 (build-matrix [x]
                         [(1 _ 1)] :a0
                         [(1 _ 2)] :a1
                         [(1 _ 3)] :a2))
@@ -645,6 +645,27 @@
       (specialize (literal-pattern 1))
       (specialize (crash-pattern))
       print-matrix)
+
+  ;; WORKS
+  ;; NOTE: Does not work with necessary-column
+  (let [x true
+        y false
+        z true]
+    (match [x y z]
+           [_ false true] 1
+           [false true _ ] 2
+           [_ _ false] 3
+           [_ _ true] 4))
+
+  (def m5 (build-matrix [x y z]
+                        [_ false true] 1
+                        [false true _ ] 2
+                        [_ _ false] 3
+                        [_ _ true] 4))
+
+  (-> m5
+      (specialize (literal-pattern true))
+      necessary-column)
 
   ;; WORKS
   (let [x [1 2 nil nil nil]]
