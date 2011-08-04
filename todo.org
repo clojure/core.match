@@ -1,4 +1,4 @@
-* Todo List [7/15]
+* Todo List [8/15]
   - [ ] When introducing wild card patterns into seq pattern Maranget's
         algo kicks in which is undesirable unless we have PersistentVectors
         we need to enforce choosing first column until the seq occurences are
@@ -6,11 +6,11 @@
   - [ ] Deal with rest seq patterns
   - [ ] Rest seq pattern should themselves be pattern matchable this is
         mostly to support :as - introduce a binding
-  - [ ] Use gensym in seq pattern occurrence introduction
   - [ ] implement basic map pattern matching
   - [ ] support only
   - [ ] Devise hash-consing strategy
   - [ ] Implement hash-consing strategy
+  - [X] Use gensym in seq pattern occurrence introduction
   - [X] Rename all instances of vector pattern to seq pattern since thats
         what it actually is
   - [X] named wildcards
