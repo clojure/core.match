@@ -65,7 +65,7 @@
     (let [m (-> ocr meta)]
       (if (:seq-occurrence m)
         (let [seq-sym (-> m :seq-sym
-                          name (str "-prev")
+                          name
                           symbol)]
          `(and (not (nil? ~seq-sym))
                (= ~ocr ~l)))
@@ -434,20 +434,30 @@
                                                      (- width (count v)))
                                                     (crash-pattern)))))))
                      vec)
+          make-sym-pair-generator (fn [c]
+                                    (let [current (atom c)
+                                          next    (atom (gensym c))]
+                                      (fn []
+                                        (let [old-c @current
+                                              old-n @next]
+                                          (swap! current (fn [_] old-n))
+                                          (swap! next    (fn [_] (gensym c)))
+                                          [old-c old-n]))))
           nocrs (let [seq-ocr focr
+                      next-syms (make-sym-pair-generator seq-ocr)
                       ocr-sym (fn ocr-sym [x]
-                                (let [ocr (symbol (str (name seq-ocr) x))]
+                                (let [ocr (gensym (str (name seq-ocr) x))
+                                      [seq-ocr next-ocr] (next-syms)]
                                   (with-meta ocr
                                     {:seq-occurrence true
                                      :seq-sym seq-ocr
                                      :bind-expr `(let [~ocr (first ~seq-ocr)
-                                                       ~(symbol (str (name seq-ocr) "-prev")) ~seq-ocr
-                                                       ~seq-ocr (next ~seq-ocr)])})))]
+                                                       ~next-ocr (next ~seq-ocr)])})))]
                   (into (conj (into []
                                     (map ocr-sym (range width)))
-                              (with-meta (ocr-sym "r")
+                              (with-meta (gensym seq-ocr)
                                 {:seq-occurence true
-                                 :seq-sym seq-ocr}))
+                                 :seq-sym (first (next-syms))}))
                         (drop-nth ocrs 0)))]
 
       (pattern-matrix nrows nocrs))))
