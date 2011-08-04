@@ -197,7 +197,6 @@
   (action [this])
   (patterns [this])
   (bindings [this])
-  (first-concrete-column-num [this]) ;; TODO: needs better name - David
   (all-wildcards? [this])
   (drop-nth-bind [this n ocr])) ;; TODO: needs better name - David
 
@@ -206,12 +205,6 @@
   (action [_] action)
   (patterns [_] ps)
   (bindings [_] bindings)
-  (first-concrete-column-num [this]
-    (->> (map wildcard-pattern? ps)
-         (map-indexed vector)
-         (filter (comp not second))
-         first
-         first))
   (all-wildcards? [this]
     (every? wildcard-pattern? ps))
   (drop-nth-bind [this n ocr]
@@ -355,7 +348,7 @@
                                        (leaf-node (action f)
                                                   (concat (bindings f)
                                                           (map vector wsyms ocrs))))
-       :else (let [col (first-concrete-column-num (first rows))]
+       :else (let [col (necessary-column this)]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
@@ -653,7 +646,7 @@
   ;; WORKS
   ;; NOTE: Does not work with necessary-column
   (let [x true
-        y false
+        y true
         z true]
     (match [x y z]
            [_ false true] 1
@@ -668,6 +661,7 @@
                         [_ _ true] 4))
   
   ;; WORKS
+  ;; :a2
   (let [x [1 2 nil nil nil]]
     (match [x]
            [(1)]     :a0
@@ -675,12 +669,14 @@
            [(1 2 nil nil nil)] :a2))
 
   ;; WORKS
+  ;; :a1
   (let [x 1 y 2 z 4]
     (match [x y z]
            [1 _ 3] :a0
            [_ 2 4] :a1))
 
   ;; WORKS
+  ;; 4
   (let [x 1 y 2 z 4]
     (match [x y z]
            [1 2 b] b
