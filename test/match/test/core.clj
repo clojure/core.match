@@ -14,15 +14,10 @@
            (thrown? java.lang.AssertionError
                     (type-pattern 1))))
 
-(deftest vector-pattern-precondition-test
-         (is
-           (thrown? java.lang.AssertionError
-                    (vector-pattern 1))))
-
 (deftest seq-pattern-matching
          (is
            (= (let [x [1]]
                 (match [x]
                        [1] 1
-                       [[1]] 2))
+                       [(1)] 2))
               2)))
