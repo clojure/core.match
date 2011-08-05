@@ -569,6 +569,11 @@
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
     (seq? pat) (seq-pattern (into () (map emit-pattern pat)))
+    (map? pat) (map-pattern
+                (->> pat
+                     (map (fn [[k v]]
+                            [(emit-pattern k) v]))
+                     (into {})))
     (symbol? pat) (wildcard-pattern pat)
     :else (literal-pattern pat))))
             
@@ -599,24 +604,6 @@
 ; =============================================================================
 ; Activ Work
 (comment
-  ;; we're working with this at the moment, no guards, no implication
-  ;; just the basic Maranget algorithm. We'd like to be execute the following
-  ;;
-  ;; (match [x y z]
-  ;;   [_  f# t#] 1
-  ;;   [f# t# _ ] 2
-  ;;   [_  _  f#] 3
-  ;;   [_  _  t#] 4)
-
-  (def pr1 (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1))
-  (pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
-
-  ;; (match [x y z]
-  ;;   [_  f# t#] 1
-  ;;   [f# t# _ ] 2
-  ;;   [_  _  f#] 3
-  ;;   [_  _  t#] 4)
-  
   (def pm2 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
                             (pattern-row [(literal-pattern false) (literal-pattern true) (wildcard-pattern)] :a2)
                             (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
@@ -624,130 +611,6 @@
                            '[x y z]))
 
   (print-matrix pm2)
-
-  (specialize pm2 (wildcard-pattern))
-
-  (pprint (compile pm2))
-
-  ;; YES
   (source-pprint (to-clj (compile pm2)))
-
   (useful-matrix pm2)
-
-  (print-matrix pm2)
-  (print-matrix (select pm2))
-  (print-matrix (specialize (select pm2) (wildcard-pattern)))
-  (print-matrix (specialize (select pm2) (literal-pattern true)))
-  (print-matrix (specialize (select pm2) (literal-pattern false)))
-  (print-matrix (select (specialize (select pm2) (literal-pattern true))))
-  (print-matrix (specialize (select (specialize (select pm2) (literal-pattern true))) (literal-pattern false)))
-  (print-matrix (specialize (select pm2) (literal-pattern false)))
-  (print-matrix (select (specialize (select pm2) (literal-pattern false))))
-  (print-matrix (specialize (select (specialize (select pm2) (literal-pattern false))) (literal-pattern true)))
-  ;; ^ we can discard :a4
-
-  (def m1 (build-matrix [x y z]
-                        [1 2 3] :a0
-                        [(1 2 3) 4 5] :a1
-                        [(2 3 4) 5 6] :a2))
-
-  (def m2 (build-matrix [x]
-                        [(1 2 3)] :a0
-                        [(1 2 4)] :a1))
-
-  (def m3 (build-matrix [x]
-                        [(1)]     :a0
-                        [(1 2)]   :a1
-                        [(1 2 3)] :a2))
-
-  (def m4 (build-matrix [x]
-                        [(1 _ 1)] :a0
-                        [(1 _ 2)] :a1
-                        [(1 _ 3)] :a2))
-
-  (pprint (compile m1))
-  (source-pprint (-> m1 compile to-clj))
-
-  (pprint (compile m2))
-  (source-pprint (-> m2 compile to-clj))
-
-  (pprint (compile m3))
-
-  (-> m2 (specialize (seq-pattern)) print-matrix)
-
-  (-> m3 (specialize (seq-pattern)) print-matrix)
-
-  (-> m3
-      (specialize (seq-pattern))
-      (specialize (literal-pattern 1))
-      (specialize (seq-crash-pattern))
-      print-matrix)
-
-  ;; WORKS
-  ;; NOTE: Does not work with necessary-column
-  (let [x true
-        y true
-        z true]
-    (match [x y z]
-           [_ false true] 1
-           [false true _ ] 2
-           [_ _ false] 3
-           [_ _ true] 4))
-
-  (def m5 (build-matrix [x y z]
-                        [_ false true] 1
-                        [false true _ ] 2
-                        [_ _ false] 3
-                        [_ _ true] 4))
-  
-  ;; WORKS
-  ;; :a2
-  (let [x [1 2 nil nil nil]]
-    (match [x]
-           [(1)]     :a0
-           [(1 2)]   :a1
-           [(1 2 nil nil nil)] :a2))
-
-  ;; WORKS
-  ;; :a1
-  (let [x 1 y 2 z 4]
-    (match [x y z]
-           [1 _ 3] :a0
-           [_ 2 4] :a1))
-
-  ;; WORKS
-  ;; 4
-  (let [x 1 y 2 z 4]
-    (match [x y z]
-           [1 2 b] [:a0 b]
-           [a 2 4] [:a1 a]))
-
-  ;; WORKS
-  ;; 4
-  (let [x '(1 2 4)]
-    (match [x]
-           [(1 2 b)] [:a0 b]
-           [(a 2 4)] [:a1 a]))
-
-  ;; WORKS
-  ;; 2
-  (let [x '(1 2 3)]
-    (match [x]
-           [(1 z 2)] [:a0 z]
-           [(a b c)] [:a1 b]))
-
-  ;; WORKS
-  (let [x '(1 2 3)]
-    (match [x]
-           [(1 z 4)] z
-           [(_ _ _)] :a2))
-
-  ;; WORKS
-  (let [x '(1 2 3)]
-    (match [x]
-           [(1 z 4)] z
-           [(_ _ _)] :a2
-           [(a 2 5)] a))
-
-  (-> m5 (specialize (seq-pattern)) (specialize (literal-pattern 1)) pprint)
 )
