@@ -1,15 +1,21 @@
-* Todo List [8/15]
-  - [ ] When introducing wild card patterns into seq pattern Maranget's
-        algo kicks in which is undesirable unless we have PersistentVectors
-        we need to enforce choosing first column until the seq occurences are
-        cleared
+* Todo List [9/15]
+  - [ ] add many seq pattern matching test cases so we can easily check
+        for regressions
   - [ ] Deal with rest seq patterns
   - [ ] Rest seq pattern should themselves be pattern matchable this is
         mostly to support :as - introduce a binding
+  - [ ] implement vector pattern matching
   - [ ] implement basic map pattern matching
+  - [ ] address the binding bug we saw with seqs. Basically when the algorithm
+        selects columns out of order, bindings from named wildcards are 
+        not pushed down.
   - [ ] support only
   - [ ] Devise hash-consing strategy
   - [ ] Implement hash-consing strategy
+  - [X] When introducing wild card patterns into seq pattern Maranget's
+        algo kicks in which is undesirable unless we have PersistentVectors
+        we need to enforce choosing first column until the seq occurences are
+        cleared
   - [X] Use gensym in seq pattern occurrence introduction
   - [X] Rename all instances of vector pattern to seq pattern since thats
         what it actually is
