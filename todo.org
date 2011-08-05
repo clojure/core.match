@@ -1,4 +1,4 @@
-* Todo List [9/15]
+* Todo List [9/18]
   - [ ] add many seq pattern matching test cases so we can easily check
         for regressions
   - [ ] Deal with rest seq patterns

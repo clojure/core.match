@@ -41,7 +41,7 @@
     1000)
   Object
   (toString [_]
-    "_")
+    (str sym))
   (hashCode [_]
     2299))
 
