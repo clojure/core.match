@@ -692,9 +692,12 @@
            [1 2 b] b
            [a 2 4] a))
 
-  (def m5 (build-matrix [x]
-                        [(1 z 2)] z
-                        [(a b c)] b))
+  ;; FIX
+  ;; bindings not propagated
+  (let [x '(1 2 4)]
+    (match [x]
+           [(1 2 b)] b
+           [(a 2 4)] a))
 
   ;; DOES NOT QUITE WORK
   ;; we need to enforce seq order
@@ -702,6 +705,21 @@
     (match [x]
            [(1 z 2)] z
            [(a b c)] a))
+
+  ;; FIX
+  ;; all wildcards in the last row breaks match
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1 z 4)] z
+           [(_ _ _)] :a2))
+
+  ;; FIX
+  ;; if a row has only wildcards things get borked
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1 z 4)] z
+           [(_ _ _)] :a2
+           [(a 2 5)] a))
 
   (-> m5 (specialize (seq-pattern)) (specialize (literal-pattern 1)) pprint)
 )
