@@ -348,7 +348,8 @@
                                        (leaf-node (action f)
                                                   (concat (bindings f)
                                                           (map vector wsyms ocrs))))
-       :else (let [col (necessary-column this)]
+       :else (let [col (if (-> ocrs first meta :seq-occurrence)
+                         0 (necessary-column this))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
@@ -689,32 +690,30 @@
   ;; 4
   (let [x 1 y 2 z 4]
     (match [x y z]
-           [1 2 b] b
-           [a 2 4] a))
+           [1 2 b] [:a0 b]
+           [a 2 4] [:a1 a]))
 
-  ;; FIX
-  ;; bindings not propagated
+  ;; WORKS
+  ;; 4
   (let [x '(1 2 4)]
     (match [x]
-           [(1 2 b)] b
-           [(a 2 4)] a))
+           [(1 2 b)] [:a0 b]
+           [(a 2 4)] [:a1 a]))
 
-  ;; DOES NOT QUITE WORK
-  ;; we need to enforce seq order
+  ;; WORKS
+  ;; 2
   (let [x '(1 2 3)]
     (match [x]
-           [(1 z 2)] z
-           [(a b c)] a))
+           [(1 z 2)] [:a0 z]
+           [(a b c)] [:a1 b]))
 
-  ;; FIX
-  ;; all wildcards in the last row breaks match
+  ;; WORKS
   (let [x '(1 2 3)]
     (match [x]
            [(1 z 4)] z
            [(_ _ _)] :a2))
 
-  ;; FIX
-  ;; if a row has only wildcards things get borked
+  ;; WORKS
   (let [x '(1 2 3)]
     (match [x]
            [(1 z 4)] z
