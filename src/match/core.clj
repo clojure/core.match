@@ -534,15 +534,13 @@
                           (reduce (fn [a srow]
                                     (merge a (set/map-invert (.m ^MapPattern (first srow)))))
                                   {} srows)))
-          x (println all-keys)
           wc-map (zipmap all-keys (repeatedly wildcard-pattern))
           key-map (zipmap all-keys (repeatedly map-crash-pattern)) ;; :only
-          x (println wc-map)
           nrows (->> srows
                      (map (fn [row]
                             (let [^MapPattern p (first row)
                                   m (.m p)]
-                              (reduce prepend (drop-nth-bind row 0 focr)
+                              (reduce conj (drop-nth-bind row 0 focr)
                                       (map second (sort (merge wc-map (set/map-invert m))))))))
                      vec)
           nocrs (let [map-ocr focr
@@ -670,5 +668,11 @@
                        [{_ :a 2 :b}] :a0
                        [{1 :a b :c}] :a1))
 
+  (match [x]
+         [{_ :a 2 :b}] :a0
+         [{1 :a b :c}] :a1)
+
+  (-> m print-matrix)
   (-> m (specialize (map-pattern)) print-matrix)
+  (pprint (-> m compile))
 )
