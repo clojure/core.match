@@ -523,23 +523,24 @@
 (extend-type MapPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
-    (let [row (rows matrix)
+    (let [rows (rows matrix)
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           all-keys (sort (keys
-                          (reduce (fn [a m]
-                                    (merge a (set/map-invert m)))
+                          (reduce (fn [a srow]
+                                    (merge a (set/map-invert (.m ^MapPattern (first srow)))))
                                   {} srows)))
+          x (println all-keys)
           wc-map (zipmap all-keys (repeatedly wildcard-pattern))
           key-map (zipmap all-keys (repeatedly map-crash-pattern)) ;; :only
+          x (println wc-map)
           nrows (->> srows
                      (map (fn [row]
                             (let [^MapPattern p (first row)
                                   m (.m p)]
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (-> (merge wc-map m) sort
-                                          (map second))))))
+                                      (map second (sort (merge wc-map (set/map-invert m))))))))
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
@@ -662,7 +663,9 @@
   (source-pprint (to-clj (compile pm2)))
   (useful-matrix pm2)
 
-  (build-matrix [x]
-                [{_ :a 2 :b}] :a0
-                [{1 :a b :c}] :a1)
+  (def m (build-matrix [x]
+                       [{_ :a 2 :b}] :a0
+                       [{1 :a b :c}] :a1))
+
+  (-> m (specialize (map-pattern)) print-matrix)
 )
