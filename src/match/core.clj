@@ -285,7 +285,10 @@
     (count ps))
   clojure.lang.IFn
   (invoke [_ n]
-    (nth ps n)))
+    (nth ps n))
+  clojure.lang.IPersistentCollection
+  (cons [_ x]
+    (PatternRow. (conj ps x) action bindings)))
 
 (defn ^PatternRow pattern-row
   ([ps action] (PatternRow. ps action nil))
