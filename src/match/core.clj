@@ -121,9 +121,9 @@
     `(map? ~ocr))
   java.lang.Comparable
   (compareTo [_ that]
-    (if (instance? MapPattern)
+    (if (instance? MapPattern that)
       0
-      -100))
+      -101))
   Object
   (toString [_]
     (str m)))
@@ -652,27 +652,38 @@
       to-clj))
 
 ; =============================================================================
-; Activ Work
+; Active Work
+
 (comment
-  (def pm2 (pattern-matrix [(pattern-row [(wildcard-pattern) (literal-pattern false) (literal-pattern true)] :a1)
-                            (pattern-row [(literal-pattern false) (literal-pattern true) (wildcard-pattern)] :a2)
-                            (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern false)] :a3)
-                            (pattern-row [(wildcard-pattern) (wildcard-pattern) (literal-pattern true)] :a4)]
-                           '[x y z]))
-
-  (print-matrix pm2)
-  (source-pprint (to-clj (compile pm2)))
-  (useful-matrix pm2)
-
   (def m (build-matrix [x]
                        [{_ :a 2 :b}] :a0
                        [{1 :a b :c}] :a1))
 
-  (match [x]
-         [{_ :a 2 :b}] :a0
-         [{1 :a b :c}] :a1)
+  ;; if we didn't test it won't get bound!
+  (let [x {:a 1 :b 1}]
+    (match [x]
+           [{_ :a 2 :b}] :a0
+           [{1 :a _ :c}] :a1
+           [{3 :c _ :d 4 :e}] :a2))
+
+  (let [x {:a 1 :b 1}]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e6]
+        (match [x]
+               [{_ :a 2 :b}] :a0
+               [{1 :a _ :c}] :a1)))))
+
+  (let [x {:a 1 :b 1}]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e6]
+        (let [{a :a b :b} x])))))
 
   (-> m print-matrix)
   (-> m (specialize (map-pattern)) print-matrix)
   (pprint (-> m compile))
+
+  (sorted-set (seq-pattern) (seq-pattern))
+  (sorted-set (map-pattern) (map-pattern))
 )
