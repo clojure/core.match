@@ -35,29 +35,16 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
+(defprotocol ICtorArityPattern
+  (crash-pattern [this]))
+
 (deftype WildcardPattern [sym]
   java.lang.Comparable
   (compareTo [this that]
     1000)
   Object
   (toString [_]
-    (str sym))
-  (hashCode [_]
-    2299))
-
-(deftype SeqCrashPattern []
-  IPatternCompile
-  (p-to-clj [this ocr]
-    (let [seq-sym (-> ocr meta :seq-sym)]
-      `(= ~seq-sym nil)))
-  java.lang.Comparable
-  (compareTo [this that]
-    -2000)
-  Object
-  (toString [_]
-    "CRASH")
-  (hashCode [_]
-    2399))
+    (str sym)))
 
 (deftype LiteralPattern [l]
   IPatternCompile
@@ -85,9 +72,7 @@
   (toString [_]
     (if (nil? l)
       "nil"
-      (str l)))
-  (hashCode [this]
-    (+ 1142 (hash l))))
+      (str l))))
 
 (deftype TypePattern [t]
   IPatternCompile
@@ -100,9 +85,7 @@
       -100))
   Object
   (toString [_]
-    (str t))
-  (hashCode [this]
-    (+ 2242 (hash t))))
+    (str t)))
 
 (declare wildcard-pattern literal-pattern)
 
@@ -117,11 +100,19 @@
       -200))
   Object
   (toString [_]
-    (str s))
-  (equals [_ that]
-    (instance? SeqPattern that))
-  (hashCode [_]
-    3331))
+    (str s)))
+
+(deftype SeqCrashPattern []
+  IPatternCompile
+  (p-to-clj [this ocr]
+    (let [seq-sym (-> ocr meta :seq-sym)]
+      `(= ~seq-sym nil)))
+  java.lang.Comparable
+  (compareTo [this that]
+    -2000)
+  Object
+  (toString [_]
+    "CRASH"))
 
 (deftype MapPattern [m]
   IPatternCompile
@@ -134,11 +125,20 @@
       -100))
   Object
   (toString [_]
-    (str m))
-  (equals [_ that]
-    (instance? MapPattern that))
-  (hashCode [_]
-    4337))
+    (str m)))
+
+(deftype MapCrashPattern []
+  IPatternCompile
+  (p-to-clj [this ocr]
+    (let [map-sym (-> ocr meta :map-sym)
+          keys (-> ocr meta :only)]
+      `(= (set (keys ~map-sym)) (set ~@keys))))
+  java.lang.Comparable
+  (compareTo [this that]
+    -3000)
+  Object
+  (toString [_]
+    "CRASH"))
 
 (defn ^WildcardPattern wildcard-pattern
   ([] (WildcardPattern. '_))
@@ -164,6 +164,9 @@
   ([] (MapPattern. {}))
   ([m] {:pre [(map? m)]}
      (MapPattern. m)))
+
+(defn ^MapCrashPattern map-crash-pattern []
+  (MapCrashPattern.))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (defn named-wildcard-pattern? [x]
@@ -197,6 +200,17 @@
 
 (defmethod pattern-equals :default 
   [a b] false)
+
+(defmulti crash-pattern? type)
+
+(defmethod crash-pattern? SeqCrashPattern
+  [x] true)
+
+(defmethod crash-pattern? MapCrashPattern
+  [x] true)
+
+(defmethod crash-pattern? :default
+  [x] false)
 
 (defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
   (.write writer (str "<WildcardPattern: " (.sym p) ">")))
@@ -442,6 +456,15 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
+(defn make-sym-pair-generator [c]
+  (let [current (atom c)
+        next    (atom (gensym c))]
+    (fn []
+      (let [old-c @current
+            old-n @next]
+        (swap! current (fn [_] old-n))
+        (swap! next    (fn [_] (gensym c)))
+        [old-c old-n]))))
 
 (extend-type SeqPattern
   ISpecializeMatrix
@@ -461,15 +484,6 @@
                                                      (- width (count s)))
                                                     (seq-crash-pattern)))))))
                      vec)
-          make-sym-pair-generator (fn [c]
-                                    (let [current (atom c)
-                                          next    (atom (gensym c))]
-                                      (fn []
-                                        (let [old-c @current
-                                              old-n @next]
-                                          (swap! current (fn [_] old-n))
-                                          (swap! next    (fn [_] (gensym c)))
-                                          [old-c old-n]))))
           nocrs (let [seq-ocr focr
                       next-syms (make-sym-pair-generator seq-ocr)
                       ocr-sym (fn ocr-sym [x]
@@ -503,6 +517,47 @@
         (pattern-matrix [] [])
         (let [row (first nrows)]
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
+
+
+;; TODO: ok this is different
+;; we need to merge the keys of all maps to make a master occurrence list
+;; Clojure syntax is problem since it's inverted and the user might want
+;; to use wildcards more than once
+
+(extend-type MapPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [row (rows matrix)
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          srows (filter #(pattern-equals this (first %)) rows)
+          nrows (->> srows
+                     (map (fn [row]
+                            (let [^MapPattern p (first row)
+                                  s (sort (keys (.m p)))]
+                              (reduce prepend (drop-nth-bind row 0 focr)
+                                      (into s
+                                            (repeat (clojure.core/inc
+                                                     (- width (count s)))
+                                                    (map-crash-pattern)))))))
+                     vec)
+          nocrs (let [map-ocr focr
+                      next-syms (make-sym-pair-generator)
+                      ocr-sym (fn ocr-sym [x]
+                                (let [ocr (gensym (str (name map-ocr) x))
+                                      [map-ocr next-ocr] (next-syms)]
+                                  (with-meta ocr
+                                    {:map-occurrence true
+                                     :map-sym map-ocr
+                                     :bind-expr `(let [~ocr (first ~map-ocr)
+                                                       ~next-ocr (next ~map-ocr)])})))]
+                  (into (conj (into []
+                                    (map ocr-sym (range width)))
+                              (with-meta (gensym map-ocr)
+                                {:seq-occurence true
+                                 :seq-sym (first (next-syms))}))
+                        (drop-nth ocrs 0)))]
+      (pattern-matrix nrows nocrs))))
 
 
 (extend-type Object
@@ -613,4 +668,8 @@
   (print-matrix pm2)
   (source-pprint (to-clj (compile pm2)))
   (useful-matrix pm2)
+
+  (build-matrix [x]
+                [{_ :a 2 :b}] :a0
+                [{1 :a b :c}] :a1)
 )
