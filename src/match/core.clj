@@ -3,7 +3,8 @@
   (:use [clojure.core.logic.minikanren :exclude [swap]]
         [clojure.core.logic prelude])
   (:use [clojure.pprint :only [pprint]])
-  (:require [clojure.pprint :as pp])
+  (:require [clojure.pprint :as pp]
+            [clojure.set :as set])
   (:import [java.io Writer]))
 
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
@@ -480,9 +481,9 @@
                                   s (.s p)] ;; NOTE: use the pattern that actually belongs to the row - David
                               (reduce prepend (drop-nth-bind row 0 focr)
                                       (into s
-                                            (repeat (clojure.core/inc
-                                                     (- width (count s)))
-                                                    (seq-crash-pattern)))))))
+                                            (repeatedly (clojure.core/inc
+                                                         (- width (count s)))
+                                                        seq-crash-pattern))))))
                      vec)
           nocrs (let [seq-ocr focr
                       next-syms (make-sym-pair-generator seq-ocr)
@@ -519,11 +520,6 @@
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 
-;; TODO: ok this is different
-;; we need to merge the keys of all maps to make a master occurrence list
-;; Clojure syntax is problem since it's inverted and the user might want
-;; to use wildcards more than once
-
 (extend-type MapPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -531,31 +527,28 @@
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
+          all-keys (sort (keys
+                          (reduce (fn [a m]
+                                    (merge a (set/map-invert m)))
+                                  {} srows)))
+          wc-map (zipmap all-keys (repeatedly wildcard-pattern))
+          key-map (zipmap all-keys (repeatedly map-crash-pattern)) ;; :only
           nrows (->> srows
                      (map (fn [row]
                             (let [^MapPattern p (first row)
-                                  s (sort (keys (.m p)))]
+                                  m (.m p)]
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (into s
-                                            (repeat (clojure.core/inc
-                                                     (- width (count s)))
-                                                    (map-crash-pattern)))))))
+                                      (-> (merge wc-map m) sort
+                                          (map second))))))
                      vec)
           nocrs (let [map-ocr focr
-                      next-syms (make-sym-pair-generator)
-                      ocr-sym (fn ocr-sym [x]
-                                (let [ocr (gensym (str (name map-ocr) x))
-                                      [map-ocr next-ocr] (next-syms)]
+                      ocr-sym (fn ocr-sym [k]
+                                (let [ocr (gensym (str (name map-ocr) "-" (name k)))]
                                   (with-meta ocr
                                     {:map-occurrence true
                                      :map-sym map-ocr
-                                     :bind-expr `(let [~ocr (first ~map-ocr)
-                                                       ~next-ocr (next ~map-ocr)])})))]
-                  (into (conj (into []
-                                    (map ocr-sym (range width)))
-                              (with-meta (gensym map-ocr)
-                                {:seq-occurence true
-                                 :seq-sym (first (next-syms))}))
+                                     :bind-expr `(let [~ocr (~k ~map-ocr)])})))]
+                  (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
 
