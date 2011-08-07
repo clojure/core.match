@@ -100,6 +100,14 @@
   (toString [_]
     (str s)))
 
+(deftype RestPattern [p]
+  java.lang.Comparable
+  (compareTo [this that]
+    -1999)
+  Object
+  (toString [_]
+    "REST"))
+
 (deftype SeqCrashPattern []
   IPatternCompile
   (p-to-clj [this ocr]
@@ -144,6 +152,9 @@
 (defn ^SeqCrashPattern seq-crash-pattern []
   (SeqCrashPattern.))
 
+(defn ^RestPattern rest-pattern [p]
+  (RestPattern. p))
+
 (defn ^LiteralPattern literal-pattern [l] 
   (LiteralPattern. l))
 
@@ -171,10 +182,11 @@
 (defn named-wildcard-pattern? [x]
   (when (instance? WildcardPattern x)
     (not= (.sym ^WildcardPattern x) '_)))
-(def seq-crash-pattern?   (partial instance? SeqCrashPattern))
 (def literal-pattern? (partial instance? LiteralPattern))
 (def type-pattern?    (partial instance? TypePattern))
 (def seq-pattern?     (partial instance? SeqPattern))
+(def seq-crash-pattern?   (partial instance? SeqCrashPattern))
+(def rest-pattern?    (partial instance? RestPattern))
 (def map-pattern?     (partial instance? MapPattern))
 
 (defmulti pattern-equals (fn [a b] [(type a) (type b)]))
@@ -189,6 +201,9 @@
   [a b] true)
 
 (defmethod pattern-equals [SeqCrashPattern SeqCrashPattern]
+  [a b] true)
+
+(defmethod pattern-equals [RestPattern RestPattern]
   [a b] true)
 
 (defmethod pattern-equals [MapPattern MapPattern]
@@ -217,9 +232,6 @@
 (defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
   (.write writer (str "<WildcardPattern: " (.sym p) ">")))
 
-(defmethod print-method SeqCrashPattern [^SeqCrashPattern p ^Writer writer]
-  (.write writer "<SeqCrashPattern>"))
-
 (defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
   (.write writer (str "<LiteralPattern: " p ">")))
 
@@ -229,8 +241,17 @@
 (defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
   (.write writer (str "<SeqPattern: " p ">")))
 
+(defmethod print-method SeqCrashPattern [^SeqCrashPattern p ^Writer writer]
+  (.write writer "<SeqCrashPattern>"))
+
+(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
+  (.write writer (str "<RestPattern: " (.p p) ">")))
+
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
+
+(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
+  (.write writer (str "<MapCrashPattern>")))
 
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
@@ -676,7 +697,15 @@
                  (= (first pat) 'isa?)))]
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
-    (seq? pat) (seq-pattern (into [] (map emit-pattern pat)))
+    (seq? pat) (seq-pattern
+                (loop [ps pat v []]
+                  (if (nil? ps)
+                    v
+                    (let [p (first ps)]
+                      (cond
+                       (= p '&) (let [p (second ps)]
+                                  (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
+                       :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))
     (map? pat) (map-pattern
                 (->> pat
                      (map (fn [[k v]]
@@ -716,7 +745,28 @@
 ; Active Work
 
 (comment
-  (let [x {:a 1 :b 2}]
+  (let [x '(1 2 3)]
     (match [x]
-           [{a :a b :b}] [:a0 a b]))
+           [(1 2 3)] :a0))
+  
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1 a & rest)] [:a0 a rest]))
+
+  (emit-pattern '(1 a b))
+  (emit-pattern '(1 a & rest))
+  (emit-pattern '(1 a & [b c]))
+
+  (let [x '(1 2 (3 5))]
+   (match [x]
+          [(1 2 (3 4))] :a0
+          [(1 2 (3 5))] :a1))
+
+  (let [x '(1 2 (3 5))]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e6]
+        (match [x]
+               [(1 2 (3 4))] :a0
+               [(1 2 (3 5))] :a1)))))
   )
