@@ -435,7 +435,7 @@
             (reduce (fn [[col score :as curr]
                          [ocol oscore :as cand]]
                       (if (> oscore score) cand curr))
-                    [0 0])))))
+                    [0 -2]))))) ;; TODO: -2 because -1 is for crash columns - David
 
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
@@ -709,25 +709,4 @@
   (-> m2
       (specialize (map-pattern))
       print-matrix)
-
-  (-> m2
-      (specialize (map-pattern))
-      necessary-column)
-  
-  (-> m2
-      (specialize (map-pattern))
-      select
-      (specialize (literal-pattern 2))
-      select
-      (specialize (literal-pattern 1))
-      select
-      useful-matrix)
-  
-  (pprint (-> m compile))
-
-  (let [x {:a 1 :b 2 :c 3}]
-    (match [x]
-           [{_ :a 2 :b :only [:a :b]}] :a0
-           [{1 :a _ :c}] :a1
-           [{3 :c _ :d 4 :e}] :a2))
   )
