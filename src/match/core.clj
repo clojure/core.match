@@ -125,12 +125,11 @@
   (toString [_]
     (str m " :only " (or only []))))
 
-(deftype MapCrashPattern []
+(deftype MapCrashPattern [only]
   IPatternCompile
   (p-to-clj [this ocr]
-    (let [map-sym (-> ocr meta :map-sym)
-          keys (-> ocr meta :only)]
-      `(= (set (keys ~map-sym)) (set ~@keys))))
+    (let [map-sym (-> ocr meta :map-sym)]
+      `(= (set (keys ~map-sym)) (set ~@only))))
   java.lang.Comparable
   (compareTo [this that]
     -3000)
@@ -165,8 +164,8 @@
   ([m only] {:pre [(map? m)]}
      (MapPattern. m only)))
 
-(defn ^MapCrashPattern map-crash-pattern []
-  (MapCrashPattern.))
+(defn ^MapCrashPattern map-crash-pattern [only]
+  (MapCrashPattern. only))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 (defn named-wildcard-pattern? [x]
@@ -189,10 +188,13 @@
 (defmethod pattern-equals [SeqPattern SeqPattern]
   [a b] true)
 
+(defmethod pattern-equals [SeqCrashPattern SeqCrashPattern]
+  [a b] true)
+
 (defmethod pattern-equals [MapPattern MapPattern]
   [a b] true)
 
-(defmethod pattern-equals [SeqCrashPattern SeqCrashPattern]
+(defmethod pattern-equals [MapCrashPattern MapCrashPattern]
   [a b] true)
 
 (defmethod pattern-equals [TypePattern TypePattern]
@@ -532,19 +534,24 @@
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
-          all-keys (sort (keys
-                          (reduce (fn [a srow]
-                                    (merge a (set/map-invert (.m ^MapPattern (first srow)))))
-                                  {} srows)))
+          all-keys (->> srows
+                        (map (fn [row]
+                               (let [^MapPattern p (first row)]
+                                 [(set (keys (set/map-invert (.m p))))
+                                  (set (.only p))])))
+                        (reduce concat)
+                        (reduce set/union #{})
+                        sort)
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
-          crash-map (zipmap all-keys (repeatedly map-crash-pattern))
           nrows (->> srows
                      (map (fn [row]
                             (let [^MapPattern p (first row)
                                   m (set/map-invert (.m p))
                                   [crash-map wc-map] (if-let [only (.only p)]
-                                                       [crash-map (zipmap only wcs)]
+                                                       [(zipmap all-keys
+                                                                (repeat (map-crash-pattern only)))
+                                                        (zipmap only wcs)]
                                                        [{} wc-map])]
                               (reduce conj (drop-nth-bind row 0 focr)
                                       (map second
@@ -560,6 +567,21 @@
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
+
+
+(extend-type MapCrashPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth % 0))
+                     vec)]
+      (if (empty? nrows)
+        (pattern-matrix [] [])
+        (let [row (first nrows)]
+         (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 
 (extend-type Object
@@ -665,9 +687,13 @@
 ; Active Work
 
 (comment
-  (def m (build-matrix [x]
-                       [{_ :a 2 :b}] :a0
-                       [{1 :a b :c}] :a1))
+  (def m1 (build-matrix [x]
+                        [{x :a 2 :b y :d}] :a0
+                        [{1 :a b :c}] :a1))
+
+  (def m2 (build-matrix [x]
+                        [{_ :a 2 :b :only [:a :b :d]}] :a0
+                        [{1 :a b :c}] :a1))
 
   ;; if we didn't test it, won't get bound!
   (let [x {:a 1 :b 1}]
@@ -676,7 +702,22 @@
            [{1 :a _ :c}] :a1
            [{3 :c _ :d 4 :e}] :a2))
 
-  (-> m print-matrix)
-  (-> m (specialize (map-pattern)) print-matrix)
+  (-> m2 print-matrix)
+
+  (-> m2
+      (specialize (map-pattern))
+      print-matrix)
+
+  (-> m2
+      (specialize (map-pattern))
+      necessary-column)
+  
+  (-> m2
+      (specialize (map-pattern))
+      select
+      (specialize (literal-pattern 2))
+      select
+      print-matrix)
+  
   (pprint (-> m compile))
   )
