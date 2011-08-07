@@ -352,7 +352,7 @@
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
-            `(~(:key m) ~(:map-sym m))))
+            `(get ~(:map-sym m) ~(:key m))))
 
 (defmethod leaf-bind-expr :default
   [ocr] ocr)
@@ -591,7 +591,7 @@
                                      :occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr `(let [~ocr (~k ~map-ocr)])})))]
+                                     :bind-expr `(let [~ocr (get ~map-ocr ~k)])})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
