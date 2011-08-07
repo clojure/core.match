@@ -756,17 +756,4 @@
   (emit-pattern '(1 a b))
   (emit-pattern '(1 a & rest))
   (emit-pattern '(1 a & [b c]))
-
-  (let [x '(1 2 (3 5))]
-   (match [x]
-          [(1 2 (3 4))] :a0
-          [(1 2 (3 5))] :a1))
-
-  (let [x '(1 2 (3 5))]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e6]
-        (match [x]
-               [(1 2 (3 4))] :a0
-               [(1 2 (3 5))] :a1)))))
   )
