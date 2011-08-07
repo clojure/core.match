@@ -115,7 +115,7 @@
   (toString [_]
     "CRASH"))
 
-(deftype MapPattern [m]
+(deftype MapPattern [m only]
   IPatternCompile
   (p-to-clj [this ocr]
     `(map? ~ocr))
@@ -126,7 +126,7 @@
       -101))
   Object
   (toString [_]
-    (str m)))
+    (str m " :only " only)))
 
 (deftype MapCrashPattern []
   IPatternCompile
@@ -162,9 +162,11 @@
      (SeqPattern. s)))
 
 (defn ^MapPattern map-pattern
-  ([] (MapPattern. {}))
+  ([] (MapPattern. {} nil))
   ([m] {:pre [(map? m)]}
-     (MapPattern. m)))
+     (MapPattern. m nil))
+  ([m only] {:pre [(map? m)]}
+     (MapPattern. m only)))
 
 (defn ^MapCrashPattern map-crash-pattern []
   (MapCrashPattern.))
@@ -625,8 +627,11 @@
     (map? pat) (map-pattern
                 (->> pat
                      (map (fn [[k v]]
-                            [(emit-pattern k) v]))
-                     (into {})))
+                            (when (not= k :only)
+                              [(emit-pattern k) v])))
+                     (remove nil?)
+                     (into {}))
+                (:only pat))
     (symbol? pat) (wildcard-pattern pat)
     :else (literal-pattern pat))))
             
@@ -662,31 +667,14 @@
                        [{_ :a 2 :b}] :a0
                        [{1 :a b :c}] :a1))
 
-  ;; if we didn't test it won't get bound!
+  ;; if we didn't test it, won't get bound!
   (let [x {:a 1 :b 1}]
     (match [x]
            [{_ :a 2 :b}] :a0
            [{1 :a _ :c}] :a1
            [{3 :c _ :d 4 :e}] :a2))
 
-  (let [x {:a 1 :b 1}]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e6]
-        (match [x]
-               [{_ :a 2 :b}] :a0
-               [{1 :a _ :c}] :a1)))))
-
-  (let [x {:a 1 :b 1}]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e6]
-        (let [{a :a b :b} x])))))
-
   (-> m print-matrix)
   (-> m (specialize (map-pattern)) print-matrix)
   (pprint (-> m compile))
-
-  (sorted-set (seq-pattern) (seq-pattern))
-  (sorted-set (map-pattern) (map-pattern))
-)
+  )
