@@ -123,7 +123,7 @@
       -101))
   Object
   (toString [_]
-    (str m " :only " only)))
+    (str m " :only " (or only []))))
 
 (deftype MapCrashPattern []
   IPatternCompile
