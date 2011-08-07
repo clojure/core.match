@@ -81,3 +81,9 @@
                        [{1 :a _ :c}] :a1
                        [{3 :c _ :d 4 :e}] :a2))
               :a1))))
+
+(deftest map-pattern-match-bind-1
+  (is (= (let [x {:a 1 :b 2}]
+           (match [x]
+                  [{a :a b :b}] [:a0 a b]))
+         [:a0 1 1])))

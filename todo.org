@@ -1,17 +1,26 @@
-* Todo List [9/18]
-  - [ ] add many seq pattern matching test cases so we can easily check
-        for regressions
+* Todo List [14/21]
+  - [ ] Things are getting a little miessy particularly around how we
+        deal with bindings. This could use some cleanup.
+  - [ ] emit-pattern logic should be open not closed
+  - [ ] Compile times are now quite slow (affects running tests) should
+        do a basic profiling / optimization pass to eliminate obvious
+        areas that contribute to performance degradation.
+  - [ ] rename pattern-equals -> constructor-match? or something similar
   - [ ] Deal with rest seq patterns
   - [ ] Rest seq pattern should themselves be pattern matchable this is
         mostly to support :as - introduce a binding
   - [ ] implement vector pattern matching
-  - [ ] implement basic map pattern matching
-  - [ ] address the binding bug we saw with seqs. Basically when the algorithm
-        selects columns out of order, bindings from named wildcards are 
-        not pushed down.
-  - [ ] support only
   - [ ] Devise hash-consing strategy
   - [ ] Implement hash-consing strategy
+  - [X] map pattern should support only
+  - [X] address the binding bug we saw with seqs. Basically when the algorithm
+        selects columns out of order, bindings from named wildcards are 
+        not pushed down.
+  - [X] wildcards might not get tested so in the binding in the leaf node
+        we'll probably want to bind the value there.
+  - [X] implement basic map pattern matching
+  - [X] add many seq pattern matching test cases so we can easily check
+        for regressions
   - [X] When introducing wild card patterns into seq pattern Maranget's
         algo kicks in which is undesirable unless we have PersistentVectors
         we need to enforce choosing first column until the seq occurences are

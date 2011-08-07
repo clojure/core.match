@@ -243,7 +243,10 @@
   (patterns [this])
   (bindings [this])
   (all-wildcards? [this])
-  (drop-nth-bind [this n ocr])) ;; TODO: needs better name - David
+  (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
+
+(declare map-occurrence?)
+(declare leaf-bind-expr)
 
 (deftype PatternRow [ps action bindings]
   IPatternRow
@@ -255,10 +258,11 @@
   (drop-nth-bind [this n ocr]
     (let [p (ps n)]
       (if (named-wildcard-pattern? p)
-        (let [sym (.sym ^WildcardPattern p)]
+        (let [sym (.sym ^WildcardPattern p)
+              binding [sym (leaf-bind-expr ocr)]]
           (PatternRow. (drop-nth ps n) action
                        (conj (or bindings [])
-                             [sym ocr])))
+                             binding)))
         (drop-nth this n))))
   IVecMod
   (drop-nth [_ n]
@@ -299,11 +303,10 @@
   INodeCompile
   (to-clj [this]
     (if (not (empty? bindings))
-      `(let [~@(apply concat
-                      (remove (fn [[sym _]]
-                                (= sym '_))
-                       bindings))]
-         ~value)
+      (let [bindings (remove (fn [[sym _]] (= sym '_))
+                             bindings)]
+       `(let [~@(apply concat bindings)]
+          ~value))
       value)))
 
 (defrecord FailNode []
@@ -338,6 +341,21 @@
      (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
      (SwitchNode. occurrence cases default)))
+
+(defn seq-occurrence? [ocr]
+  (-> ocr meta :seq-occurrence))
+
+(defn map-occurrence? [ocr]
+  (-> ocr meta :map-occurrence))
+
+(defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
+
+(defmethod leaf-bind-expr :map
+  [ocr] (let [m (meta ocr)]
+            `(~(:key m) ~(:map-sym m))))
+
+(defmethod leaf-bind-expr :default
+  [ocr] ocr)
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -390,14 +408,17 @@
              ps (patterns f)]
          (and (not (nil? ps))
               (empty? ps))) (let [f (first rows)]
-                             (leaf-node (action f) (bindings f)))
+                              (leaf-node (action f) (bindings f)))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
-                                           wsyms (map #(.sym ^WildcardPattern %) (.ps f))]
+                                           ps (.ps f)
+                                           wc-syms (map #(.sym ^WildcardPattern %) ps)
+                                           wc-bindings (map vector wc-syms
+                                                            (map leaf-bind-expr ocrs))]
                                        (leaf-node (action f)
                                                   (concat (bindings f)
-                                                          (map vector wsyms ocrs))))
+                                                          wc-bindings)))
        :else (let [col (cond
-                        (-> ocrs first meta :seq-occurrence) 0
+                        (-> ocrs first meta :seq-occurrence) 0 ;; TODO: don't hardcode - David
                         :else (necessary-column this))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
@@ -435,7 +456,7 @@
             (reduce (fn [[col score :as curr]
                          [ocol oscore :as cand]]
                       (if (> oscore score) cand curr))
-                    [0 -2]))))) ;; TODO: -2 because -1 is for crash columns - David
+                    [0 -2]))))) ;; NOTE: -2 because -1 is for crash columns - David
 
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
@@ -502,6 +523,7 @@
                                       [seq-ocr next-ocr] (next-syms)]
                                   (with-meta ocr
                                     {:seq-occurrence true
+                                     :occurrence-type :seq
                                      :seq-sym seq-ocr
                                      :bind-expr `(let [~ocr (first ~seq-ocr)
                                                        ~next-ocr (next ~seq-ocr)])})))]
@@ -509,6 +531,7 @@
                                     (map ocr-sym (range width)))
                               (with-meta (gensym seq-ocr)
                                 {:seq-occurence true
+                                 :occurrence-type :seq
                                  :seq-sym (first (next-syms))}))
                         (drop-nth ocrs 0)))]
 
@@ -565,12 +588,15 @@
                                 (let [ocr (gensym (str (name map-ocr) "-" (name k)))]
                                   (with-meta ocr
                                     {:map-occurrence true
+                                     :occurrence-type :map
+                                     :key k
                                      :map-sym map-ocr
                                      :bind-expr `(let [~ocr (~k ~map-ocr)])})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
 
+;; TODO: redundant, combine this and SeqCrashPattern ISpecializeMatrix - David
 
 (extend-type MapCrashPattern
   ISpecializeMatrix
@@ -689,24 +715,7 @@
 ; Active Work
 
 (comment
-  (def m1 (build-matrix [x]
-                        [{x :a 2 :b y :d}] :a0
-                        [{1 :a b :c}] :a1))
-
-  (def m2 (build-matrix [x]
-                        [{_ :a 2 :b :only [:a :b :d]}] :a0
-                        [{1 :a b :c}] :a1))
-
-  ;; if we didn't test it, won't get bound!
-  (let [x {:a 1 :b 1}]
+  (let [x {:a 1 :b 2}]
     (match [x]
-           [{_ :a 2 :b}] :a0
-           [{1 :a _ :c}] :a1
-           [{3 :c _ :d 4 :e}] :a2))
-
-  (-> m2 print-matrix)
-
-  (-> m2
-      (specialize (map-pattern))
-      print-matrix)
+           [{a :a b :b}] [:a0 a b]))
   )
