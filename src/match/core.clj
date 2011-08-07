@@ -778,7 +778,10 @@
   [1 REST]
 
   ;; if we follow h::t convention things
-  ;; seem simpler
+  ;; seem simpler, our mistake was making
+  ;; seq a multi-arity constructor, really
+  ;; it always takes two parameters an
+  ;; item and a seq
   [(1)]
   [(1 2)]
   ;; =>
@@ -794,12 +797,25 @@
   [2 rest-p]
   [_ _]
 
-  ;; but what does this entail for vectors?
-  ;; this doesn't make sense, rest patterns
+  ;; but what does this imply for vectors?
+  ;; uh, oh this doesn't make sense, rest patterns
   ;; should probably be restricted to use
   ;; with seq patterns?
   [[1 2 & rest]]
   [[1 & rest]]
+  ;; ah the problem with rest patterns is that
+  ;; they totally assume h::t style ctor, rest
+  ;; pattern is in fact h::t ctor!
+  ;; (1 & r) == (1::t)
+
+  ;; should vectors support variable length
+  ;; patterns?
+
+  [1 % % %] ;; crash pattern should come first, test vector length
+  [1 2 % %]
+  [1 2 3 4]
+
+  ;; not hard to do
 
   (def m1 (build-matrix [x]
                         [(1)] :a0
