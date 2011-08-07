@@ -36,9 +36,6 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-(defprotocol ICtorArityPattern
-  (crash-pattern [this]))
-
 (deftype WildcardPattern [sym]
   java.lang.Comparable
   (compareTo [this that]
@@ -539,14 +536,19 @@
                           (reduce (fn [a srow]
                                     (merge a (set/map-invert (.m ^MapPattern (first srow)))))
                                   {} srows)))
-          wc-map (zipmap all-keys (repeatedly wildcard-pattern))
-          key-map (zipmap all-keys (repeatedly map-crash-pattern)) ;; :only
+          wcs (repeatedly wildcard-pattern)
+          wc-map (zipmap all-keys wcs)
+          crash-map (zipmap all-keys (repeatedly map-crash-pattern))
           nrows (->> srows
                      (map (fn [row]
                             (let [^MapPattern p (first row)
-                                  m (.m p)]
+                                  m (set/map-invert (.m p))
+                                  [crash-map wc-map] (if-let [only (.only p)]
+                                                       [crash-map (zipmap only wcs)]
+                                                       [{} wc-map])]
                               (reduce conj (drop-nth-bind row 0 focr)
-                                      (map second (sort (merge wc-map (set/map-invert m))))))))
+                                      (map second
+                                           (sort (merge crash-map wc-map m)))))))
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
