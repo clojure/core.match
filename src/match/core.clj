@@ -511,10 +511,11 @@
                             (let [^SeqPattern p (first row)
                                   s (.s p)] ;; NOTE: use the pattern that actually belongs to the row - David
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (into s
-                                            (repeatedly (clojure.core/inc
-                                                         (- width (count s)))
-                                                        seq-crash-pattern))))))
+                                      (reverse
+                                       (into s
+                                             (repeatedly (clojure.core/inc
+                                                          (- width (count s)))
+                                                         seq-crash-pattern)))))))
                      vec)
           nocrs (let [seq-ocr focr
                       next-syms (make-sym-pair-generator seq-ocr)
@@ -675,7 +676,7 @@
                  (= (first pat) 'isa?)))]
    (cond
     (type-pattern? pat) (type-pattern (resolve (second pat)))
-    (seq? pat) (seq-pattern (into () (map emit-pattern pat)))
+    (seq? pat) (seq-pattern (into [] (map emit-pattern pat)))
     (map? pat) (map-pattern
                 (->> pat
                      (map (fn [[k v]]
