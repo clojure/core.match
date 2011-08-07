@@ -395,8 +395,9 @@
                                        (leaf-node (action f)
                                                   (concat (bindings f)
                                                           (map vector wsyms ocrs))))
-       :else (let [col (if (-> ocrs first meta :seq-occurrence)
-                         0 (necessary-column this))]
+       :else (let [col (cond
+                        (-> ocrs first meta :seq-occurrence) 0
+                        :else (necessary-column this))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
@@ -418,20 +419,22 @@
 
   (row [_ j] (nth rows j))
 
-  ;; TODO: replace with more sophisticated scoring
   (necessary-column [this]
-    (first
-     (->> (apply map vector (useful-matrix this))
-          (map-indexed (fn [i col]
-                         [i (reduce (fn [score useful]
-                                      (if useful
-                                        (clojure.core/inc score)
-                                        score))
-                                    0 col)]))
-          (reduce (fn [[col score :as curr]
-                       [ocol oscore :as cand]]
-                    (if (> oscore score) cand curr))
-                  [0 0]))))
+    (letfn [(score-column [i col]
+              (cond
+               (some crash-pattern? col) -1
+               :else [i (reduce (fn [score useful]
+                                  (if useful
+                                    (clojure.core/inc score)
+                                    score))
+                                0 col)]))]
+      (first
+       (->> (apply map vector (useful-matrix this))
+            (map-indexed score-column)
+            (reduce (fn [[col score :as curr]
+                         [ocol oscore :as cand]]
+                      (if (> oscore score) cand curr))
+                    [0 0])))))
 
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
