@@ -57,15 +57,15 @@
             `(= ~ocr ~l))))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
-    (cond 
-      (instance? LiteralPattern that) (cond 
-                                        (and (not= l (.l that))) -1
-                                        (and (nil? l)
-                                             (nil? (.l that))) 0
-                                        (nil? l) -1
-                                        (nil? (.l that)) 1
-                                        :else (.compareTo l (.l that)))
-      :else -1000))
+    (if (instance? LiteralPattern that)
+      (let [tl (.l ^LiteralPattern that)]
+        (cond 
+         (and (not= l tl)) -1
+         (and (nil? l) (nil? tl)) 0
+         (nil? l) -1
+         (nil? tl) 1
+         :else (compare l tl)))
+      -1000))
   Object
   (toString [_]
     (if (nil? l)
@@ -79,7 +79,7 @@
   java.lang.Comparable
   (compareTo [this that]
     (if (instance? TypePattern that)
-      (compare (hash t) (hash (.t that))) ;; NOTE: see note about inheritance below. pontential hash collisions? - David
+      (compare (hash t) (hash (.t ^TypePattern that))) ;; NOTE: see note about inheritance below. pontential hash collisions? - David
       -100))
   Object
   (toString [_]
@@ -129,7 +129,7 @@
   IPatternCompile
   (p-to-clj [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
-      `(= (set (keys ~map-sym)) (set ~@only))))
+      `(= (set (keys ~map-sym)) (set [~@only]))))
   java.lang.Comparable
   (compareTo [this that]
     -3000)
@@ -423,7 +423,7 @@
   (necessary-column [this]
     (letfn [(score-column [i col]
               (cond
-               (some crash-pattern? col) -1
+               (some #{::crash} col) [i -1]
                :else [i (reduce (fn [score useful]
                                   (if useful
                                     (clojure.core/inc score)
@@ -481,7 +481,10 @@
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
-          width (reduce max (map #(-> % first .s count) srows))
+          width (reduce max (map (fn [srow]
+                                   (let [^SeqPattern p (first srow)]
+                                     (count (.s p))))
+                                 srows))
           nrows (->> srows
                      (map (fn [row]
                             (let [^SeqPattern p (first row)
@@ -606,15 +609,14 @@
 (defn empty-matrix? [pm]
   (= (dim pm) [0 0]))
 
-(defn score-p [pm i j]
-  )
-
 (defn useful-p? [pm i j]
-  (or (and (constructor? (pattern-at pm i j))
-           (every? #(not (wildcard-pattern? %))
-                   (take j (column pm i))))
-      (and (wildcard-pattern? (pattern-at pm i j))
-           (not (useful? (drop-nth pm i) j)))))
+  (let [p (pattern-at pm i j)]
+   (cond
+    (crash-pattern? p) ::crash
+    (constructor? p) (every? #(not (wildcard-pattern? %))
+                             (take j (column pm i)))
+    (wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+    :else false)))
 
 (defn useful? [pm j]
   (some #(useful-p? pm % j)
@@ -717,7 +719,15 @@
       select
       (specialize (literal-pattern 2))
       select
-      print-matrix)
+      (specialize (literal-pattern 1))
+      select
+      useful-matrix)
   
   (pprint (-> m compile))
+
+  (let [x {:a 1 :b 2 :c 3}]
+    (match [x]
+           [{_ :a 2 :b :only [:a :b]}] :a0
+           [{1 :a _ :c}] :a1
+           [{3 :c _ :d 4 :e}] :a2))
   )

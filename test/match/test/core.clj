@@ -59,3 +59,25 @@
                   [(1 z 4)] z
                   [(_ _ _)] :a2)
            :a2))))
+
+(deftest map-pattern-match-1
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+                  [{_ :a 2 :b}] :a0
+                  [{1 :a _ :c}] :a1
+                  [{3 :c _ :d 4 :e}] :a2))
+         :a1)))
+
+(deftest map-pattern-match-only-1
+  (is (and (= (let [x {:a 1 :b 2}]
+                (match [x]
+                       [{_ :a 2 :b :only [:a :b]}] :a0
+                       [{1 :a _ :c}] :a1
+                       [{3 :c _ :d 4 :e}] :a2))
+              :a0)
+           (= (let [x {:a 1 :b 2 :c 3}]
+                (match [x]
+                       [{_ :a 2 :b :only [:a :b]}] :a0
+                       [{1 :a _ :c}] :a1
+                       [{3 :c _ :d 4 :e}] :a2))
+              :a1))))
