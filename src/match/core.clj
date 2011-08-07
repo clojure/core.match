@@ -575,6 +575,22 @@
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 
+(extend-type RestPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map (fn [row]
+                            (let [^RestPattern f (first row)]
+                             (prepend (drop-nth-bind row 0 focr)
+                                      (.p f)))))
+                     vec)]
+      (pattern-matrix nrows ocrs))))
+
+
 (extend-type MapPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -745,15 +761,58 @@
 ; Active Work
 
 (comment
-  (let [x '(1 2 3)]
+  (let [x '(1 2)]
     (match [x]
-           [(1 2 3)] :a0))
-  
-  (let [x '(1 2 3)]
+           [(1)] :a0
+           [(1 & rest)] [:a1 a rest]))
+
+  ;; hmmm, in what way do we understand
+  ;; the following?
+  (let [x '(1 2)]
     (match [x]
-           [(1 a & rest)] [:a0 a rest]))
+           [(1 2 & rest)] :a0
+           [(1 & rest)] :a1))
+
+  ;; it's hard to make sense of this
+  [1 2 REST]
+  [1 REST]
+
+  ;; if we follow h::t convention things
+  ;; seem simpler
+  [(1)]
+  [(1 2)]
+  ;; =>
+  [1 nil]
+  [1 (2)]
+
+  [(1 2 & rest)]
+  [(1 & rest)]
+  ;; =>
+  [1 (2 rest-p)]
+  [1 rest]
+  ;; =>
+  [2 rest-p]
+  [_ _]
+
+  ;; but what does this entail for vectors?
+  ;; this doesn't make sense, rest patterns
+  ;; should probably be restricted to use
+  ;; with seq patterns?
+  [[1 2 & rest]]
+  [[1 & rest]]
+
+  (def m1 (build-matrix [x]
+                        [(1)] :a0
+                        [(1 & rest)] [:a1 a rest]))
+
+  ;; we see an extra crash column
+  ;; crash checks for nil
+  ;; rest just accepts whatever remains
+  (-> m1
+      (specialize (seq-pattern))
+      print-matrix)
 
   (emit-pattern '(1 a b))
   (emit-pattern '(1 a & rest))
-  (emit-pattern '(1 a & [b c]))
+  (emit-pattern '(1 a & (b c)))
   )
