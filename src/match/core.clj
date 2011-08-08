@@ -715,18 +715,10 @@
 
 (comment
   ;; literal pattern needs to be tested first
-  (let [x '(1 3 4)]
-    (match [x]
-           [()] :a0
-           [(1)] :a1
-           [(1 2)] :a2
-           [(1 3 & rest)] [:a3 rest]))
-
-  (let [x '(1 2 nil nil nil)]
+  (let [x '()]
     (match [x]
            [(1)] :a0
-           [(1 2 nil nil nil)] :a1))
-
+           [(1 & r)] :a1))
   
   (def m1 (build-matrix [x]
                         [()] :a0
@@ -737,33 +729,4 @@
       select
       (specialize (seq-pattern))
       print-matrix)
-
-  (let [x '(1 2)]
-    (match [x]
-           [(1)] :a0
-           [(1 & rest)] [:a1 a rest]))
-
-  ;; hmmm, in what way do we understand
-  ;; the following?
-  (let [x '(1 2)]
-    (match [x]
-           [(1 2 & rest)] :a0
-           [(1 & rest)] :a1))
-
-  (def m2 (build-matrix [x]
-                        [(1)] :a0
-                        [(1 & rest)] [:a1 a rest]))
-
-  ;; we see an extra crash column
-  ;; crash checks for nil
-  ;; rest just accepts whatever remains
-  (-> m2
-      (specialize (seq-pattern))
-      print-matrix)
-
-  (emit-pattern '(1 a b))
-  (emit-pattern '(1 a & rest))
-  (emit-pattern '(1 a & (b c)))
-
-  (rest (seq-pattern [1 2 3]))
   )
