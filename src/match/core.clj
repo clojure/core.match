@@ -493,22 +493,6 @@
       (pattern-matrix nrows nocrs))))
 
 
-(extend-type RestPattern
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map (fn [row]
-                            (let [^RestPattern f (first row)]
-                             (prepend (drop-nth-bind row 0 focr)
-                                      (.p f)))))
-                     vec)]
-      (pattern-matrix nrows ocrs))))
-
-
 (extend-type MapPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
