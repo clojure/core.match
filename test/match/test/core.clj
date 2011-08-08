@@ -9,10 +9,6 @@
           count
           (= 1))))
 
-(deftest type-pattern-precondition-test
-  (is (thrown? java.lang.AssertionError
-               (type-pattern 1))))
-
 (deftest pattern-match-1
   (is (= (let [x true
                y true
@@ -87,3 +83,24 @@
            (match [x]
                   [{a :a b :b}] [:a0 a b]))
          [:a0 1 2])))
+
+(deftest seq-pattern-match-empty-1
+  (is (= (let [x '()]
+           (match [x]
+                  [()] :a0
+                  [(1 & r)] [:a1 r]))
+         :a0)))
+
+(deftest seq-pattern-match-rest-1
+  (is (= (let [x '(1 2)]
+    (match [x]
+           [(1)] :a0
+           [(1 & r)] [:a1 r]))
+         [:a1 2])))
+
+(deftest seq-pattern-match-rest-2
+  (is (= (let [x '(1 2 3 4)]
+           (match [x]
+                  [(1)] :a0
+                  [(_ 2 & (a & b))] [:a1 a b]))
+         [:a1 3 (4)])))

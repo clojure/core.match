@@ -454,7 +454,7 @@
                     (swap ocrs idx))))
 
 
-;; Note: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
+;; NOTE: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
 
 (extend-type SeqPattern
   ISpecializeMatrix
@@ -675,27 +675,4 @@
 ; Active Work
 
 (comment
-  ;; WORKS
-  (let [x '(1)]
-    (match [x]
-           [(1)] :a0
-           [(1 & r)] [:a1 r]))
-  
-  ;; WORKS
-  (let [x '(1 2)]
-    (match [x]
-           [(1)] :a0
-           [(1 & r)] [:a1 r]))
-
-  ;; WORKS
-  (let [x '(1 2 3)]
-    (match [x]
-           [(1)] :a0
-           [(1 a & r)] [:a1 a r]))
-  
-  ;; WORKS
-  (let [x '(1 2 3)]
-    (match [x]
-           [(1)] :a0
-           [(1 2 & (r))] [:a1 r]))
   )

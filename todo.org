@@ -1,17 +1,17 @@
-* Todo List [14/23]
-  - [ ] Things are getting a little miessy particularly around how we
+* Todo List [16/23]
+  - [ ] Things are getting a little messy particularly around how we
         deal with bindings. This could use some cleanup.
   - [ ] emit-pattern logic should be open not closed
   - [ ] Compile times are now quite slow (affects running tests) should
         do a basic profiling / optimization pass to eliminate obvious
         areas that contribute to performance degradation.
   - [ ] rename pattern-equals -> constructor-match? or something similar
-  - [ ] Deal with rest seq patterns
-  - [ ] Rest seq pattern should themselves be pattern matchable this is
-        mostly to support :as - introduce a binding
   - [ ] implement vector pattern matching
   - [ ] Devise hash-consing strategy
   - [ ] Implement hash-consing strategy
+  - [X] Deal with rest seq patterns
+  - [X] Rest seq pattern should themselves be pattern matchable this is
+        mostly to support :as - introduce a binding
   - [X] map pattern should support only
   - [X] address the binding bug we saw with seqs. Basically when the algorithm
         selects columns out of order, bindings from named wildcards are 
