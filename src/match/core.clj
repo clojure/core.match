@@ -47,14 +47,7 @@
 (deftype LiteralPattern [l]
   IPatternCompile
   (p-to-clj [this ocr]
-    (let [m (-> ocr meta)]
-      (if (:seq-occurrence m)
-        (let [seq-sym (-> m :seq-sym
-                          name
-                          symbol)]
-         `(and (not (nil? ~seq-sym))
-               (= ~ocr ~l)))
-            `(= ~ocr ~l))))
+    `(= ~ocr ~l))
   java.lang.Comparable
   (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
     (if (instance? LiteralPattern that)
@@ -72,25 +65,12 @@
       "nil"
       (str l))))
 
-(deftype TypePattern [t]
-  IPatternCompile
-  (p-to-clj [this ocr]
-    `(instance? ~t ~ocr))
-  java.lang.Comparable
-  (compareTo [this that]
-    (if (instance? TypePattern that)
-      (compare (hash t) (hash (.t ^TypePattern that))) ;; NOTE: see note about inheritance below. pontential hash collisions? - David
-      -100))
-  Object
-  (toString [_]
-    (str t)))
-
 (declare wildcard-pattern literal-pattern)
 
 (deftype SeqPattern [s]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(sequential? ~ocr))
+    `(seq? ~ocr))
   java.lang.Comparable
   (compareTo [_ that]
     (if (instance? SeqPattern that)
@@ -158,15 +138,10 @@
 (defn ^LiteralPattern literal-pattern [l] 
   (LiteralPattern. l))
 
-(defn ^TypePattern type-pattern [t] 
-  {:pre [(class? t)]}
-  (TypePattern. t))
-
-(defn ^SeqPattern seq-pattern
-  ([] (SeqPattern. ()))
-  ([s]
-     {:pre [(sequential? s)]}
-     (SeqPattern. s)))
+(defn ^SeqPattern seq-pattern [s]
+  {:pre [(sequential? s)
+         (not (empty? s))]}
+  (SeqPattern. s))
 
 (defn ^MapPattern map-pattern
   ([] (MapPattern. {} nil))
@@ -183,7 +158,6 @@
   (when (instance? WildcardPattern x)
     (not= (.sym ^WildcardPattern x) '_)))
 (def literal-pattern? (partial instance? LiteralPattern))
-(def type-pattern?    (partial instance? TypePattern))
 (def seq-pattern?     (partial instance? SeqPattern))
 (def seq-crash-pattern?   (partial instance? SeqCrashPattern))
 (def rest-pattern?    (partial instance? RestPattern))
@@ -212,9 +186,6 @@
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
   [a b] true)
 
-(defmethod pattern-equals [TypePattern TypePattern]
-  [^TypePattern a ^TypePattern b] (= (.t a) (.t b)))
-
 (defmethod pattern-equals :default 
   [a b] false)
 
@@ -234,9 +205,6 @@
 
 (defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
   (.write writer (str "<LiteralPattern: " p ">")))
-
-(defmethod print-method TypePattern [^TypePattern p ^Writer writer]
-  (.write writer (str "<TypePattern: " p ">")))
 
 (defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
   (.write writer (str "<SeqPattern: " p ">")))
@@ -447,14 +415,16 @@
                                   (if-not (empty-matrix? m)
                                     (compile m)
                                     (fail-node)))]
+                    (println constrs)
                     (switch-node
                       (ocrs col)
-                      (into [] (map (fn [c]
-                                      (let [s (-> this 
-                                                  (specialize c) 
-                                                  compile)]
-                                        [c s]))
-                                    constrs))
+                      (reverse
+                       (map (fn [c]
+                              (let [s (-> this 
+                                          (specialize c) 
+                                          compile)]
+                                [c s]))
+                            constrs))
                       default))
                   (compile (swap this col)))))))
 
@@ -506,15 +476,8 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
-(defn make-sym-pair-generator [c]
-  (let [current (atom c)
-        next    (atom (gensym c))]
-    (fn []
-      (let [old-c @current
-            old-n @next]
-        (swap! current (fn [_] old-n))
-        (swap! next    (fn [_] (gensym c)))
-        [old-c old-n]))))
+
+;; NOTE: we can handle (& rest) pattern in the emit-pattern logic - David
 
 (extend-type SeqPattern
   ISpecializeMatrix
@@ -530,33 +493,26 @@
           nrows (->> srows
                      (map (fn [row]
                             (let [^SeqPattern p (first row)
-                                  s (.s p)] ;; NOTE: use the pattern that actually belongs to the row - David
+                                  [h & t] (.s p)
+                                  t (cond
+                                     (empty? t) (literal-pattern ())
+                                     (rest-pattern? (first t)) (.p ^RestPattern (first t))
+                                     :else (seq-pattern t))]
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (reverse
-                                       (into s
-                                             (repeatedly (clojure.core/inc
-                                                          (- width (count s)))
-                                                         seq-crash-pattern)))))))
+                                      [t h]))))
                      vec)
           nocrs (let [seq-ocr focr
-                      next-syms (make-sym-pair-generator seq-ocr)
-                      ocr-sym (fn ocr-sym [x]
-                                (let [ocr (gensym (str (name seq-ocr) x))
-                                      [seq-ocr next-ocr] (next-syms)]
-                                  (with-meta ocr
-                                    {:seq-occurrence true
-                                     :occurrence-type :seq
-                                     :seq-sym seq-ocr
-                                     :bind-expr `(let [~ocr (first ~seq-ocr)
-                                                       ~next-ocr (next ~seq-ocr)])})))]
-                  (into (conj (into []
-                                    (map ocr-sym (range width)))
-                              (with-meta (gensym seq-ocr)
-                                {:seq-occurence true
-                                 :occurrence-type :seq
-                                 :seq-sym (first (next-syms))}))
-                        (drop-nth ocrs 0)))]
-
+                      seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
+                      sym-meta {:seq-occurrence true
+                                :occurrence-type :seq
+                                :seq-sym seq-sym}
+                      hsym (gensym (str (name seq-sym) "-head-"))
+                      hsym (with-meta hsym
+                             (assoc sym-meta :bind-expr `(let [~hsym (first ~seq-ocr)])))
+                      tsym (gensym (str (name seq-sym) "-tail-"))
+                      tsym (with-meta tsym
+                             (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
+                  (into [hsym tsym] (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
 
 
@@ -707,31 +663,28 @@
 ;; Pattern matching interface
 
 (defn emit-pattern [pat]
-  (letfn [(type-pattern? [pat]
-            (and (list? pat)
-                 (= (count pat) 2)
-                 (= (first pat) 'isa?)))]
-   (cond
-    (type-pattern? pat) (type-pattern (resolve (second pat)))
-    (seq? pat) (seq-pattern
-                (loop [ps pat v []]
-                  (if (nil? ps)
-                    v
-                    (let [p (first ps)]
-                      (cond
-                       (= p '&) (let [p (second ps)]
-                                  (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
-                       :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))
-    (map? pat) (map-pattern
-                (->> pat
-                     (map (fn [[k v]]
-                            (when (not= k :only)
-                              [(emit-pattern k) v])))
-                     (remove nil?)
-                     (into {}))
-                (:only pat))
-    (symbol? pat) (wildcard-pattern pat)
-    :else (literal-pattern pat))))
+  (cond
+   (seq? pat) (if (empty? pat)
+                (literal-pattern ())
+                (seq-pattern
+                 (loop [ps pat v []]
+                   (if (nil? ps)
+                     v
+                     (let [p (first ps)]
+                       (cond
+                        (= p '&) (let [p (second ps)]
+                                   (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
+                        :else (recur (next ps) (conj v (emit-pattern (first ps))))))))))
+   (map? pat) (map-pattern
+               (->> pat
+                    (map (fn [[k v]]
+                           (when (not= k :only)
+                             [(emit-pattern k) v])))
+                    (remove nil?)
+                    (into {}))
+               (:only pat))
+   (symbol? pat) (wildcard-pattern pat)
+   :else (literal-pattern pat)))
             
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
@@ -761,6 +714,30 @@
 ; Active Work
 
 (comment
+  ;; literal pattern needs to be tested first
+  (let [x '(1 3 4)]
+    (match [x]
+           [()] :a0
+           [(1)] :a1
+           [(1 2)] :a2
+           [(1 3 & rest)] [:a3 rest]))
+
+  (let [x '(1 2 nil nil nil)]
+    (match [x]
+           [(1)] :a0
+           [(1 2 nil nil nil)] :a1))
+
+  
+  (def m1 (build-matrix [x]
+                        [()] :a0
+                        [(1)] :a1
+                        [(1 2)] :a2))
+
+  (-> m1
+      select
+      (specialize (seq-pattern))
+      print-matrix)
+
   (let [x '(1 2)]
     (match [x]
            [(1)] :a0
@@ -773,62 +750,20 @@
            [(1 2 & rest)] :a0
            [(1 & rest)] :a1))
 
-  ;; it's hard to make sense of this
-  [1 2 REST]
-  [1 REST]
-
-  ;; if we follow h::t convention things
-  ;; seem simpler, our mistake was making
-  ;; seq a multi-arity constructor, really
-  ;; it always takes two parameters an
-  ;; item and a seq
-  [(1)]
-  [(1 2)]
-  ;; =>
-  [1 nil]
-  [1 (2)]
-
-  [(1 2 & rest)]
-  [(1 & rest)]
-  ;; =>
-  [1 (2 rest-p)]
-  [1 rest]
-  ;; =>
-  [2 rest-p]
-  [_ _]
-
-  ;; but what does this imply for vectors?
-  ;; uh, oh this doesn't make sense, rest patterns
-  ;; should probably be restricted to use
-  ;; with seq patterns?
-  [[1 2 & rest]]
-  [[1 & rest]]
-  ;; ah the problem with rest patterns is that
-  ;; they totally assume h::t style ctor, rest
-  ;; pattern is in fact h::t ctor!
-  ;; (1 & r) == (1::t)
-
-  ;; should vectors support variable length
-  ;; patterns?
-
-  [1 % % %] ;; crash pattern should come first, test vector length
-  [1 2 % %]
-  [1 2 3 4]
-
-  ;; not hard to do
-
-  (def m1 (build-matrix [x]
+  (def m2 (build-matrix [x]
                         [(1)] :a0
                         [(1 & rest)] [:a1 a rest]))
 
   ;; we see an extra crash column
   ;; crash checks for nil
   ;; rest just accepts whatever remains
-  (-> m1
+  (-> m2
       (specialize (seq-pattern))
       print-matrix)
 
   (emit-pattern '(1 a b))
   (emit-pattern '(1 a & rest))
   (emit-pattern '(1 a & (b c)))
+
+  (rest (seq-pattern [1 2 3]))
   )
