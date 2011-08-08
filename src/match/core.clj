@@ -172,7 +172,7 @@
   IPatternCompile
   (p-to-clj [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
-      `(= (set (keys ~map-sym)) (set [~@only]))))
+      `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
   java.lang.Comparable
   (compareTo [this that]
     -3000)
