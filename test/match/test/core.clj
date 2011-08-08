@@ -96,11 +96,11 @@
     (match [x]
            [(1)] :a0
            [(1 & r)] [:a1 r]))
-         [:a1 2])))
+         [:a1 '(2)])))
 
 (deftest seq-pattern-match-rest-2
   (is (= (let [x '(1 2 3 4)]
            (match [x]
                   [(1)] :a0
                   [(_ 2 & (a & b))] [:a1 a b]))
-         [:a1 3 (4)])))
+         [:a1 3 '(4)])))

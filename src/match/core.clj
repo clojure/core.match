@@ -86,7 +86,7 @@
     -1999)
   Object
   (toString [_]
-    "REST"))
+    p))
 
 (deftype MapPattern [m only]
   IPatternCompile
