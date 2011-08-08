@@ -36,6 +36,12 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
+;; =============================================================================
+;; Patterns
+
+;; -----------------------------------------------------------------------------
+;; Wildcard Pattern
+
 (deftype WildcardPattern [sym]
   java.lang.Comparable
   (compareTo [this that]
@@ -43,6 +49,22 @@
   Object
   (toString [_]
     (str sym)))
+
+(defn ^WildcardPattern wildcard-pattern
+  ([] (WildcardPattern. '_))
+  ([sym] (WildcardPattern. sym)))
+
+(def wildcard-pattern? (partial instance? WildcardPattern))
+
+(defn named-wildcard-pattern? [x]
+  (when (instance? WildcardPattern x)
+    (not= (.sym ^WildcardPattern x) '_)))
+
+(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
+  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; Literal Pattern
 
 (deftype LiteralPattern [l]
   IPatternCompile
@@ -65,7 +87,16 @@
       "nil"
       (str l))))
 
-(declare wildcard-pattern literal-pattern)
+(defn ^LiteralPattern literal-pattern [l] 
+  (LiteralPattern. l))
+
+(def literal-pattern? (partial instance? LiteralPattern))
+
+(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
+  (.write writer (str "<LiteralPattern: " p ">")))
+
+;; -----------------------------------------------------------------------------
+;; Seq Pattern
 
 (deftype SeqPattern [s]
   IPatternCompile
@@ -80,6 +111,19 @@
   (toString [_]
     (str s)))
 
+(defn ^SeqPattern seq-pattern [s]
+  {:pre [(sequential? s)
+         (not (empty? s))]}
+  (SeqPattern. s))
+
+(def seq-pattern? (partial instance? SeqPattern))
+
+(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
+  (.write writer (str "<SeqPattern: " p ">")))
+
+;; -----------------------------------------------------------------------------
+;; Rest Pattern
+
 (deftype RestPattern [p]
   java.lang.Comparable
   (compareTo [this that]
@@ -87,6 +131,17 @@
   Object
   (toString [_]
     p))
+
+(defn ^RestPattern rest-pattern [p]
+  (RestPattern. p))
+
+(def rest-pattern? (partial instance? RestPattern))
+
+(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
+  (.write writer (str "<RestPattern: " (.p p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; Map Pattern
 
 (deftype MapPattern [m only]
   IPatternCompile
@@ -101,6 +156,18 @@
   (toString [_]
     (str m " :only " (or only []))))
 
+(defn ^MapPattern map-pattern
+  ([] (MapPattern. {} nil))
+  ([m] {:pre [(map? m)]}
+     (MapPattern. m nil))
+  ([m only] {:pre [(map? m)]}
+     (MapPattern. m only)))
+
+(def map-pattern? (partial instance? MapPattern))
+
+(defmethod print-method MapPattern [^MapPattern p ^Writer writer]
+  (.write writer (str "<MapPattern: " p ">")))
+
 (deftype MapCrashPattern [only]
   IPatternCompile
   (p-to-clj [this ocr]
@@ -113,39 +180,25 @@
   (toString [_]
     "CRASH"))
 
-(defn ^WildcardPattern wildcard-pattern
-  ([] (WildcardPattern. '_))
-  ([sym] (WildcardPattern. sym)))
-  
-(defn ^RestPattern rest-pattern [p]
-  (RestPattern. p))
-
-(defn ^LiteralPattern literal-pattern [l] 
-  (LiteralPattern. l))
-
-(defn ^SeqPattern seq-pattern [s]
-  {:pre [(sequential? s)
-         (not (empty? s))]}
-  (SeqPattern. s))
-
-(defn ^MapPattern map-pattern
-  ([] (MapPattern. {} nil))
-  ([m] {:pre [(map? m)]}
-     (MapPattern. m nil))
-  ([m only] {:pre [(map? m)]}
-     (MapPattern. m only)))
-
 (defn ^MapCrashPattern map-crash-pattern [only]
   (MapCrashPattern. only))
 
-(def wildcard-pattern? (partial instance? WildcardPattern))
-(defn named-wildcard-pattern? [x]
-  (when (instance? WildcardPattern x)
-    (not= (.sym ^WildcardPattern x) '_)))
-(def literal-pattern? (partial instance? LiteralPattern))
-(def seq-pattern?     (partial instance? SeqPattern))
-(def rest-pattern?    (partial instance? RestPattern))
-(def map-pattern?     (partial instance? MapPattern))
+(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
+  (.write writer (str "<MapCrashPattern>")))
+
+;; -----------------------------------------------------------------------------
+;; Crash Patterns
+
+(defmulti crash-pattern? type)
+
+(defmethod crash-pattern? MapCrashPattern
+  [x] true)
+
+(defmethod crash-pattern? :default
+  [x] false)
+
+;; =============================================================================
+;; Pattern Equality
 
 (defmulti pattern-equals (fn [a b] [(type a) (type b)]))
 
@@ -170,37 +223,14 @@
 (defmethod pattern-equals :default 
   [a b] false)
 
-(defmulti crash-pattern? type)
-
-(defmethod crash-pattern? MapCrashPattern
-  [x] true)
-
-(defmethod crash-pattern? :default
-  [x] false)
-
-(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
-
-(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
-  (.write writer (str "<LiteralPattern: " p ">")))
-
-(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
-  (.write writer (str "<SeqPattern: " p ">")))
-
-(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
-  (.write writer (str "<RestPattern: " (.p p) ">")))
-
-(defmethod print-method MapPattern [^MapPattern p ^Writer writer]
-  (.write writer (str "<MapPattern: " p ">")))
-
-(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
-  (.write writer (str "<MapCrashPattern>")))
-
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
 
 (declare useful-p?)
 (declare useful?)
+
+;; =============================================================================
+;; Pattern Rows
 
 (defprotocol IPatternRow
   (action [this])
@@ -263,6 +293,12 @@
   ([ps action] (PatternRow. ps action nil))
   ([ps action bindings] (PatternRow. ps action bindings)))
 
+;; =============================================================================
+;; Compilation Nodes
+
+;; -----------------------------------------------------------------------------
+;; Leaf Node
+
 (defrecord LeafNode [value bindings]
   INodeCompile
   (to-clj [this]
@@ -273,10 +309,35 @@
           ~value))
       value)))
 
+(defn ^LeafNode leaf-node
+  ([value] (LeafNode. value []))
+  ([value bindings] (LeafNode. value bindings)))
+
+(defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
+
+(defmethod leaf-bind-expr :seq
+  [ocr] (concat (-> ocr meta :bind-expr) `(~ocr)))
+
+(defmethod leaf-bind-expr :map
+  [ocr] (let [m (meta ocr)]
+            `(get ~(:map-sym m) ~(:key m))))
+
+(defmethod leaf-bind-expr :default
+  [ocr] ocr)
+
+;; -----------------------------------------------------------------------------
+;; Fail Node
+
 (defrecord FailNode []
   INodeCompile
   (to-clj [this]
     `(throw (Exception. "Found FailNode"))))
+
+(defn ^FailNode fail-node []
+  (FailNode.))
+
+;; -----------------------------------------------------------------------------
+;; Switch Node
 
 (defn dag-clause-to-clj [occurrence pattern action]
   (vector (p-to-clj pattern occurrence) 
@@ -293,36 +354,20 @@
         (concat bind-expr (list cond-expr))
         cond-expr))))
 
-(defn ^LeafNode leaf-node
-  ([value] (LeafNode. value []))
-  ([value bindings] (LeafNode. value bindings)))
-
-(defn ^FailNode fail-node []
-  (FailNode.))
-
 (defn ^SwitchNode switch-node
   ([occurrence cases]
      (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
      (SwitchNode. occurrence cases default)))
 
+;; =============================================================================
+;; Pattern Matrix
+
 (defn seq-occurrence? [ocr]
   (-> ocr meta :seq-occurrence))
 
 (defn map-occurrence? [ocr]
   (-> ocr meta :map-occurrence))
-
-(defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
-
-(defmethod leaf-bind-expr :seq
-  [ocr] (concat (-> ocr meta :bind-expr) `(~ocr)))
-
-(defmethod leaf-bind-expr :map
-  [ocr] (let [m (meta ocr)]
-            `(get ~(:map-sym m) ~(:key m))))
-
-(defmethod leaf-bind-expr :default
-  [ocr] ocr)
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -347,7 +392,6 @@
   (specialize-matrix [this matrix]))
 
 (declare pattern-matrix)
-
 
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
@@ -453,6 +497,61 @@
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx))))
 
+(defn ^PatternMatrix pattern-matrix [rows ocrs]
+  (PatternMatrix. rows ocrs))
+
+(defn empty-matrix? [pm]
+  (= (dim pm) [0 0]))
+
+(defn useful-p? [pm i j]
+  (let [p (pattern-at pm i j)]
+   (cond
+    (crash-pattern? p) ::crash
+    (constructor? p) (every? #(not (wildcard-pattern? %))
+                             (take j (column pm i)))
+    (wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+    :else false)))
+
+(defn useful? [pm j]
+  (some #(useful-p? pm % j)
+        (range (count (row pm j)))))
+
+(defn print-matrix
+  ([pm] (print-matrix pm 4))
+  ([pm col-width]
+     (binding [*out* (pp/get-pretty-writer *out*)]
+       (print "|")
+       (doseq [o (occurrences pm)]
+         (pp/cl-format true "~4D~7,vT" o col-width))
+       (print "|")
+       (prn)
+       (doseq [[i row] (map-indexed (fn [p i] [p i]) (rows pm))]
+         (print "|")
+         (doseq [p (patterns row)]
+           (pp/cl-format true "~4D~7,vT" (str p) col-width))
+         (print "|")
+         (print " " (action-for-row pm i))
+         (prn))
+       (println))))
+
+;; =============================================================================
+;; Default Matrix Specialization
+
+(extend-type Object
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth-bind % 0 focr))
+                     vec)
+          nocrs (drop-nth ocrs 0)]
+      (pattern-matrix nrows nocrs))))
+
+;; =============================================================================
+;; Seq Pattern Matrix Specialization
 
 ;; NOTE: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
 
@@ -488,6 +587,8 @@
                   (into [hsym tsym] (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
 
+;; =============================================================================
+;; Map Pattern Matrix Specialization
 
 (extend-type MapPattern
   ISpecializeMatrix
@@ -547,61 +648,10 @@
         (let [row (first nrows)]
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
-
-(extend-type Object
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth-bind % 0 focr))
-                     vec)
-          nocrs (drop-nth ocrs 0)]
-      (pattern-matrix nrows nocrs))))
-
-
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
-(defn ^PatternMatrix pattern-matrix [rows ocrs]
-  (PatternMatrix. rows ocrs))
-
-(defn empty-matrix? [pm]
-  (= (dim pm) [0 0]))
-
-(defn useful-p? [pm i j]
-  (let [p (pattern-at pm i j)]
-   (cond
-    (crash-pattern? p) ::crash
-    (constructor? p) (every? #(not (wildcard-pattern? %))
-                             (take j (column pm i)))
-    (wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
-    :else false)))
-
-(defn useful? [pm j]
-  (some #(useful-p? pm % j)
-        (range (count (row pm j)))))
-
-(defn print-matrix
-  ([pm] (print-matrix pm 4))
-  ([pm col-width]
-     (binding [*out* (pp/get-pretty-writer *out*)]
-       (print "|")
-       (doseq [o (occurrences pm)]
-         (pp/cl-format true "~4D~7,vT" o col-width))
-       (print "|")
-       (prn)
-       (doseq [[i row] (map-indexed (fn [p i] [p i]) (rows pm))]
-         (print "|")
-         (doseq [p (patterns row)]
-           (pp/cl-format true "~4D~7,vT" (str p) col-width))
-         (print "|")
-         (print " " (action-for-row pm i))
-         (prn))
-       (println))))
-
-;; Pattern matching interface
+;; =============================================================================
+;; Interface
 
 (defn emit-pattern [pat]
   (cond
