@@ -463,10 +463,6 @@
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
-          width (reduce max (map (fn [srow]
-                                   (let [^SeqPattern p (first srow)]
-                                     (count (.s p))))
-                                 srows))
           nrows (->> srows
                      (map (fn [row]
                             (let [^SeqPattern p (first row)
