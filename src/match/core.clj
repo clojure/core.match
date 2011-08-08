@@ -70,7 +70,7 @@
 (deftype SeqPattern [s]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(seq? ~ocr))
+    `(sequential? ~ocr))
   java.lang.Comparable
   (compareTo [_ that]
     (if (instance? SeqPattern that)
@@ -87,18 +87,6 @@
   Object
   (toString [_]
     "REST"))
-
-(deftype SeqCrashPattern []
-  IPatternCompile
-  (p-to-clj [this ocr]
-    (let [seq-sym (-> ocr meta :seq-sym)]
-      `(= ~seq-sym nil)))
-  java.lang.Comparable
-  (compareTo [this that]
-    -2000)
-  Object
-  (toString [_]
-    "CRASH"))
 
 (deftype MapPattern [m only]
   IPatternCompile
@@ -129,9 +117,6 @@
   ([] (WildcardPattern. '_))
   ([sym] (WildcardPattern. sym)))
   
-(defn ^SeqCrashPattern seq-crash-pattern []
-  (SeqCrashPattern.))
-
 (defn ^RestPattern rest-pattern [p]
   (RestPattern. p))
 
@@ -159,7 +144,6 @@
     (not= (.sym ^WildcardPattern x) '_)))
 (def literal-pattern? (partial instance? LiteralPattern))
 (def seq-pattern?     (partial instance? SeqPattern))
-(def seq-crash-pattern?   (partial instance? SeqCrashPattern))
 (def rest-pattern?    (partial instance? RestPattern))
 (def map-pattern?     (partial instance? MapPattern))
 
@@ -172,9 +156,6 @@
   [^LiteralPattern a ^LiteralPattern b] (= (.l a) (.l b)))
 
 (defmethod pattern-equals [SeqPattern SeqPattern]
-  [a b] true)
-
-(defmethod pattern-equals [SeqCrashPattern SeqCrashPattern]
   [a b] true)
 
 (defmethod pattern-equals [RestPattern RestPattern]
@@ -191,9 +172,6 @@
 
 (defmulti crash-pattern? type)
 
-(defmethod crash-pattern? SeqCrashPattern
-  [x] true)
-
 (defmethod crash-pattern? MapCrashPattern
   [x] true)
 
@@ -208,9 +186,6 @@
 
 (defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
   (.write writer (str "<SeqPattern: " p ">")))
-
-(defmethod print-method SeqCrashPattern [^SeqCrashPattern p ^Writer writer]
-  (.write writer "<SeqCrashPattern>"))
 
 (defmethod print-method RestPattern [^RestPattern p ^Writer writer]
   (.write writer (str "<RestPattern: " (.p p) ">")))
@@ -339,6 +314,9 @@
 
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
+(defmethod leaf-bind-expr :seq
+  [ocr] (concat (-> ocr meta :bind-expr) `(~ocr)))
+
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
             `(get ~(:map-sym m) ~(:key m))))
@@ -415,7 +393,6 @@
                                   (if-not (empty-matrix? m)
                                     (compile m)
                                     (fail-node)))]
-                    (println constrs)
                     (switch-node
                       (ocrs col)
                       (reverse
@@ -477,7 +454,7 @@
                     (swap ocrs idx))))
 
 
-;; NOTE: we can handle (& rest) pattern in the emit-pattern logic - David
+;; Note: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
 
 (extend-type SeqPattern
   ISpecializeMatrix
@@ -505,7 +482,7 @@
                       seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
                       sym-meta {:seq-occurrence true
                                 :occurrence-type :seq
-                                :seq-sym seq-sym}
+                                :seq-sym seq-ocr}
                       hsym (gensym (str (name seq-sym) "-head-"))
                       hsym (with-meta hsym
                              (assoc sym-meta :bind-expr `(let [~hsym (first ~seq-ocr)])))
@@ -514,21 +491,6 @@
                              (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
                   (into [hsym tsym] (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
-
-
-(extend-type SeqCrashPattern
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth % 0))
-                     vec)]
-      (if (empty? nrows)
-        (pattern-matrix [] [])
-        (let [row (first nrows)]
-         (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 
 (extend-type RestPattern
@@ -590,7 +552,6 @@
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
 
-;; TODO: redundant, combine this and SeqCrashPattern ISpecializeMatrix - David
 
 (extend-type MapCrashPattern
   ISpecializeMatrix
@@ -714,19 +675,27 @@
 ; Active Work
 
 (comment
-  ;; literal pattern needs to be tested first
-  (let [x '()]
+  ;; WORKS
+  (let [x '(1)]
     (match [x]
            [(1)] :a0
-           [(1 & r)] :a1))
+           [(1 & r)] [:a1 r]))
   
-  (def m1 (build-matrix [x]
-                        [()] :a0
-                        [(1)] :a1
-                        [(1 2)] :a2))
+  ;; WORKS
+  (let [x '(1 2)]
+    (match [x]
+           [(1)] :a0
+           [(1 & r)] [:a1 r]))
 
-  (-> m1
-      select
-      (specialize (seq-pattern))
-      print-matrix)
+  ;; WORKS
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1)] :a0
+           [(1 a & r)] [:a1 a r]))
+  
+  ;; WORKS
+  (let [x '(1 2 3)]
+    (match [x]
+           [(1)] :a0
+           [(1 2 & (r))] [:a1 r]))
   )
