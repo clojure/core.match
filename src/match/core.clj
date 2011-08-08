@@ -647,12 +647,18 @@
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  `~(-> (emit-matrix vars clauses)
-      compile
-      to-clj))
+  (let [[vars clauses] (if (vector? vars)
+                         [vars clauses]
+                         [[vars]
+                          (->> (partition 2 clauses)
+                               (map (fn [[p a]] [[p] a]))
+                               (apply concat))])]
+   `~(-> (emit-matrix vars clauses)
+         compile
+         to-clj)))
 
-; =============================================================================
-; Active Work
+;; =============================================================================
+;; Active Work
 
 (comment
   )
