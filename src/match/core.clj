@@ -197,6 +197,12 @@
 (defmethod crash-pattern? :default
   [x] false)
 
+;; -----------------------------------------------------------------------------
+;; constructor?
+
+(defn constructor? [p]
+  (not (wildcard-pattern? p)))
+
 ;; =============================================================================
 ;; Pattern Equality
 
@@ -222,12 +228,6 @@
 
 (defmethod pattern-equals :default 
   [a b] false)
-
-(defn constructor? [p]
-  (not (wildcard-pattern? p)))
-
-(declare useful-p?)
-(declare useful?)
 
 ;; =============================================================================
 ;; Pattern Rows
@@ -385,12 +385,12 @@
   (occurrences [this])
   (action-for-row [this j]))
 
-(declare empty-matrix?)
-
 (defprotocol ISpecializeMatrix
   (specialize-matrix [this matrix]))
 
-(declare pattern-matrix)
+(declare empty-matrix?)
+(declare useful-p?)
+(declare useful?)
 
 (deftype PatternMatrix [rows ocrs]
   IPatternMatrix
