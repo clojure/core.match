@@ -689,13 +689,3 @@
    `~(-> (emit-matrix vars clauses)
          compile
          to-clj)))
-
-;; =============================================================================
-;; Active Work
-
-(comment
-  (apply sorted-set-by (fn [a b] (pattern-compare a b))
-         [(seq-pattern [1]) (literal-pattern ())])
-
-  (pattern-compare (literal-pattern ()) (seq-pattern [1]))
-  )
