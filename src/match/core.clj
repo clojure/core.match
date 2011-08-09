@@ -273,12 +273,15 @@
   (first [_] (first ps))
   (next [_]
     (if-let [nps (next ps)]
-      (PatternRow. nps action bindings)))
+      (PatternRow. nps action bindings)
+      (PatternRow. [] action bindings)))
   (more [_]
     (if (empty? ps)
-      '()
+      nil
       (let [nps (rest ps)]
         (PatternRow. nps action bindings))))
+  (seq [this]
+    this)
   (count [_]
     (count ps))
   clojure.lang.IFn
