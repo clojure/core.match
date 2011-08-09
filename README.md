@@ -3,6 +3,45 @@ match
 
 An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching.
 
+This library implements a pattern match compilation algorithm that uses the notion of "necessity" from lazy pattern matching.
+
+For example the following pattern:
+
+```clojure
+(let [x true
+      y true
+      z true]
+  (match [x y z]
+     [_ false true] 1
+     [false true _ ] 2
+     [_ _ false] 3
+     [_ _ true] 4))
+```
+
+expands into
+
+```clojure
+(cond
+ (= y false) (cond
+              (= z false) (let [] 3)
+              (= z true) (let [] 1)
+              :else (throw (java.lang.Exception. "Found FailNode")))
+ (= y true) (cond
+             (= x false) (let [] 2)
+             :else (cond
+                    (= z false) 3
+                    (= z true) 4
+                    :else (throw
+                           (java.lang.Exception.
+                            "Found FailNode"))))
+ :else (cond
+        (= z false) (let [] 3)
+        (= z true) (let [] 4)
+        :else (throw (java.lang.Exception. "Found FailNode"))))
+```
+
+Note that y gets tested first. Lazy pattern matching consistently gives compact decision trees. This means faster pattern matching. You can found out more in the top paper cited below.
+
 Matching literals
 ----
 
@@ -85,8 +124,8 @@ Resources
 
 The four most relevant papers:
 
-* [Efficient Predicate Dispatch](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553)
 * [Compiling Pattern Matching to Good Decision Trees](http://pauillac.inria.fr/~maranget/papers/ml05e-maranget.pdf)
+* [Efficient Predicate Dispatch](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.47.4553)
 * [Warnings for Pattern Matching](http://moscova.inria.fr/~maranget/papers/warn/index.html)
 * [Type-Safe Modular Hash-Consing](http://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf)
 
