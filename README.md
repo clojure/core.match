@@ -40,7 +40,7 @@ expands into
         :else (throw (java.lang.Exception. "Found FailNode"))))
 ```
 
-Note that y gets tested first. Lazy pattern matching consistently gives compact decision trees. This means faster pattern matching. You can found out more in the top paper cited below.
+Note that y gets tested first. Lazy pattern matching consistently gives compact decision trees. This means faster pattern matching. You can find out more in the top paper cited below.
 
 Matching literals
 ----
