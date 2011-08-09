@@ -73,21 +73,19 @@ Seq matching
 ```clojure
 (let [x [1 2 nil nil nil]]
    (match [x]
-     [(1)]   :a0
-     [(1 2)] :a1
-     [(1 2 nil nil nil)] :a2))
+     [[1]   :a0
+     [[1 2]] :a1
+     [[1 2 nil nil nil]] :a2))
 ;; => :a2
 ```
-
-Notice that we use list syntax not vector syntax. We are reserving vector syntax for sequential data types that support both random access and "slicing". This includes vectors. By bringing other types to a yet to be determined protocol we could support high performance pattern matching of primitive arrays, buffers, etc.
 
 Seq patterns also support the familiar rest syntax from destructuring.
 
 ```clojure
 (let [x '(1 2 3 4)]
   (match [x]
-    [(1)] :a0
-    [(_ 2 & (a & b))] [:a1 a b]))
+    [[1]] :a0
+    [[_ 2 & [a & b]]] [:a1 a b]))
 ;; => [:a1 3 '(4)]
 ```
 
