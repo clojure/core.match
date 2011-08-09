@@ -79,9 +79,9 @@ Seq matching
 ;; => :a2
 ```
 
-Notice that we use list syntax, not vector syntax. We are reserving the vector syntax for sequential data types that support both random access and "slicing". This includes vectors. However by bringing other types to a yet to be determined protocol we could support high performance pattern matching of primitive arrays, buffers, etc.
+Notice that we use list syntax not vector syntax. We are reserving vector syntax for sequential data types that support both random access and "slicing". This includes vectors. By bringing other types to a yet to be determined protocol we could support high performance pattern matching of primitive arrays, buffers, etc.
 
-Seq pattern also support the familiar destructuring rest syntax.
+Seq patterns also support the familiar rest syntax from destructuring.
 
 ```clojure
 (let [x '(1 2 3 4)]
@@ -103,7 +103,7 @@ Map matching
 ;; => :a1
 ```
 
-You can constrain map matching so that only keys with only the specified keys will match:
+You can constrain map matching so that only maps with the exact key set will match:
 
 ```clojure
 (match [x]
@@ -117,7 +117,7 @@ Road Map
 
 A good chunk of Maranget's algorithm for pattern matching has been implemented. We would like to flesh out the pattern matching functionality. When we get to guards we will start considering predicate dispatch in earnest.
 
-If you like to see a more detail account of what we're considering you can look here (https://github.com/swannodette/match/wiki/Design-Wiki).
+If you would like to see a more detailed account of what we're considering you can look here (https://github.com/swannodette/match/wiki/Design-Wiki).
 
 Resources
 ----
