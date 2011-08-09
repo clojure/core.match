@@ -3,12 +3,6 @@
   (:use [match.core])
   (:use [clojure.test]))
 
-(deftest pattern-sorted-set-test
-  (is (-> (sorted-set (literal-pattern nil)
-                      (literal-pattern nil))
-          count
-          (= 1))))
-
 (deftest pattern-match-1
   (is (= (let [x true
                y true

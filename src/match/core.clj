@@ -43,9 +43,6 @@
 ;; Wildcard Pattern
 
 (deftype WildcardPattern [sym]
-  java.lang.Comparable
-  (compareTo [this that]
-    1000)
   Object
   (toString [_]
     (str sym)))
@@ -70,17 +67,6 @@
   IPatternCompile
   (p-to-clj [this ocr]
     `(= ~ocr ~l))
-  java.lang.Comparable
-  (compareTo [this that] ;; TODO clean up this garbage, implements comparable so we can give to (sorted-set)
-    (if (instance? LiteralPattern that)
-      (let [tl (.l ^LiteralPattern that)]
-        (cond 
-         (and (not= l tl)) -1
-         (and (nil? l) (nil? tl)) 0
-         (nil? l) -1
-         (nil? tl) 1
-         :else (compare l tl)))
-      -1000))
   Object
   (toString [_]
     (if (nil? l)
@@ -102,11 +88,6 @@
   IPatternCompile
   (p-to-clj [this ocr]
     `(sequential? ~ocr))
-  java.lang.Comparable
-  (compareTo [_ that]
-    (if (instance? SeqPattern that)
-      0
-      -200))
   Object
   (toString [_]
     (str s)))
@@ -125,9 +106,6 @@
 ;; Rest Pattern
 
 (deftype RestPattern [p]
-  java.lang.Comparable
-  (compareTo [this that]
-    -1999)
   Object
   (toString [_]
     p))
@@ -147,11 +125,6 @@
   IPatternCompile
   (p-to-clj [this ocr]
     `(map? ~ocr))
-  java.lang.Comparable
-  (compareTo [_ that]
-    (if (instance? MapPattern that)
-      0
-      -101))
   Object
   (toString [_]
     (str m " :only " (or only []))))
@@ -173,9 +146,6 @@
   (p-to-clj [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
       `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
-  java.lang.Comparable
-  (compareTo [this that]
-    -3000)
   Object
   (toString [_]
     "CRASH"))
@@ -202,6 +172,23 @@
 
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
+
+;; =============================================================================
+;; Pattern Comparison
+
+(defmulti pattern-compare (fn [a b] [(type a) (type b)]))
+
+(defmethod pattern-compare [LiteralPattern LiteralPattern]
+  [^LiteralPattern a ^LiteralPattern b] (compare (.l a) (.l b)))
+
+(defmethod pattern-compare [LiteralPattern Object]
+  [a b] -1)
+
+(defmethod pattern-compare [Object LiteralPattern]
+  [a b] 1)
+
+(defmethod pattern-compare :default
+  [a b] -1)
 
 ;; =============================================================================
 ;; Pattern Equality
@@ -413,7 +400,7 @@
     (letfn [(column-constructors [this i]
               (->> (column this i)
                 (filter (comp not wildcard-pattern?))
-                (apply sorted-set)))]
+                (apply sorted-set-by (fn [a b] (pattern-compare a b)))))]
       (cond
        (empty? rows) (fail-node)
        (let [f (first rows) ;; TODO: A big gross, cleanup - David
@@ -440,13 +427,12 @@
                                     (fail-node)))]
                     (switch-node
                       (ocrs col)
-                      (reverse
-                       (map (fn [c]
-                              (let [s (-> this 
-                                          (specialize c) 
-                                          compile)]
-                                [c s]))
-                            constrs))
+                      (map (fn [c]
+                             (let [s (-> this 
+                                         (specialize c) 
+                                         compile)]
+                               [c s]))
+                           constrs)
                       default))
                   (compile (swap this col)))))))
 
@@ -708,4 +694,8 @@
 ;; Active Work
 
 (comment
+  (apply sorted-set-by (fn [a b] (pattern-compare a b))
+         [(seq-pattern [1]) (literal-pattern ())])
+
+  (pattern-compare (literal-pattern ()) (seq-pattern [1]))
   )
