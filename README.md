@@ -1,74 +1,84 @@
 match
 ====
 
-An optimizing pattern match and predicate dispatch library for Clojure.
+An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching.
 
-Note there's nothing to see here yet. There's a lot of work and research to do before anything useful comes of this. If you've signed a Clojure CA I'm more than willing to accept help.
+Matching literals
+----
 
-The basic idea is to maintain a DAG and compile it into a series of nested case statements. The following illustrates the basic idea and compares it against multimethod performance in the latest Clojure 1.3.0 alphas.
-
-More [crazy ideas here](https://github.com/swannodette/match/wiki/Crazy-Ideas).
-
-```clj
-(defn m1 []
-  :m1)
-
-(defn mu []
-  :mu)
-
-(deftype PredFn [f]
-  clojure.lang.IFn
-  (invoke [this a1] (@f a1))
-  (invoke [this a1 a2] (@f a1 a2)))
-
-(defn dag [fa fb]
-  (let [f (fn []
-            (let [ya (y fa)
-                  yb (y fb)]
-              (if (= ya yb)
-                (m1))))]
-   (if (instance? A fa)
-     (let [x (x fa)]
-       (if (instance? A x)
-         (f)
-         (if (instance? B x)
-           (if (instance? C x)
-             (if (instance? D x)
-               nil)))))
-     (if (instance? B fa)
-       nil
-       (if (instance? C fa)
-         nil
-         (if (instance? D fa)
-           (mu)))))))
-
-;; ~100ms
-(let [s1 (B. nil nil)
-        o1 (A. (A. nil nil) s1)
-        o2 (A. (A. nil nil) s1)
-        f (PredFn. (atom dag4))]
-    (dotimes [_ 10]
-      (time
-       (dotimes [_ 1e7]
-         (f o1 o2)))))
-
-(defmulti gf (fn [f1 f2]
-               [(class f1)
-                (class f2)
-                (class (x f1))
-                (= (y f1) (y f2))]))
-
-(defmethod gf [A Object A true] [f1 f2] :m1)
-
-;; ~1900ms-2000ms
-(let [s1 (B. nil nil)
-        o1 (A. (A. nil nil) s1)
-        o2 (A. (A. nil nil) s1)]
-    (dotimes [_ 10]
-      (time
-       (dotimes [_ 1e7]
-         (gf o1 o2)))))
+```clojure
+(let [x true
+      y true
+      z true]
+  (match [x y z]
+     [_ false true] 1
+     [false true _ ] 2
+     [_ _ false] 3
+     [_ _ true] 4))
+;; => 4
 ```
+
+Wherever you would use a wildcard you can use a binding:
+
+```clojure
+(let [x 1 y 2 z 4]
+  (match [x y z]
+     [1 2 b] [:a0 b]
+     [a 2 4] [:a1 a]))
+;; => [:a0 4]
+```
+
+Seq matching
+----
+
+```clojure
+(let [x [1 2 nil nil nil]]
+   (match [x]
+     [(1)]   :a0
+     [(1 2)] :a1
+     [(1 2 nil nil nil)] :a2))
+;; => :a2
+```
+
+Notice that we use list syntax, not vector syntax. We are reserving the vector syntax for sequential data types that support both random access and "slicing". This includes vectors. However by bringing other types to a yet to be determined protocol we could support high performance pattern matching of primitive arrays, buffers, etc.
+
+Seq pattern also support the familiar destructuring rest syntax.
+
+```clojure
+(let [x '(1 2 3 4)]
+  (match [x]
+    [(1)] :a0
+    [(_ 2 & (a & b))] [:a1 a b]))
+;; => [:a1 3 '(4)]
+```
+
+Map matching
+----
+
+```clojure
+(let [x {:a 1 :b 1}]
+   (match [x]
+     [{_ :a 2 :b}] :a0
+     [{1 :a _ :c}] :a1
+     [{3 :c _ :d 4 :e}] :a2))
+;; => :a1
+```
+
+You can constrain map matching so that only keys with only the specified keys will match:
+
+```clojure
+(match [x]
+  [{_ :a 2 :b :only [:a :b]}] :a0
+  [{1 :a c :c}] :a1
+  [{3 :c d :d 4 :e}] :a2)
+```
+
+Road Map
+----
+
+A good chunk of Maranget's algorithm for pattern matching has been implemented. We would like to flesh out the pattern matching functionality. When we get to guards we will start considering predicate dispatch in earnest.
+
+If you like to see a more detail account of what we're considering you can look here (https://github.com/swannodette/match/wiki/Design-Wiki).
 
 Resources
 ----
