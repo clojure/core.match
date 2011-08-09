@@ -239,7 +239,6 @@
   (all-wildcards? [this])
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
 
-(declare map-occurrence?)
 (declare leaf-bind-expr)
 
 (deftype PatternRow [ps action bindings]
@@ -364,10 +363,10 @@
 ;; Pattern Matrix
 
 (defn seq-occurrence? [ocr]
-  (-> ocr meta :seq-occurrence))
+  (= (-> ocr meta :occurrence-type) :seq))
 
 (defn map-occurrence? [ocr]
-  (-> ocr meta :map-occurrence))
+  (= (-> ocr meta :occurrence-type) :map))
 
 (defprotocol IPatternMatrix
   (width [this])
@@ -429,7 +428,7 @@
                                                   (concat (bindings f)
                                                           wc-bindings)))
        :else (let [col (cond
-                        (-> ocrs first meta :seq-occurrence) 0 ;; TODO: don't hardcode - David
+                        (seq-occurrence? ocrs) 0 ;; TODO: don't hardcode - David
                         :else (necessary-column this))]
                 (if (= col 0)
                   (let [constrs (column-constructors this col)
@@ -575,8 +574,7 @@
                      vec)
           nocrs (let [seq-ocr focr
                       seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
-                      sym-meta {:seq-occurrence true
-                                :occurrence-type :seq
+                      sym-meta {:occurrence-type :seq
                                 :seq-sym seq-ocr}
                       hsym (gensym (str (name seq-sym) "-head-"))
                       hsym (with-meta hsym
@@ -624,8 +622,7 @@
                       ocr-sym (fn ocr-sym [k]
                                 (let [ocr (gensym (str (name map-ocr) "-" (name k)))]
                                   (with-meta ocr
-                                    {:map-occurrence true
-                                     :occurrence-type :map
+                                    {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
                                      :bind-expr `(let [~ocr (get ~map-ocr ~k)])})))]
