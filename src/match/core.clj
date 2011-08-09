@@ -1,8 +1,5 @@
 (ns match.core
-  (:refer-clojure :exclude [reify == inc compile])
-  (:use [clojure.core.logic.minikanren :exclude [swap]]
-        [clojure.core.logic prelude])
-  (:use [clojure.pprint :only [pprint]])
+  (:refer-clojure :exclude [compile])
   (:require [clojure.pprint :as pp]
             [clojure.set :as set])
   (:import [java.io Writer]))
@@ -18,7 +15,7 @@
 (defn source-pprint [source]
   (binding [pp/*print-pprint-dispatch* pp/code-dispatch
             pp/*print-suppress-namespaces* true]
-    (pprint source)))
+    (pp/pprint source)))
 
 (defprotocol IVecMod
   (prepend [this x])
@@ -638,17 +635,17 @@
 
 (defn emit-pattern [pat]
   (cond
-   (seq? pat) (if (empty? pat)
-                (literal-pattern ())
-                (seq-pattern
-                 (loop [ps pat v []]
-                   (if (nil? ps)
-                     v
-                     (let [p (first ps)]
-                       (cond
-                        (= p '&) (let [p (second ps)]
-                                   (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
-                        :else (recur (next ps) (conj v (emit-pattern (first ps))))))))))
+   (vector? pat) (if (empty? pat)
+                   (literal-pattern ())
+                   (seq-pattern
+                    (loop [ps pat v []]
+                      (if (nil? ps)
+                        v
+                        (let [p (first ps)]
+                          (cond
+                           (= p '&) (let [p (second ps)]
+                                      (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
+                           :else (recur (next ps) (conj v (emit-pattern (first ps))))))))))
    (map? pat) (map-pattern
                (->> pat
                     (map (fn [[k v]]
