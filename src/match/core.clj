@@ -381,7 +381,6 @@
   (necessary-column [this])
   (useful-matrix [this])
   (select [this])
-  (score [this])
   (occurrences [this])
   (action-for-row [this j]))
 
@@ -478,8 +477,6 @@
 
   (select [this]
     (swap this (necessary-column this)))
-
-  (score [_] [])
 
   (rows [_] rows)
 
