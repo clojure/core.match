@@ -1,7 +1,10 @@
 (ns match.core.debug
   (:refer-clojure :exclude [compile])
-  (:use [match.core :only [build-matrix compile to-clj source-pprint]])
+  (:use [match.core :only [compile to-clj source-pprint]])
   (:use [clojure.pprint :only [pprint]]))
+
+(defmacro build-matrix [vars & clauses]
+  `(emit-matrix '~vars '~clauses))
 
 (defmacro m-to-matrix [vars & clauses]
   `(-> (build-matrix ~vars ~@clauses)

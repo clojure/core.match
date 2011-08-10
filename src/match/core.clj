@@ -678,9 +678,6 @@
         clause-sources (into [] (map emit-clause cs))]
     (pattern-matrix clause-sources vars)))
 
-(defmacro build-matrix [vars & clauses]
-  `(emit-matrix '~vars '~clauses))
-
 (defmacro defmatch [name vars & clauses]
   (let [clj-form (-> (emit-matrix vars clauses)
                    compile
