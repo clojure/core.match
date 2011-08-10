@@ -633,30 +633,42 @@
 ;; =============================================================================
 ;; Interface
 
-(defn emit-pattern [pat]
-  (cond
-   (vector? pat) (if (empty? pat)
-                   (literal-pattern ())
-                   (seq-pattern
-                    (loop [ps pat v []]
-                      (if (nil? ps)
-                        v
-                        (let [p (first ps)]
-                          (cond
-                           (= p '&) (let [p (second ps)]
-                                      (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
-                           :else (recur (next ps) (conj v (emit-pattern (first ps))))))))))
-   (map? pat) (map-pattern
-               (->> pat
-                    (map (fn [[k v]]
-                           (when (not= k :only)
-                             [(emit-pattern k) v])))
-                    (remove nil?)
-                    (into {}))
-               (:only pat))
-   (symbol? pat) (wildcard-pattern pat)
-   :else (literal-pattern pat)))
-            
+(defmulti emit-pattern class)
+
+(defmethod emit-pattern clojure.lang.IPersistentVector
+  [pat]
+  (if (empty? pat)
+    (literal-pattern ())
+    (seq-pattern
+      (loop [ps pat v []]
+        (if (nil? ps)
+          v
+          (let [p (first ps)]
+            (cond
+              (= p '&) (let [p (second ps)]
+                         (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
+              :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))))
+
+(defmethod emit-pattern clojure.lang.IPersistentMap
+  [pat]
+  (map-pattern
+    (->> pat
+      (map (fn [[k v]]
+             (when (not= k :only)
+               [(emit-pattern k) v])))
+      (remove nil?)
+      (into {}))
+    (:only pat)))
+
+(defmethod emit-pattern clojure.lang.Symbol
+  [pat]
+  (wildcard-pattern pat))
+
+(defmethod emit-pattern :default
+  [pat]
+  (literal-pattern pat))
+
+
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
     (pattern-row p action)))
