@@ -185,7 +185,7 @@
   [a b] 1)
 
 (defmethod pattern-compare :default
-  [a b] -1)
+  [a b] (if (= (class a) (class b)) 0 -1))
 
 ;; =============================================================================
 ;; Pattern Equality
