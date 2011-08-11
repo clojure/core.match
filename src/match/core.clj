@@ -31,6 +31,9 @@
 ;; =============================================================================
 ;; Patterns
 
+(defmulti pattern-equals (fn [a b] [(type a) (type b)]))
+(defmulti pattern-compare (fn [a b] [(type a) (type b)]))
+
 ;; -----------------------------------------------------------------------------
 ;; Wildcard Pattern
 
@@ -149,6 +152,25 @@
   (.write writer (str "<MapCrashPattern>")))
 
 ;; -----------------------------------------------------------------------------
+;; Or Patterns
+
+(deftype OrPattern [ps]
+  Object
+  (toString [this]
+    ps))
+
+(defn ^OrPattern or-pattern [p]
+  (OrPattern. p))
+
+(def or-pattern? (partial instance? OrPattern))
+
+(defmethod pattern-equals [OrPattern OrPattern]
+  [^OrPattern a ^OrPattern b] (= (.ps a) (.ps b)))
+
+(defmethod print-method OrPattern [^OrPattern p ^Writer writer]
+  (.write writer (str "<OrPattern: " (.ps p) ">")))
+
+;; -----------------------------------------------------------------------------
 ;; Crash Patterns
 
 (defmulti crash-pattern? type)
@@ -168,8 +190,6 @@
 ;; =============================================================================
 ;; Pattern Comparison
 
-(defmulti pattern-compare (fn [a b] [(type a) (type b)]))
-
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
   [^LiteralPattern a ^LiteralPattern b] (compare (.l a) (.l b)))
 
@@ -184,8 +204,6 @@
 
 ;; =============================================================================
 ;; Pattern Equality
-
-(defmulti pattern-equals (fn [a b] [(type a) (type b)]))
 
 (defmethod pattern-equals [Object WildcardPattern]
   [a b] true)
@@ -214,6 +232,7 @@
 (defprotocol IPatternRow
   (action [this])
   (patterns [this])
+  (update-pattern [this i p])
   (bindings [this])
   (all-wildcards? [this])
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
@@ -224,6 +243,8 @@
   IPatternRow
   (action [_] action)
   (patterns [_] ps)
+  (update-pattern [_ i p]
+    (PatternRow. (assoc ps i p) action bindings))
   (bindings [_] bindings)
   (all-wildcards? [this]
     (every? wildcard-pattern? ps))
@@ -360,6 +381,8 @@
   (column [this i])
   (row [this j])
   (rows [this])
+  (insert-row [this i row])
+  (insert-rows [this i rows])
   (necessary-column [this])
   (useful-matrix [this])
   (select [this])
@@ -460,6 +483,14 @@
     (swap this (necessary-column this)))
 
   (rows [_] rows)
+
+  (insert-row [_ i row]
+    (PatternMatrix. (into (conj (subvec rows 0 i) row) (subvec rows i))
+                    ocrs))
+
+  (insert-rows [_ i rows]
+    (PatternMatrix. (into (into (subvec rows 0 i) rows) (subvec rows i))
+                    ocrs))
 
   (occurrences [_] ocrs)
 
@@ -605,6 +636,22 @@
         (let [row (first nrows)]
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
+;; ==============================================================================
+;; OrPattern Specialization
+
+(extend-type OrPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [ps (.ps this)
+          rows (rows matrix)
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map #(drop-nth-bind % 0 focr))
+                     vec)]
+      (pattern-matrix nrows ocrs))))
+
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 ;; =============================================================================
@@ -645,17 +692,22 @@
   [pat]
   (literal-pattern pat))
 
-(defmethod emit-pattern clojure.lang.ISeq
-  [pat] (emit-pattern-for-syntax pat))
-
+(declare emit-pattern-for-syntax)
 (declare or-pattern)
 (declare as-pattern)
 (declare guard-pattern)
 
+(defmethod emit-pattern clojure.lang.ISeq
+  [pat] (emit-pattern-for-syntax pat))
+
 (defmulti emit-pattern-for-syntax (fn [syn] (second syn)))
 
 (defmethod emit-pattern-for-syntax '|
-  [pat] (or-pattern pat))
+  [pat] (or-pattern
+         (->> pat
+              (remove '#{|})
+              (map emit-pattern)
+              (into []))))
 
 (defmethod emit-pattern-for-syntax :as
   [pat] (as-pattern pat))
@@ -689,3 +741,7 @@
    `~(-> (emit-matrix vars clauses)
          compile
          to-clj)))
+
+(comment
+  (emit-pattern '(1 | 2 | 3))
+  )
