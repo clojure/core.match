@@ -12,11 +12,6 @@
 (defprotocol IPatternCompile
   (p-to-clj [this ocr]))
 
-(defn source-pprint [source]
-  (binding [pp/*print-pprint-dispatch* pp/code-dispatch
-            pp/*print-suppress-namespaces* true]
-    (pp/pprint source)))
-
 (defprotocol IVecMod
   (prepend [this x])
   (drop-nth [this n])
