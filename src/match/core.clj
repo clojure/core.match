@@ -645,6 +645,23 @@
   [pat]
   (literal-pattern pat))
 
+(defmethod emit-pattern clojure.lang.ISeq
+  [pat] (emit-pattern-for-syntax pat))
+
+(declare or-pattern)
+(declare as-pattern)
+(declare guard-pattern)
+
+(defmulti emit-pattern-for-syntax (fn [syn] (second syn)))
+
+(defmethod emit-pattern-for-syntax '|
+  [pat] (or-pattern pat))
+
+(defmethod emit-pattern-for-syntax :as
+  [pat] (as-pattern pat))
+
+(defmethod emit-pattern-for-syntax :when
+  [pat] (guard-pattern pat))
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
