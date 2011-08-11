@@ -157,7 +157,7 @@
 (deftype OrPattern [ps]
   Object
   (toString [this]
-    ps))
+    (str ps)))
 
 (defn ^OrPattern or-pattern [p]
   (OrPattern. p))
@@ -222,6 +222,12 @@
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
   [a b] true)
+
+(defmethod pattern-equals [OrPattern OrPattern]
+  [^OrPattern a ^OrPattern b] (let [as (.ps a)
+                                    bs (.ps b)]
+                                (and (= (count as) (count bs))
+                                     (every? identity (map pattern-equals as bs)))))
 
 (defmethod pattern-equals :default 
   [a b] false)
@@ -643,14 +649,14 @@
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [ps (.ps this)
-          rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
-          nrows (->> rows
+          nrows (->> (rows matrix)
                      (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth-bind % 0 focr))
-                     vec)]
-      (pattern-matrix nrows ocrs))))
+                     (map (fn [row]
+                            (map (fn [p]
+                                   (update-pattern row 0 p)) ps)))
+                     (apply concat)
+                     (into []))]
+      (pattern-matrix nrows (occurrences matrix)))))
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
