@@ -435,14 +435,15 @@
                    (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
             (pseudo-patterns? [this i]
               (->> (column this i)
-                   (filter pseudo-pattern?)))]
+                   (filter pseudo-pattern?)))
+            (empty-row? [row]
+              (let [ps (patterns row)] ;; TODO: cleanup
+                (and (not (nil? ps))
+                     (empty? ps))))]
       (cond
        (empty? rows) (fail-node)
-       (let [f (first rows) ;; TODO: A big gross, cleanup - David
-             ps (patterns f)]
-         (and (not (nil? ps))
-              (empty? ps))) (let [f (first rows)]
-                              (leaf-node (action f) (bindings f)))
+       (empty-row? (first rows)) (let [f (first rows)]
+                                   (leaf-node (action f) (bindings f)))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
                                            ps (.ps f)
                                            wc-syms (map #(.sym ^WildcardPattern %) ps)
