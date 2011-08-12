@@ -82,7 +82,7 @@
 (deftype SeqPattern [s]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(sequential? ~ocr))
+    `(or (seq? ~ocr) (sequential? ~ocr)))
   Object
   (toString [_]
     (str s)))
