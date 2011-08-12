@@ -766,12 +766,6 @@
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  (let [[vars clauses] (if (vector? vars)
-                         [vars clauses]
-                         [[vars]
-                          (->> (partition 2 clauses)
-                               (map (fn [[p a]] [[p] a]))
-                               (apply concat))])]
-   `~(-> (emit-matrix vars clauses)
-         compile
-         n-to-clj)))
+  `~(-> (emit-matrix vars clauses)
+      compile
+      n-to-clj))
