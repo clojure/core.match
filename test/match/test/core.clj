@@ -119,3 +119,13 @@
              [{(1 | 2) :a}] :a0
              [{(3 | 4) :a}] :a1))
          :a1)))
+
+(defn div3? [n]
+    (= (mod n 3) 0))
+
+(deftest guard-pattern-match-1
+  (is (= (let [y '(2 3 4 5)]
+           (match [y]
+             [[_ (a :when even?) _ _]] :a0
+             [[_ (b :when [odd? div3?]) _ _]] :a1))
+         :a1)))
