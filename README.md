@@ -126,7 +126,20 @@ Or patterns are supported anywhere you would use a pattern:
   (match [x y z ]
     [{(1 | 2) :a}] :a0
     [{(3 | 4) :a}] :a1))
-;; :a1
+;; => :a1
+```
+
+Guards
+----
+
+Guards are simple boolean tests. You can specify them like so:
+
+```clojure
+(let [y '(2 3 4 5)]
+  (match [y]
+    [[_ (a :when even?) _ _]] :a0
+    [[_ (b :when [odd? div3?]) _ _]] :a1))
+;; => :a1
 ```
 
 Road Map
