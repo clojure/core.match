@@ -1,7 +1,7 @@
 (ns match.core.debug
   (:refer-clojure :exclude [compile])
   (:use [match.core :only [emit-matrix compile occurrences
-                           rows patterns action-for-row to-clj]])
+                           rows patterns action-for-row n-to-clj]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]
@@ -24,7 +24,7 @@
 (defmacro m-to-clj [vars & clauses]
   `(-> (build-matrix ~vars ~@clauses)
      compile
-     to-clj
+     n-to-clj
      source-pprint))
 
 (defn pprint-matrix

@@ -7,7 +7,7 @@
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
 (defprotocol INodeCompile
-  (to-clj [this]))
+  (n-to-clj [this]))
 
 (defprotocol IPatternCompile
   (p-to-clj [this ocr]))
@@ -320,7 +320,7 @@
 
 (defrecord LeafNode [value bindings]
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     (if (not (empty? bindings))
       (let [bindings (remove (fn [[sym _]] (= sym '_))
                              bindings)]
@@ -349,7 +349,7 @@
 
 (defrecord FailNode []
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     `(throw (Exception. "Found FailNode"))))
 
 (defn ^FailNode fail-node []
@@ -360,15 +360,15 @@
 
 (defn dag-clause-to-clj [occurrence pattern action]
   (vector (p-to-clj pattern occurrence) 
-          (to-clj action)))
+          (n-to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
           cond-expr (concat `(cond ~@clauses)
-                            `(:else ~(to-clj default)))]
+                            `(:else ~(n-to-clj default)))]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
@@ -751,7 +751,7 @@
 (defmacro defmatch [name vars & clauses]
   (let [clj-form (-> (emit-matrix vars clauses)
                    compile
-                   to-clj)]
+                   n-to-clj)]
     `(defn ~name ~vars 
        ~clj-form)))
 
@@ -764,4 +764,4 @@
                                (apply concat))])]
    `~(-> (emit-matrix vars clauses)
          compile
-         to-clj)))
+         n-to-clj)))
