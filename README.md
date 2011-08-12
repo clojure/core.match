@@ -145,7 +145,7 @@ Guards are simple boolean tests. You can specify them like so:
 Road Map
 ----
 
-A good chunk of Maranget's algorithm for pattern matching has been implemented. We would like to flesh out the pattern matching functionality. When we get to guards we will start considering predicate dispatch in earnest.
+A good chunk of Maranget's algorithm for pattern matching has been implemented. We would like to flesh out the pattern matching functionality. Once that work is done, we'll move on to predicate dispatch.
 
 If you would like to see a more detailed account of what we're considering you can look here (https://github.com/swannodette/match/wiki/Design-Wiki).
 
