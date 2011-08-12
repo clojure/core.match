@@ -185,6 +185,26 @@
   [x] false)
 
 ;; -----------------------------------------------------------------------------
+;; Guard Patterns
+
+(deftype GuardPattern [p gs]
+  Object
+  (toString [this]
+    (str p " :when " gs)))
+
+(defn ^GuardPattern guard-pattern [p gs]
+  {:pre [(set? gs)]}
+  (GuardPattern. p gs))
+
+(def guard-pattern? (partial instance? GuardPattern))
+
+(defmethod pattern-equals [GuardPattern GuardPattern]
+  [^GuardPattern a ^GuardPattern b] (= (.gs a) (.gs b)))
+
+(defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
+  (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
+
+;; -----------------------------------------------------------------------------
 ;; Crash Patterns
 
 (defmulti crash-pattern? type)
@@ -741,11 +761,13 @@
               (map emit-pattern)
               (into []))))
 
+;; TODO: just emit a normal pattern but add :as metadata to it
 (defmethod emit-pattern-for-syntax :as
   [pat] (as-pattern pat))
 
 (defmethod emit-pattern-for-syntax :when
-  [pat] (guard-pattern pat))
+  [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
+              (guard-pattern (emit-pattern p) (set gs))))
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
