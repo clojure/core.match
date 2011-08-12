@@ -7,7 +7,7 @@
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
 (defprotocol INodeCompile
-  (to-clj [this]))
+  (n-to-clj [this]))
 
 (defprotocol IPatternCompile
   (p-to-clj [this ocr]))
@@ -44,7 +44,9 @@
 
 (defn ^WildcardPattern wildcard-pattern
   ([] (WildcardPattern. '_))
-  ([sym] (WildcardPattern. sym)))
+  ([sym] 
+   {:pre [(symbol? sym)]}
+   (WildcardPattern. sym)))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 
@@ -160,6 +162,7 @@
     (str ps)))
 
 (defn ^OrPattern or-pattern [p]
+  {:pre [(vector? p)]}
   (OrPattern. p))
 
 (def or-pattern? (partial instance? OrPattern))
@@ -309,8 +312,12 @@
     (PatternRow. (conj ps x) action bindings)))
 
 (defn ^PatternRow pattern-row
-  ([ps action] (PatternRow. ps action nil))
-  ([ps action bindings] (PatternRow. ps action bindings)))
+  ([ps action] 
+   {:pre [(vector? ps)]}
+   (PatternRow. ps action nil))
+  ([ps action bindings]
+   {:pre [(vector? ps)]} ;; TODO: what can we expect bindings? (or (nil? bindings) (list? bindings))  ? - Ambrose
+   (PatternRow. ps action bindings)))
 
 ;; =============================================================================
 ;; Compilation Nodes
@@ -320,7 +327,7 @@
 
 (defrecord LeafNode [value bindings]
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     (if (not (empty? bindings))
       (let [bindings (remove (fn [[sym _]] (= sym '_))
                              bindings)]
@@ -330,7 +337,7 @@
 
 (defn ^LeafNode leaf-node
   ([value] (LeafNode. value []))
-  ([value bindings] (LeafNode. value bindings)))
+  ([value bindings] (LeafNode. value bindings))) ;; TODO precondition on bindings? see above - Ambrose
 
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
@@ -349,7 +356,7 @@
 
 (defrecord FailNode []
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     `(throw (Exception. "Found FailNode"))))
 
 (defn ^FailNode fail-node []
@@ -360,24 +367,24 @@
 
 (defn dag-clause-to-clj [occurrence pattern action]
   (vector (p-to-clj pattern occurrence) 
-          (to-clj action)))
+          (n-to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
-  (to-clj [this]
+  (n-to-clj [this]
     (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
           bind-expr (-> occurrence meta :bind-expr)
           cond-expr (concat `(cond ~@clauses)
-                            `(:else ~(to-clj default)))]
+                            `(:else ~(n-to-clj default)))]
       (if bind-expr
         (concat bind-expr (list cond-expr))
         cond-expr))))
 
 (defn ^SwitchNode switch-node
-  ([occurrence cases]
-     (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
-     (SwitchNode. occurrence cases default)))
+   {:pre [(symbol? occurrence)
+          (seq? cases)]}
+   (SwitchNode. occurrence cases default)))
 
 ;; =============================================================================
 ;; Pattern Matrix
@@ -435,14 +442,15 @@
                    (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
             (pseudo-patterns? [this i]
               (->> (column this i)
-                   (filter pseudo-pattern?)))]
+                   (filter pseudo-pattern?)))
+            (empty-row? [row]
+              (let [ps (patterns row)] ;; TODO: cleanup
+                (and (not (nil? ps))
+                     (empty? ps))))]
       (cond
        (empty? rows) (fail-node)
-       (let [f (first rows) ;; TODO: A big gross, cleanup - David
-             ps (patterns f)]
-         (and (not (nil? ps))
-              (empty? ps))) (let [f (first rows)]
-                              (leaf-node (action f) (bindings f)))
+       (empty-row? (first rows)) (let [f (first rows)]
+                                   (leaf-node (action f) (bindings f)))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
                                            ps (.ps f)
                                            wc-syms (map #(.sym ^WildcardPattern %) ps)
@@ -529,6 +537,8 @@
                     (swap ocrs idx))))
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
+  {:pre [(vector rows) 
+         (vector ocrs)]}
   (PatternMatrix. rows ocrs))
 
 (defn empty-matrix? [pm]
@@ -751,17 +761,11 @@
 (defmacro defmatch [name vars & clauses]
   (let [clj-form (-> (emit-matrix vars clauses)
                    compile
-                   to-clj)]
+                   n-to-clj)]
     `(defn ~name ~vars 
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  (let [[vars clauses] (if (vector? vars)
-                         [vars clauses]
-                         [[vars]
-                          (->> (partition 2 clauses)
-                               (map (fn [[p a]] [[p] a]))
-                               (apply concat))])]
-   `~(-> (emit-matrix vars clauses)
-         compile
-         to-clj)))
+  `~(-> (emit-matrix vars clauses)
+      compile
+      n-to-clj))
