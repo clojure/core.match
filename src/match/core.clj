@@ -440,7 +440,7 @@
               (->> (column this i)
                    (filter (comp not wildcard-pattern?))
                    (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
-            (pseudo-patterns? [this i]
+            (pseudo-patterns [this i]
               (->> (column this i)
                    (filter pseudo-pattern?)))
             (empty-row? [row]
@@ -463,9 +463,7 @@
                         (seq-occurrence? ocrs) 0 ;; TODO: don't hardcode - David
                         :else (necessary-column this))]
                 (if (= col 0)
-                  (let [this (reduce specialize this
-                                     (->> (column this col)
-                                          (filter pseudo-pattern?)))
+                  (let [this (reduce specialize this (pseudo-patterns this col))
                         constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
