@@ -188,6 +188,9 @@
 ;; Guard Patterns
 
 (deftype GuardPattern [p gs]
+  IPatternCompile
+  (p-to-clj [this ocr]
+    `(and ~@(map list gs (repeat ocr))))
   Object
   (toString [this]
     (str p " :when " gs)))
@@ -232,6 +235,9 @@
 
 (defmethod pattern-compare [Object LiteralPattern]
   [a b] 1)
+
+(defmethod pattern-compare [GuardPattern GuardPattern]
+  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
 
 (defmethod pattern-compare :default
   [a b] (if (= (class a) (class b)) 0 -1))
@@ -688,7 +694,7 @@
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 ;; ==============================================================================
-;; OrPattern Specialization
+;; Or Pattern Specialization
 
 (extend-type OrPattern
   ISpecializeMatrix
@@ -701,10 +707,24 @@
                                      (update-pattern row 0 p)) ps)
                               [row])))
                      (apply concat)
-                     (into []))]
+                     vec)]
       (pattern-matrix nrows (occurrences matrix)))))
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+
+;; =============================================================================
+;; Guard Pattern Specialization
+
+(extend-type GuardPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [nrows (->> (rows matrix)
+                     (filter #(pattern-equals this (first %)))
+                     (map (fn [row]
+                            (let [^GuardPattern p (first row)]
+                             (update-pattern row 0 (.p p)))))
+                     vec)]
+      (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
 ;; Interface
