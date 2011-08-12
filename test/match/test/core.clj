@@ -98,3 +98,24 @@
              [[1]] :a0
              [[_ 2 & [a & b]]] [:a1 a b]))
          [:a1 3 '(4)])))
+
+(deftest or-pattern-match-1
+  (is (= (let [x 4 y 6 z 9]
+           (match [x y z ]
+             [(1 | 2 | 3) _ _] :a0
+             [4 (5 | 6 | 7) _] :a1))
+         :a1)))
+
+(deftest or-pattern-match-seq-1
+  (is (= (let [x '(1 2 3)]
+           (match [x y z ]
+             [[1 (3 | 4) 3]] :a0
+             [[1 (2 | 3) 3]] :a1))
+         :a1)))
+
+(deftest or-pattern-match-map-2
+  (is (= (let [x {:a 3}]
+           (match [x y z ]
+             [{(1 | 2) :a}] :a0
+             [{(3 | 4) :a}] :a1))
+         :a1)))

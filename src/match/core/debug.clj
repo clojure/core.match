@@ -1,6 +1,7 @@
 (ns match.core.debug
   (:refer-clojure :exclude [compile])
-  (:use [match.core :only [compile occurrences rows patterns action-for-row to-clj]])
+  (:use [match.core :only [emit-matrix compile occurrences
+                           rows patterns action-for-row to-clj]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]

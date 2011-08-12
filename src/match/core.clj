@@ -171,6 +171,17 @@
   (.write writer (str "<OrPattern: " (.ps p) ">")))
 
 ;; -----------------------------------------------------------------------------
+;; Pseudo-patterns
+
+(defmulti pseudo-pattern? type)
+
+(defmethod pseudo-pattern? OrPattern
+  [x] true)
+
+(defmethod pseudo-pattern? :default
+  [x] false)
+
+;; -----------------------------------------------------------------------------
 ;; Crash Patterns
 
 (defmulti crash-pattern? type)
@@ -420,8 +431,11 @@
   (compile [this]
     (letfn [(column-constructors [this i]
               (->> (column this i)
-                (filter (comp not wildcard-pattern?))
-                (apply sorted-set-by (fn [a b] (pattern-compare a b)))))]
+                   (filter (comp not wildcard-pattern?))
+                   (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
+            (pseudo-patterns? [this i]
+              (->> (column this i)
+                   (filter pseudo-pattern?)))]
       (cond
        (empty? rows) (fail-node)
        (let [f (first rows) ;; TODO: A big gross, cleanup - David
@@ -441,20 +455,23 @@
                         (seq-occurrence? ocrs) 0 ;; TODO: don't hardcode - David
                         :else (necessary-column this))]
                 (if (= col 0)
-                  (let [constrs (column-constructors this col)
+                  (let [this (reduce specialize this
+                                     (->> (column this col)
+                                          (filter pseudo-pattern?)))
+                        constrs (column-constructors this col)
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
                                     (compile m)
                                     (fail-node)))]
                     (switch-node
-                      (ocrs col)
-                      (map (fn [c]
-                             (let [s (-> this 
-                                         (specialize c) 
-                                         compile)]
-                               [c s]))
-                           constrs)
-                      default))
+                     (ocrs col)
+                     (map (fn [c]
+                            (let [s (-> this 
+                                        (specialize c) 
+                                        compile)]
+                              [c s]))
+                          constrs)
+                     default))
                   (compile (swap this col)))))))
 
   (pattern-at [_ i j] ((rows j) i))
@@ -650,10 +667,11 @@
   (specialize-matrix [this matrix]
     (let [ps (.ps this)
           nrows (->> (rows matrix)
-                     (filter #(pattern-equals this (first %)))
                      (map (fn [row]
-                            (map (fn [p]
-                                   (update-pattern row 0 p)) ps)))
+                            (if (pattern-equals this (first row))
+                              (map (fn [p]
+                                     (update-pattern row 0 p)) ps)
+                              [row])))
                      (apply concat)
                      (into []))]
       (pattern-matrix nrows (occurrences matrix)))))
@@ -747,7 +765,3 @@
    `~(-> (emit-matrix vars clauses)
          compile
          to-clj)))
-
-(comment
-  (emit-pattern '(1 | 2 | 3))
-  )
