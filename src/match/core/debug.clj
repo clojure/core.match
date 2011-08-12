@@ -25,7 +25,7 @@
   `(-> (build-matrix ~vars ~@clauses)
      compile
      to-clj
-     pp/source-pprint))
+     source-pprint))
 
 (defn pprint-matrix
   ([pm] (pprint-matrix pm 4))
