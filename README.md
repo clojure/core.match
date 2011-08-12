@@ -110,6 +110,25 @@ You can constrain map matching so that only maps with the exact key set will mat
   [{3 :c d :d 4 :e}] :a2)
 ```
 
+Or Patterns
+----
+
+Or patterns are supported anywhere you would use a pattern:
+
+```clojure
+(let [x '(1 2 3)]
+  (match [x y z ]
+    [[1 (3 | 4) 3]] :a0
+    [[1 (2 | 3) 3]] :a1))
+;; :a1
+    
+(let [x {:a 3}]
+  (match [x y z ]
+    [{(1 | 2) :a}] :a0
+    [{(3 | 4) :a}] :a1))
+;; :a1
+```
+
 Road Map
 ----
 
