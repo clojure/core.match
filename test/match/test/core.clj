@@ -43,7 +43,7 @@
              [[a 2 4]] [:a1 a]))
          [:a0 4])))
 
-(deftest seq-pattern-match-wilcard-row
+(deftest seq-pattern-match-wildcard-row
   (is (= (let [x '(1 2 3)]
            (match [x]
              [[1 z 4]] z
