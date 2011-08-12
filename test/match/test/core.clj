@@ -129,3 +129,21 @@
              [[_ (a :when even?) _ _]] :a0
              [[_ (b :when [odd? div3?]) _ _]] :a1))
          :a1)))
+
+(extend-type java.util.Date
+  IMatchLookup
+  (val-at* [this k not-found]
+    (case k
+      :year    (.getYear this)
+      :month   (.getMonth this)
+      :date    (.getDate this)
+      :hours   (.getHours this)
+      :minutes (.getMinutes this)
+      not-found)))
+
+(deftest map-pattern-interop-1
+  (is (= (let [d (java.util.Date. 2010 10 1 12 30)]
+           (match [d]
+             [{2009 :year a :month}] [:a0 a]
+             [{(2010 | 2011) :year b :month}] [:a1 b]))
+         [:a1 10])))

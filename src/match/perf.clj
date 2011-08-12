@@ -46,7 +46,7 @@
        (dotimes [_ 1e6]
          (let [[a b c d e] x])))))
 
-  ;; 170ms, map match
+  ;; 180ms, map match
   (let [x {:a 1 :b 2 :c 3}]
     (dotimes [_ 10]
       (time
@@ -56,7 +56,7 @@
           [{1 :a _ :c}] :a1
           [{3 :c _ :d 4 :e}] :a2)))))
 
-  ;; 300ms, map destructure
+  ;; 200, map destructure
   (let [x {:a 1 :b 2 :c 3}]
     (dotimes [_ 10]
       (time
@@ -72,4 +72,24 @@
            [{_ :a 2 :b :only [:a :b]}] :a0
            [{1 :a _ :c}] :a1
            [{3 :c _ :d 4 :e}] :a2)))))
+
+   ;; 240ms
+  (do
+    (extend-type java.util.Date
+      IMatchLookup
+      (val-at* [this k not-found]
+        (case k
+          :year    (.getYear this)
+          :month   (.getMonth this)
+          :date    (.getDate this)
+          :hours   (.getHours this)
+          :minutes (.getMinutes this)
+          not-found)))
+    (let [d (java.util.Date. 2010 10 1 12 30)]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e6]
+           (match [d]
+             [{2009 :year a :month}] [:a0 a]
+             [{(2010 | 2011) :year b :month}] [:a1 b]))))))
  )

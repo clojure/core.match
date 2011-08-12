@@ -4,6 +4,18 @@
             [clojure.set :as set])
   (:import [java.io Writer]))
 
+(defprotocol IMatchLookup
+  (val-at* [this k not-found]))
+
+(extend-type clojure.lang.ILookup
+  IMatchLookup
+  (val-at* [this k not-found]
+    (.valAt this k not-found)))
+
+(defn val-at
+  ([m k] (val-at* m k nil))
+  ([m k not-found] (val-at* m k not-found)))
+
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
 (defprotocol INodeCompile
@@ -121,7 +133,7 @@
 (deftype MapPattern [m only]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(map? ~ocr))
+    `(or (map? ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
     (str m " :only " (or only []))))
@@ -372,7 +384,7 @@
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
-            `(get ~(:map-sym m) ~(:key m))))
+            `(val-at ~(:map-sym m) ~(:key m))))
 
 (defmethod leaf-bind-expr :default
   [ocr] ocr)
@@ -673,7 +685,7 @@
                                     {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr `(let [~ocr (get ~map-ocr ~k)])})))]
+                                     :bind-expr `(let [~ocr (val-at ~map-ocr ~k)])})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))]
       (pattern-matrix nrows nocrs))))
@@ -768,6 +780,7 @@
 (declare or-pattern)
 (declare as-pattern)
 (declare guard-pattern)
+(declare vector-pattern)
 
 (defmethod emit-pattern clojure.lang.ISeq
   [pat] (emit-pattern-for-syntax pat))
@@ -788,6 +801,9 @@
 (defmethod emit-pattern-for-syntax :when
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
+
+(defmethod emit-pattern-for-syntax :vector
+  [p])
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
