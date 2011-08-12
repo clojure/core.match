@@ -44,7 +44,9 @@
 
 (defn ^WildcardPattern wildcard-pattern
   ([] (WildcardPattern. '_))
-  ([sym] (WildcardPattern. sym)))
+  ([sym] 
+   {:pre [(symbol? sym)]}
+   (WildcardPattern. sym)))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 
@@ -160,6 +162,7 @@
     (str ps)))
 
 (defn ^OrPattern or-pattern [p]
+  {:pre [(vector? p)]}
   (OrPattern. p))
 
 (def or-pattern? (partial instance? OrPattern))
@@ -309,8 +312,12 @@
     (PatternRow. (conj ps x) action bindings)))
 
 (defn ^PatternRow pattern-row
-  ([ps action] (PatternRow. ps action nil))
-  ([ps action bindings] (PatternRow. ps action bindings)))
+  ([ps action] 
+   {:pre [(vector? ps)]}
+   (PatternRow. ps action nil))
+  ([ps action bindings]
+   {:pre [(vector? ps)]} ;; TODO: what can we expect bindings? (or (nil? bindings) (list? bindings))  ? - Ambrose
+   (PatternRow. ps action bindings)))
 
 ;; =============================================================================
 ;; Compilation Nodes
@@ -330,7 +337,7 @@
 
 (defn ^LeafNode leaf-node
   ([value] (LeafNode. value []))
-  ([value bindings] (LeafNode. value bindings)))
+  ([value bindings] (LeafNode. value bindings))) ;; TODO precondition on bindings? see above - Ambrose
 
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
@@ -374,10 +381,10 @@
         cond-expr))))
 
 (defn ^SwitchNode switch-node
-  ([occurrence cases]
-     (SwitchNode. occurrence cases (fail-node)))
   ([occurrence cases default]
-     (SwitchNode. occurrence cases default)))
+   {:pre [(symbol? occurrence)
+          (seq? cases)]}
+   (SwitchNode. occurrence cases default)))
 
 ;; =============================================================================
 ;; Pattern Matrix
@@ -530,6 +537,8 @@
                     (swap ocrs idx))))
 
 (defn ^PatternMatrix pattern-matrix [rows ocrs]
+  {:pre [(vector rows) 
+         (vector ocrs)]}
   (PatternMatrix. rows ocrs))
 
 (defn empty-matrix? [pm]
