@@ -158,7 +158,7 @@ Sometimees you'd like capture a part of the match with a binding:
 Java Interop
 ----
 
-By extending Javas type to IMatchLookup, Java types can participate in map patterns:
+By extending Java types to IMatchLookup, Java types can participate in map patterns:
 
 ```clojure
 (extend-type java.util.Date
