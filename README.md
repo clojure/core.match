@@ -110,6 +110,14 @@ You can constrain map matching so that only maps with the exact key set will mat
   [{3 :c d :d 4 :e}] :a2)
 ```
 
+Special Syntax
+----
+
+The list syntax `()` is reserved for special uses. It does *not* match a literal list.
+
+Or Patterns, Guards and As Patterns use this syntax.
+
+
 Or Patterns
 ----
 
@@ -177,6 +185,19 @@ By extending Javas type to IMatchLookup, Java types can participate in map patte
     [{2009 :year a :month}] [:a0 a]
     [{(2010 | 2011) :year b :month}] [:a1 b]))
 ;; => [:a1 10]
+```
+
+Note on Pattern Rows
+----
+
+A pattern row is delimited with `[]`, and is not a pattern itself.
+
+For example, this syntax is illegal:
+
+```clojure
+(let [v 1]
+  (match [v]
+    ([1] :as w) :a0) ;; Illegal! [1] is a pattern row, not a pattern.
 ```
 
 Road Map
