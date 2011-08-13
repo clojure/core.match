@@ -129,6 +129,14 @@ Or patterns are supported anywhere you would use a pattern:
 ;; => :a1
 ```
 
+Special Syntax
+----
+
+The list syntax `()` is reserved for special uses. It does *not* match a literal list.
+
+Guards and As Patterns use this syntax.
+
+
 Guards
 ----
 
