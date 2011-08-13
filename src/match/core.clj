@@ -857,7 +857,7 @@
     (not (vector? vars)) (throw (AssertionError. (str "Occurances must be in a vector. " vars " is not a vector"))))
 
   (let [nvars (count vars)]
-    (doseq [[pat action] (partition 2 clauses)]
+    (doseq [[pat _] (partition 2 clauses)]
       (cond 
         (not (vector? pat)) (throw (AssertionError. 
                                      (str "Pattern rows must be wrapped in []. Try changing " pat " to [" pat "]." 
