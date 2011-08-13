@@ -1,7 +1,7 @@
 match
 ====
 
-An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching.
+An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later.
 
 This library implements a pattern match compilation algorithm that uses the notion of "necessity" from lazy pattern matching.
 

@@ -1,7 +1,6 @@
 (ns match.core
   (:refer-clojure :exclude [compile])
-  (:require [clojure.pprint :as pp]
-            [clojure.set :as set])
+  (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
 (defprotocol IMatchLookup
