@@ -662,7 +662,7 @@
                                   (set (.only p))])))
                         (reduce concat)
                         (reduce set/union #{})
-                        sort)
+                        sort) ;; NOTE: this assumes keys are of a heterogenous type, can't sort #{1 :a} - David
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
           nrows (->> srows
