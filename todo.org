@@ -1,14 +1,20 @@
-* Todo List [16/23]
-  - [ ] Things are getting a little messy particularly around how we
-        deal with bindings. This could use some cleanup.
-  - [ ] emit-pattern logic should be open not closed
-  - [ ] Compile times are now quite slow (affects running tests) should
-        do a basic profiling / optimization pass to eliminate obvious
-        areas that contribute to performance degradation.
+* Todo List [25/29]
+  - [ ] :else clause support, currently must supply wildcard row yourself
+  - [ ] fail nodes should be more descriptive
   - [ ] rename pattern-equals -> constructor-match? or something similar
   - [ ] implement vector pattern matching
-  - [ ] Devise hash-consing strategy
-  - [ ] Implement hash-consing strategy
+  - [X] Java interop
+  - [X] guards
+  - [X] or patterns
+  - [X] as pattern
+  - [X] emit-pattern logic should be open not closed
+  - [X] ON HOLD Things are getting a little messy particularly around how we
+        deal with bindings. This could use some cleanup.
+  - [X] ON HOLD - Compile times are now quite slow (affects running tests) should
+        do a basic profiling / optimization pass to eliminate obvious
+        areas that contribute to performance degradation.
+  - [X] WON'T DO - Devise hash-consing strategy
+  - [X] WON'T DO -Implement hash-consing strategy
   - [X] Deal with rest seq patterns
   - [X] Rest seq pattern should themselves be pattern matchable this is
         mostly to support :as - introduce a binding
@@ -39,5 +45,4 @@
   - [X] Fix how we deal with seq pattern tails / crash pattern
   - [X] For cases where there is the default matrix is empty we need
         to insert fail nodes
-
   - [X] write basic match macro
