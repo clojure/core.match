@@ -155,6 +155,30 @@ Sometimees you'd like capture a part of the match with a binding:
 ;; => [:a1 1 [1 2]]
 ```
 
+Java Interop
+----
+
+By extending Javas type to IMatchLookup, Java types can participate in map patterns:
+
+```clojure
+(extend-type java.util.Date
+  IMatchLookup
+  (val-at* [this k not-found]
+    (case k
+      :year    (.getYear this)
+      :month   (.getMonth this)
+      :date    (.getDate this)
+      :hours   (.getHours this)
+      :minutes (.getMinutes this)
+      not-found)))
+
+(let [d (java.util.Date. 2010 10 1 12 30)]
+  (match [d]
+    [{2009 :year a :month}] [:a0 a]
+    [{(2010 | 2011) :year b :month}] [:a1 b]))
+;; => [:a1 10]
+```
+
 Road Map
 ----
 
