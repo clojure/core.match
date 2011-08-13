@@ -888,7 +888,7 @@
       (specialize (seq-pattern [1]))
       pprint-matrix)
 
-  ;; NOTE: there some reordering getting trigger which
+  ;; NOTE: some reordering getting triggered which
   ;; is not what we want at all - David
   (-> m
       (specialize (seq-pattern [1]))
