@@ -12,7 +12,7 @@
            [(1 | 2 | 3) _ _] :a0
            [4 (5 | 6 | 7) _] :a1)))))
 
-  ;; ~600ms, seq match on vector
+  ;; ~300ms, seq match on vector
   (let [x [1 2 nil nil nil]]
     (dotimes [_ 10]
       (time
@@ -22,7 +22,7 @@
            [[1 2]]   :a1
            [[1 2 nil nil nil]] :a2)))))
 
-  ;; ~360ms, seq match on seq
+  ;; ~150ms, seq match on seq
   (let [x '(1 2 nil nil nil)]
     (dotimes [_ 10]
       (time
@@ -32,7 +32,7 @@
            [[1 2]]   :a1
            [[1 2 nil nil nil]] :a2)))))
 
-  ;; 17ms, destructure on vector
+  ;; ~13ms, destructure on vector
   (let [x [1 2 nil nil nil]]
     (dotimes [_ 10]
       (time
@@ -46,7 +46,7 @@
        (dotimes [_ 1e6]
          (let [[a b c d e] x])))))
 
-  ;; 180ms, map match
+  ;; 200ms, map match
   (let [x {:a 1 :b 2 :c 3}]
     (dotimes [_ 10]
       (time
@@ -64,9 +64,9 @@
          (let [{a :a b :b c :c} x])))))
 
   ;; small maps are not a good indicator
-  ;; 89ms, map pattern
-  (let [x (zipmap (map keyword (take 33 (repeatedly gensym)))
-                  (map keyword (take 33 (repeatedly gensym))))
+  ;; 150ms, map pattern
+  (let [x (zipmap (map keyword (take 40 (repeatedly gensym)))
+                  (map keyword (take 40 (repeatedly gensym))))
         x (assoc x :a 1)
         x (assoc x :c 2)]
     (dotimes [_ 10]
@@ -77,9 +77,9 @@
           [{1 :a _ :c}] :a1
           [{3 :c _ :d 4 :e}] :a2)))))
 
-  ;; 123ms, map destructure
-  (let [x (zipmap (map keyword (take 33 (repeatedly gensym)))
-                  (map keyword (take 33 (repeatedly gensym))))
+  ;; 100ms, map destructure
+  (let [x (zipmap (map keyword (take 40 (repeatedly gensym)))
+                  (map keyword (take 40 (repeatedly gensym))))
         x (assoc x :a 1)
         x (assoc x :c 2)]
     (dotimes [_ 10]
@@ -87,7 +87,7 @@
        (dotimes [_ 1e6]
          (let [{a :a c :c} x])))))
 
-  ;; 300ms, map match with only
+  ;; 400ms, map match with only
   (let [x {:a 1 :b 2}]
     (dotimes [_ 10]
       (time
