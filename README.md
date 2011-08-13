@@ -110,6 +110,14 @@ You can constrain map matching so that only maps with the exact key set will mat
   [{3 :c d :d 4 :e}] :a2)
 ```
 
+Special Syntax
+----
+
+The list syntax `()` is reserved for special uses. It does *not* match a literal list.
+
+Or Patterns, Guards and As Patterns use this syntax.
+
+
 Or Patterns
 ----
 
@@ -128,14 +136,6 @@ Or patterns are supported anywhere you would use a pattern:
     [{(3 | 4) :a}] :a1))
 ;; => :a1
 ```
-
-Special Syntax
-----
-
-The list syntax `()` is reserved for special uses. It does *not* match a literal list.
-
-Guards and As Patterns use this syntax.
-
 
 Guards
 ----
