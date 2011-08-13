@@ -758,8 +758,6 @@
                      vec)]
       (pattern-matrix nrows (occurrences matrix)))))
 
-(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
-
 ;; =============================================================================
 ;; Guard Pattern Specialization
 
