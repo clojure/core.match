@@ -83,7 +83,9 @@
     (LiteralPattern. l new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
-    `(= ~ocr ~l))
+    (cond
+     (= l ()) `(empty? ~ocr)
+     :else `(= ~ocr ~l)))
   Object
   (toString [_]
     (if (nil? l)
