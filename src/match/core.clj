@@ -339,21 +339,17 @@
   (all-wildcards? [this]
     (every? wildcard-pattern? ps))
   (drop-nth-bind [this n ocr]
-    (let [p (ps n)]
-      (if (named-wildcard-pattern? p)
-        (let [sym (.sym ^WildcardPattern p)
-              bind-expr (leaf-bind-expr ocr)
-              binding [sym bind-expr]
-              bindings (conj (or bindings [])
-                             binding)
-              bindings (if-let [sym (-> p meta :as)]
-                         (do
-                           (println "found :as" sym)
-                           (conj bindings [sym bind-expr]))
-                         bindings)]
-          (PatternRow. (drop-nth ps n) action
-                       bindings))
-        (drop-nth this n))))
+    (let [p (ps n)
+          bind-expr (leaf-bind-expr ocr)
+          bindings (or bindings [])
+          bindings (if-let [sym (-> p meta :as)]
+                     (conj bindings [sym bind-expr])
+                     bindings)
+          bindings (if (named-wildcard-pattern? p)
+                       (conj bindings [(.sym ^WildcardPattern p) bind-expr])
+                       bindings)]
+      (PatternRow. (drop-nth ps n) action
+                   bindings)))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action bindings))
@@ -864,35 +860,3 @@
   `~(-> (emit-matrix vars clauses)
       compile
       n-to-clj))
-
-(comment
-  (use 'match.core.debug)
-  
-  ;; FIXME
-  (let [v [1 [2 3] 4]]
-    (match [v]
-      [[_ ([a _] :as b) _]] [:a0 b]))
-
-  ;; FIXME, serious bug
-  ;; because constructors get expanded when
-  ;; specialized, problematic when in a seq
-  ;; because seq is strongly ordered, and map
-  ;; is not
-  (let [v [{:a 2}]]
-    (match [v]
-      [[{1 :a}]] :a0))
-
-  (def m (build-matrix [v]
-                       [[{1 :a}]] :a0))
-
-  (-> m
-      (specialize (seq-pattern [1]))
-      pprint-matrix)
-
-  ;; NOTE: some reordering getting triggered which
-  ;; is not what we want at all - David
-  (-> m
-      (specialize (seq-pattern [1]))
-      (specialize (map-pattern))
-      pprint-matrix)
-  )
