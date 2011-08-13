@@ -826,9 +826,8 @@
               (map emit-pattern)
               (into []))))
 
-;; TODO: just emit a normal pattern but add :as metadata to it
 (defmethod emit-pattern-for-syntax :as
-  [pat] (as-pattern pat))
+  [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
 
 (defmethod emit-pattern-for-syntax :when
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
