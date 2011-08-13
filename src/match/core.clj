@@ -342,10 +342,17 @@
     (let [p (ps n)]
       (if (named-wildcard-pattern? p)
         (let [sym (.sym ^WildcardPattern p)
-              binding [sym (leaf-bind-expr ocr)]]
+              bind-expr (leaf-bind-expr ocr)
+              binding [sym bind-expr]
+              bindings (conj (or bindings [])
+                             binding)
+              bindings (if-let [sym (-> p meta :as)]
+                         (do
+                           (println "found :as" sym)
+                           (conj bindings [sym bind-expr]))
+                         bindings)]
           (PatternRow. (drop-nth ps n) action
-                       (conj (or bindings [])
-                             binding)))
+                       bindings))
         (drop-nth this n))))
   IVecMod
   (drop-nth [_ n]
@@ -856,3 +863,35 @@
   `~(-> (emit-matrix vars clauses)
       compile
       n-to-clj))
+
+(comment
+  (use 'match.core.debug)
+  
+  ;; FIXME
+  (let [v [1 [2 3] 4]]
+    (match [v]
+      [[_ ([a _] :as b) _]] [:a0 b]))
+
+  ;; FIXME, serious bug
+  ;; because constructors get expanded when
+  ;; specialized, problematic when in a seq
+  ;; because seq is strongly ordered, and map
+  ;; is not
+  (let [v [{:a 2}]]
+    (match [v]
+      [[{1 :a}]] :a0))
+
+  (def m (build-matrix [v]
+                       [[{1 :a}]] :a0))
+
+  (-> m
+      (specialize (seq-pattern [1]))
+      pprint-matrix)
+
+  ;; NOTE: there some reordering getting trigger which
+  ;; is not what we want at all - David
+  (-> m
+      (specialize (seq-pattern [1]))
+      (specialize (map-pattern))
+      pprint-matrix)
+  )
