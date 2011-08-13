@@ -49,16 +49,20 @@
 ;; -----------------------------------------------------------------------------
 ;; Wildcard Pattern
 
-(deftype WildcardPattern [sym]
+(deftype WildcardPattern [sym _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (WildcardPattern. sym new-meta))
   Object
   (toString [_]
     (str sym)))
 
 (defn ^WildcardPattern wildcard-pattern
-  ([] (WildcardPattern. '_))
+  ([] (WildcardPattern. '_ nil))
   ([sym] 
    {:pre [(symbol? sym)]}
-   (WildcardPattern. sym)))
+   (WildcardPattern. sym nil)))
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 
@@ -72,7 +76,11 @@
 ;; -----------------------------------------------------------------------------
 ;; Literal Pattern
 
-(deftype LiteralPattern [l]
+(deftype LiteralPattern [l _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (LiteralPattern. l new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     `(= ~ocr ~l))
@@ -83,7 +91,7 @@
       (str l))))
 
 (defn ^LiteralPattern literal-pattern [l] 
-  (LiteralPattern. l))
+  (LiteralPattern. l nil))
 
 (def literal-pattern? (partial instance? LiteralPattern))
 
@@ -93,7 +101,11 @@
 ;; -----------------------------------------------------------------------------
 ;; Seq Pattern
 
-(deftype SeqPattern [s]
+(deftype SeqPattern [s _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (SeqPattern. s new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     `(or (seq? ~ocr) (sequential? ~ocr)))
@@ -104,7 +116,7 @@
 (defn ^SeqPattern seq-pattern [s]
   {:pre [(sequential? s)
          (not (empty? s))]}
-  (SeqPattern. s))
+  (SeqPattern. s nil))
 
 (def seq-pattern? (partial instance? SeqPattern))
 
@@ -114,13 +126,17 @@
 ;; -----------------------------------------------------------------------------
 ;; Rest Pattern
 
-(deftype RestPattern [p]
+(deftype RestPattern [p _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (RestPattern. p new-meta))
   Object
   (toString [_]
     p))
 
 (defn ^RestPattern rest-pattern [p]
-  (RestPattern. p))
+  (RestPattern. p nil))
 
 (def rest-pattern? (partial instance? RestPattern))
 
@@ -130,7 +146,11 @@
 ;; -----------------------------------------------------------------------------
 ;; Map Pattern
 
-(deftype MapPattern [m only]
+(deftype MapPattern [m only _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (MapPattern. m only new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     `(or (map? ~ocr) (satisfies? IMatchLookup ~ocr)))
@@ -139,18 +159,22 @@
     (str m " :only " (or only []))))
 
 (defn ^MapPattern map-pattern
-  ([] (MapPattern. {} nil))
+  ([] (MapPattern. {} nil nil))
   ([m] {:pre [(map? m)]}
-     (MapPattern. m nil))
+     (MapPattern. m nil nil))
   ([m only] {:pre [(map? m)]}
-     (MapPattern. m only)))
+     (MapPattern. m only nil)))
 
 (def map-pattern? (partial instance? MapPattern))
 
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
 
-(deftype MapCrashPattern [only]
+(deftype MapCrashPattern [only _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (MapCrashPattern. only new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
@@ -160,7 +184,7 @@
     "CRASH"))
 
 (defn ^MapCrashPattern map-crash-pattern [only]
-  (MapCrashPattern. only))
+  (MapCrashPattern. only nil))
 
 (defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
   (.write writer (str "<MapCrashPattern>")))
@@ -168,14 +192,18 @@
 ;; -----------------------------------------------------------------------------
 ;; Or Patterns
 
-(deftype OrPattern [ps]
+(deftype OrPattern [ps _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (OrPattern. ps new-meta))
   Object
   (toString [this]
     (str ps)))
 
 (defn ^OrPattern or-pattern [p]
   {:pre [(vector? p)]}
-  (OrPattern. p))
+  (OrPattern. p nil))
 
 (def or-pattern? (partial instance? OrPattern))
 
@@ -199,7 +227,11 @@
 ;; -----------------------------------------------------------------------------
 ;; Guard Patterns
 
-(deftype GuardPattern [p gs]
+(deftype GuardPattern [p gs _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (GuardPattern. p gs new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     `(and ~@(map list gs (repeat ocr))))
@@ -209,7 +241,7 @@
 
 (defn ^GuardPattern guard-pattern [p gs]
   {:pre [(set? gs)]}
-  (GuardPattern. p gs))
+  (GuardPattern. p gs nil))
 
 (def guard-pattern? (partial instance? GuardPattern))
 
