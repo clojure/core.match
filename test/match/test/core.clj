@@ -147,3 +147,10 @@
              [{2009 :year a :month}] [:a0 a]
              [{(2010 | 2011) :year b :month}] [:a1 b]))
          [:a1 10])))
+
+(deftest map-pattern-ocr-order-1
+  (is (= (let [v [{:a 1} 2]]
+           (match [v]
+             [[{2 :a} 2]] :a0
+             [[{_ :a} 2]] :a1))
+         :a1)))

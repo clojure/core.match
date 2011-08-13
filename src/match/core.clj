@@ -713,9 +713,10 @@
                                                                 (repeat (map-crash-pattern only)))
                                                         (zipmap only wcs)]
                                                        [{} wc-map])]
-                              (reduce conj (drop-nth-bind row 0 focr)
-                                      (map second
-                                           (sort (merge crash-map wc-map m)))))))
+                              (reduce prepend (drop-nth-bind row 0 focr)
+                                      (reverse
+                                       (map second
+                                            (sort (merge crash-map wc-map m))))))))
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
