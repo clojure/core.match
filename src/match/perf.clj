@@ -63,6 +63,30 @@
        (dotimes [_ 1e6]
          (let [{a :a b :b c :c} x])))))
 
+  ;; small maps are not a good indicator
+  ;; 89ms, map pattern
+  (let [x (zipmap (map keyword (take 33 (repeatedly gensym)))
+                  (map keyword (take 33 (repeatedly gensym))))
+        x (assoc x :a 1)
+        x (assoc x :c 2)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e6]
+        (match [x]
+          [{_ :a 2 :b :only [:a :b]}] :a0
+          [{1 :a _ :c}] :a1
+          [{3 :c _ :d 4 :e}] :a2)))))
+
+  ;; 123ms, map destructure
+  (let [x (zipmap (map keyword (take 33 (repeatedly gensym)))
+                  (map keyword (take 33 (repeatedly gensym))))
+        x (assoc x :a 1)
+        x (assoc x :c 2)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e6]
+         (let [{a :a c :c} x])))))
+
   ;; 300ms, map match with only
   (let [x {:a 1 :b 2}]
     (dotimes [_ 10]
@@ -90,6 +114,19 @@
         (time
          (dotimes [_ 1e6]
            (match [d]
-             [{2009 :year a :month}] [:a0 a]
-             [{(2010 | 2011) :year b :month}] [:a1 b]))))))
+             [{2009 :year a :month}] a
+             [{(2010 | 2011) :year b :month}] b))))))
+
+  ;; satisfies call is a bit slow
+  (let [d (java.util.Date. 2010 10 1 12 30)]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e6]
+        (let [y (.getYear d)]
+          (if (satisfies? IMatchLookup d)
+           (if (= 2009 y)
+             nil
+             (if (= 2010 y)
+               (.getMonth d)
+               nil))))))))
  )
