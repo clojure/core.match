@@ -120,7 +120,7 @@ Or patterns are supported anywhere you would use a pattern:
   (match [x y z ]
     [[1 (3 | 4) 3]] :a0
     [[1 (2 | 3) 3]] :a1))
-;; :a1
+;; => :a1
     
 (let [x {:a 3}]
   (match [x y z ]
@@ -140,6 +140,19 @@ Guards are simple boolean tests. You can specify them like so:
     [[_ (a :when even?) _ _]] :a0
     [[_ (b :when [odd? div3?]) _ _]] :a1))
 ;; => :a1
+```
+
+As Patterns
+----
+
+Sometimees you'd like capture a part of the match with a binding:
+
+```clojure
+(let [v [[1 2]]]
+  (match [v]
+    [[3 1]] :a0
+    [[([1 a] :as b)]] [:a1 a b]))
+;; => [:a1 1 [1 2]]
 ```
 
 Road Map
