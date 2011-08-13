@@ -187,6 +187,19 @@ By extending Javas type to IMatchLookup, Java types can participate in map patte
 ;; => [:a1 10]
 ```
 
+Note on Pattern Rows
+----
+
+A pattern row is delimited with `[]`, and is not a pattern itself.
+
+For example, this syntax is illegal:
+
+```clojure
+(let [v 1]
+  (match [v]
+    ([1] :as w) :a0) ;; Illegal! [1] is a pattern row, not a pattern.
+```
+
 Road Map
 ----
 
