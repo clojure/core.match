@@ -856,25 +856,25 @@
     (symbol? vars) (throw (AssertionError. (str "Occurances must be in a vector. Try changing " vars " to [" vars "]")))
     (not (vector? vars)) (throw (AssertionError. (str "Occurances must be in a vector. " vars " is not a vector"))))
 
-  (letfn [(check-pattern [pat nvars]
+  (letfn [(check-pattern [pat nvars rownum]
             (cond 
               (not (vector? pat)) (throw (AssertionError. 
-                                           (str "Pattern rows must be wrapped in []. Try changing " pat " to [" pat "]." 
+                                           (str "Pattern row " rownum ": Pattern rows must be wrapped in []. Try changing " pat " to [" pat "]." 
                                                 (when (list? pat)
                                                   " Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"))))
               (not= (count pat) nvars)
-              (throw (AssertionError. (str "Pattern row has differing number of patterns. "
+              (throw (AssertionError. (str "Pattern row " rownum ": Pattern row has differing number of patterns. "
                                            pat " has " (count pat) " pattern/s, expecting " nvars " for occurances " vars)))))]
 
     (let [nvars (count vars)
           cls (partition 2 clauses)]
-      (doseq [[pat _] (butlast cls)]
+      (doseq [[[pat _] rownum] (map vector (butlast cls) (rest (range)))]
         (cond
-          (= :else pat) (throw (AssertionError. ":else form only allowed on final pattern row"))
-          :else (check-pattern pat nvars)))
+          (= :else pat) (throw (AssertionError. (str "Pattern row " rownum": :else form only allowed on final pattern row")))
+          :else (check-pattern pat nvars rownum)))
       (when-let [[pat _] (last cls)]
         (when-not (= :else pat)
-          (check-pattern pat nvars)))))
+          (check-pattern pat nvars (count cls))))))
 
   (when (odd? (count clauses)) 
     (throw (AssertionError. (str "Uneven number of Pattern Rows. The last form `" (last clauses) "` seems out of place.")))))

@@ -21,21 +21,21 @@
 (deftest match-errors-pattern-row1
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing 1 to \[1\]"
+        #"Pattern row 1: Pattern rows must be wrapped in \[\]. Try changing 1 to \[1\]"
         (m-to-clj [x]
                   1 :a1))))
 
 (deftest match-errors-pattern-row-list1
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
+        #"Pattern row 1: Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
         (m-to-clj [x]
                   (1) :a1))))
 
 (deftest match-errors-pattern-row-list2
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
+        #"Pattern row 2: Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
         (m-to-clj [x]
                   [2] :a0
                   (1) :a1))))
@@ -65,7 +65,7 @@
 (deftest match-else-clause-error
   (is (thrown-with-msg?
         AssertionError
-        #":else form only allowed on final pattern row"
+        #"Pattern row 1: :else form only allowed on final pattern row"
         (m-to-clj [x]
                   :else 1
                   [1] 1
@@ -74,7 +74,15 @@
 (deftest match-differing-patterns
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurances \[x\]"
+        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurances \[x\]"
+        (m-to-clj [x]
+                  [1 2] 1
+                  :else 1))))
+
+(deftest match-differing-patterns
+  (is (thrown-with-msg?
+        AssertionError
+        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurances \[x\]"
         (m-to-clj [x]
                   [1 2] 1
                   :else 1))))
