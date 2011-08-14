@@ -1,8 +1,8 @@
 * Todo List [25/29]
-  - [ ] :else clause support, currently must supply wildcard row yourself
   - [ ] fail nodes should be more descriptive
   - [ ] rename pattern-equals -> constructor-match? or something similar
   - [ ] implement vector pattern matching
+  - [X] :else clause support, currently must supply wildcard row yourself
   - [X] Java interop
   - [X] guards
   - [X] or patterns
