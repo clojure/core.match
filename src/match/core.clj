@@ -866,9 +866,15 @@
               (throw (AssertionError. (str "Pattern row has differing number of patterns. "
                                            pat " has " (count pat) " pattern/s, expecting " nvars " for occurances " vars)))))]
 
-    (let [nvars (count vars)]
-      (doseq [[pat _] (partition 2 clauses)]
-        (check-pattern pat nvars))))
+    (let [nvars (count vars)
+          cls (partition 2 clauses)]
+      (doseq [[pat _] (butlast cls)]
+        (cond
+          (= :else pat) (throw (AssertionError. ":else form only allowed on final pattern row"))
+          :else (check-pattern pat nvars)))
+      (when-let [[pat _] (last cls)]
+        (when-not (= :else pat)
+          (check-pattern pat nvars)))))
 
   (when (odd? (count clauses)) 
     (throw (AssertionError. (str "Uneven number of Pattern Rows. The last form `" (last clauses) "` seems out of place.")))))
@@ -877,6 +883,10 @@
 (defn emit-matrix [vars clauses]
   (when *match-debug* (check-matrix-args vars clauses))
   (let [cs (partition 2 clauses)
+        cs (let [[p a] (last cs)]
+             (if (= :else p)
+               (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a])
+               cs))
         clause-sources (into [] (map emit-clause cs))]
     (pattern-matrix clause-sources vars)))
 

@@ -4,64 +4,6 @@
         [match.core.debug])
   (:use [clojure.test]))
 
-(deftest match-errors-occurances-symbol
-  (is (thrown-with-msg?
-        AssertionError
-        #"Occurances must be in a vector. Try changing x to \[x\]"
-        (m-to-clj x
-                  [1] :a1))))
-
-(deftest match-errors-occurances-list
-  (is (thrown-with-msg?
-        AssertionError
-        #"Occurances must be in a vector. \(x\) is not a vector"
-        (m-to-clj (x)
-                  [1] :a1))))
-
-(deftest match-errors-pattern-row1
-  (is (thrown-with-msg?
-        AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing 1 to \[1\]"
-        (m-to-clj [x]
-                  1 :a1))))
-
-(deftest match-errors-pattern-row-list1
-  (is (thrown-with-msg?
-        AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
-        (m-to-clj [x]
-                  (1) :a1))))
-
-(deftest match-errors-pattern-row-list2
-  (is (thrown-with-msg?
-        AssertionError
-        #"Pattern rows must be wrapped in \[\]. Try changing \(1\) to \[\(1\)\]. Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"
-        (m-to-clj [x]
-                  [2] :a0
-                  (1) :a1))))
-
-(deftest match-errors-uneven-clauses1
-  (is (thrown-with-msg?
-        AssertionError
-        #"Uneven number of Pattern Rows. The last form `\[1\]` seems out of place."
-        (m-to-clj [x]
-                  [1]))))
-
-(deftest match-errors-uneven-clauses2
-  (is (thrown-with-msg?
-        AssertionError
-        #"Uneven number of Pattern Rows. The last form `\[1\]` seems out of place."
-        (m-to-clj [x]
-                  [1] :a1
-                  [1]))))
-
-(deftest match-list-syntax-error
-  (is (thrown-with-msg?
-        AssertionError
-        #"Invalid list syntax `:what` in \(1 :what a\)."
-        (m-to-clj [x]
-                  [(1 :what a)] :a1))))
-
 (deftest pattern-match-1
   (is (= (let [x true
                y true
@@ -220,3 +162,17 @@
              [[3 1]] :a0
              [[([1 a] :as b)]] [:a1 a b]))
          [:a1 2 [1 2]])))
+
+(deftest else-clause-1
+  (is (= (let [v [1]]
+           (match [v]
+                  [2] 1
+                  :else 21))
+         21)))
+
+#_(deftest else-clause-list ;; TODO blows up, Wildcards need compatible with vectors
+  (is (= (let [v [[1 2]]]
+           (match [v]
+                  [[1 3]] 1
+                  :else 21))
+         21)))
