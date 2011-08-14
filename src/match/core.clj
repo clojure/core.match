@@ -856,17 +856,19 @@
     (symbol? vars) (throw (AssertionError. (str "Occurances must be in a vector. Try changing " vars " to [" vars "]")))
     (not (vector? vars)) (throw (AssertionError. (str "Occurances must be in a vector. " vars " is not a vector"))))
 
-  (let [nvars (count vars)]
-    (doseq [[pat _] (partition 2 clauses)]
-      (cond 
-        (not (vector? pat)) (throw (AssertionError. 
-                                     (str "Pattern rows must be wrapped in []. Try changing " pat " to [" pat "]." 
-                                          (when (list? pat)
-                                            " Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"))))
-        (not= (count pat) nvars)
-        (throw (AssertionError. (str "Pattern row has differing number of patterns. "
-                                     pat " has " (count pat) " pattern/s, expecting " nvars " for occurances " vars)))
-                )))
+  (letfn [(check-pattern [pat nvars]
+            (cond 
+              (not (vector? pat)) (throw (AssertionError. 
+                                           (str "Pattern rows must be wrapped in []. Try changing " pat " to [" pat "]." 
+                                                (when (list? pat)
+                                                  " Note: pattern rows are not patterns. They cannot be wrapped in a :when guard, for example"))))
+              (not= (count pat) nvars)
+              (throw (AssertionError. (str "Pattern row has differing number of patterns. "
+                                           pat " has " (count pat) " pattern/s, expecting " nvars " for occurances " vars)))))]
+
+    (let [nvars (count vars)]
+      (doseq [[pat _] (partition 2 clauses)]
+        (check-pattern pat nvars))))
 
   (when (odd? (count clauses)) 
     (throw (AssertionError. (str "Uneven number of Pattern Rows. The last form `" (last clauses) "` seems out of place.")))))
