@@ -843,7 +843,11 @@
 
 (defmethod emit-pattern-for-syntax :default
   [[_ s :as l]]
-  (throw (AssertionError. (str "Invalid list syntax `" s "` in " l "."))))
+  (throw (AssertionError. (str "Invalid list syntax " s " in " l ". "
+                               "Valid syntax: "
+                               (vec (remove #(= % :default) (keys (.getMethodTable emit-pattern-for-syntax))))
+                               ))))
+
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
