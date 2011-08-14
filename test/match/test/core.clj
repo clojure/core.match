@@ -1,6 +1,7 @@
 (ns match.test.core
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [match.core])
+  (:use [match.core]
+        [match.core.debug])
   (:use [clojure.test]))
 
 (deftest pattern-match-1
@@ -39,8 +40,8 @@
 (deftest seq-pattern-match-bind-1
   (is (= (let [x '(1 2 4)]
            (match [x y z]
-             [[1 2 b]] [:a0 b]
-             [[a 2 4]] [:a1 a]))
+             [[1 2 b] _ _] [:a0 b]
+             [[a 2 4] _ _] [:a1 a]))
          [:a0 4])))
 
 (deftest seq-pattern-match-wildcard-row
@@ -109,15 +110,15 @@
 (deftest or-pattern-match-seq-1
   (is (= (let [x '(1 2 3)]
            (match [x y z ]
-             [[1 (3 | 4) 3]] :a0
-             [[1 (2 | 3) 3]] :a1))
+             [[1 (3 | 4) 3] _ _] :a0
+             [[1 (2 | 3) 3] _ _] :a1))
          :a1)))
 
 (deftest or-pattern-match-map-2
   (is (= (let [x {:a 3}]
            (match [x y z ]
-             [{(1 | 2) :a}] :a0
-             [{(3 | 4) :a}] :a1))
+             [{(1 | 2) :a} _ _] :a0
+             [{(3 | 4) :a} _ _] :a1))
          :a1)))
 
 (defn div3? [n]
@@ -161,3 +162,17 @@
              [[3 1]] :a0
              [[([1 a] :as b)]] [:a1 a b]))
          [:a1 2 [1 2]])))
+
+(deftest else-clause-1
+  (is (= (let [v [1]]
+           (match [v]
+                  [2] 1
+                  :else 21))
+         21)))
+
+#_(deftest else-clause-list ;; TODO blows up, Wildcards need compatible with vectors
+  (is (= (let [v [[1 2]]]
+           (match [v]
+                  [[1 3]] 1
+                  :else 21))
+         21)))
