@@ -1,4 +1,4 @@
-(ns match.test.error-msg
+(ns match.test.core.error-msg
   (:refer-clojure :exclude [reify == inc compile])
   (:use [match.core]
         [match.core.debug])
