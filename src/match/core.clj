@@ -237,7 +237,11 @@
     (GuardPattern. p gs new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
-    `(and ~@(map list gs (repeat ocr))))
+    `(and ~@(map (fn [expr ocr]
+                   (if (list? expr)
+                     (concat expr [ocr])
+                     (list expr ocr)))
+                 gs (repeat ocr))))
   Object
   (toString [this]
     (str p " :when " gs)))
