@@ -129,4 +129,43 @@
              (if (= 2010 y)
                (.getMonth d)
                nil))))))))
+
+  ;; 173ms, ok, when the multimethod is first defined 
+  (let [^objects v (object-array [zero? :zero even? :even odd? :odd])
+        f (fn [x] (cond
+                   ((aget v 0) x) (aget v 1)
+                   ((aget v 2) x) (aget v 3)
+                   ((aget v 4) x) (aget v 5)
+                   :else nil))]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (f 3)))))
+
+  ;; 680ms, much slower, perhaps because the callsite keeps changing?
+  (let [^objects v (object-array [zero? :zero even? :even odd? :odd])
+        f (fn [x] (loop [i 0]
+                    (cond
+                     (> i 5) nil
+                     ((aget v i) x) (aget v (inc i))
+                     :else (recur (+ i 2)))))]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (f 3)))))
+
+  ;; ah just like deftype
+  ;; inline dispatching be optimized
+  ;; we'll have to see how feasible this is
+  (defpred foo
+    [0] :a0
+    [(a :when even?)] :a1
+    [(a :when div3?)] :a2)
+
+  ;; this should be namespace local
+  ;; also this needs to be inside
+  ;; so we should use the slower
+  ;; dispatch table
+  (extend-pred foo
+    [1] :new-a)
  )

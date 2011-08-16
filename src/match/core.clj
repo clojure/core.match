@@ -665,12 +665,16 @@
           srows (filter #(pattern-equals this (first %)) rows)
           nrows (->> srows
                      (map (fn [row]
-                            (let [^SeqPattern p (first row)
-                                  [h & t] (.s p)
-                                  t (cond
-                                     (empty? t) (literal-pattern ())
-                                     (rest-pattern? (first t)) (.p ^RestPattern (first t))
-                                     :else (seq-pattern t))]
+                            (let [p (first row)
+                                  [h t] (if (seq-pattern? p)
+                                          (let [^SeqPattern p p
+                                                [h & t] (.s p)
+                                                t (cond
+                                                   (empty? t) (literal-pattern ())
+                                                   (rest-pattern? (first t)) (.p ^RestPattern (first t))
+                                                   :else (seq-pattern t))]
+                                            [h t])
+                                          [(wildcard-pattern) (wildcard-pattern)])]
                               (reduce prepend (drop-nth-bind row 0 focr)
                                       [t h]))))
                      vec)
