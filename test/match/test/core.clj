@@ -170,7 +170,7 @@
                   :else 21))
          21)))
 
-#_(deftest else-clause-list ;; TODO blows up, Wildcards need compatible with vectors
+(deftest else-clause-list
   (is (= (let [v [[1 2]]]
            (match [v]
                   [[1 3]] 1
