@@ -563,7 +563,9 @@
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
                                     (compile m)
-                                    (fail-node)))] ;; TODO handle-warning here?
+                                    (do (handle-warning (str "WARNING: Non-exhaustive pattern matrix, " 
+                                                             "consider adding :else clause"))
+                                        (fail-node))))]
                     (switch-node
                      (ocrs col)
                      clauses
