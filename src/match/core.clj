@@ -1,17 +1,10 @@
 (ns match.core
   (:refer-clojure :exclude [compile])
+  (:use [clojure.tools.logging :only (warn)])
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
 (def ^:dynamic *syntax-check* true)
-(def ^:dynamic *warnings* true)
-(def ^:dynamic *warnings-as-errors* false)
-
-(defn- handle-warning [msg]
-  (when *warnings*
-    (if *warnings-as-errors*
-      (throw (Exception. msg))
-      (println msg))))
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -536,7 +529,7 @@
                 (and (not (nil? ps))
                      (empty? ps))))]
       (cond
-       (empty? rows) (do (handle-warning "WARNING: Non-exhaustive pattern matrix, consider adding :else clause")
+       (empty? rows) (do (warn "WARNING: Non-exhaustive pattern matrix, consider adding :else clause")
                          (fail-node))
        (empty-row? (first rows)) (let [f (first rows)]
                                    (leaf-node (action f) (bindings f)))
@@ -563,8 +556,8 @@
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
                                     (compile m)
-                                    (do (handle-warning (str "WARNING: Non-exhaustive pattern matrix, " 
-                                                             "consider adding :else clause"))
+                                    (do (warn (str "WARNING: Non-exhaustive pattern matrix, " 
+                                                   "consider adding :else clause"))
                                         (fail-node))))]
                     (switch-node
                      (ocrs col)

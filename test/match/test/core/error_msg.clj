@@ -86,20 +86,3 @@
         (m-to-clj [x]
                   [1 2] 1
                   :else 1))))
-
-(deftest match-warning-comprehensive-test1
-  (is (thrown-with-msg?
-        Exception
-        #"WARNING: Non-exhaustive pattern matrix, consider adding :else clause"
-        (binding [match.core/*warnings-as-errors* true]
-          (m-to-clj [x]
-                    [1] 1)))))
-
-(deftest match-warning-comprehensive-test2
-  (is (thrown-with-msg?
-        Exception
-        #"WARNING: Non-exhaustive pattern matrix, consider adding :else clause"
-        (binding [match.core/*warnings-as-errors* true]
-          (m-to-clj [x y]
-                    [_ 1] 1
-                    [1 _] 2)))))
