@@ -151,6 +151,23 @@
            [{1 :a}] :a2
            :else :a3)))))
 
+  ;; hmm we could optimize literals w/ case
+  (let [x '(:tenth foo)]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e7]
+        (match [x]
+          [[:first & r]] :a0
+          [[:second & r]] :a1
+          [[:third & r]] :a2
+          [[:fourth & r]] :a3
+          [[:fifth & r]] :a4
+          [[:sixth & r]] :a5
+          [[:seventh & r]] :a6
+          [[:eigth & r]] :a7
+          [[:ninth & r]] :a8
+          [[:tenth & r]] :a9)))))
+
   ;; 173ms, ok, when the multimethod is first defined 
   (let [^objects v (object-array [zero? :zero even? :even odd? :odd])
         f (fn [x] (cond
