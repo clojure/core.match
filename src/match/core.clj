@@ -539,9 +539,7 @@
                                        (leaf-node (action f)
                                                   (concat (bindings f)
                                                           wc-bindings)))
-       :else (let [col (cond
-                        (seq-occurrence? ocrs) 0 ;; TODO: don't hardcode - David
-                        :else (necessary-column this))]
+       :else (let [col (necessary-column this)]
                 (if (= col 0)
                   (let [this (reduce specialize this (pseudo-patterns this col))
                         constrs (column-constructors this col)
