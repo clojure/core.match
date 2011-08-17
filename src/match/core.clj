@@ -156,7 +156,7 @@
     (MapPattern. m only new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
-    `(or (map? ~ocr) (satisfies? IMatchLookup ~ocr)))
+    `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
     (str m " :only " (or only []))))
