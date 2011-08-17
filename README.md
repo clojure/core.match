@@ -153,7 +153,7 @@ Guards are simple boolean tests. You can specify them like so:
 As Patterns
 ----
 
-Sometimees you'd like capture a part of the match with a binding:
+Sometimes you'd like capture a part of the match with a binding:
 
 ```clojure
 (let [v [[1 2]]]
