@@ -170,9 +170,30 @@
                   :else 21))
          21)))
 
-#_(deftest else-clause-list ;; TODO blows up, Wildcards need compatible with vectors
+(deftest else-clause-seq-pattern-1
   (is (= (let [v [[1 2]]]
            (match [v]
                   [[1 3]] 1
                   :else 21))
          21)))
+
+(deftest else-clause-map-pattern-1
+  (is (= (let [v {:a 1}]
+           (match [v]
+                  [{a :a}] 1
+                  :else 21))
+         1)))
+
+(deftest else-clause-guard-pattern-1
+  (is (= (let [v 1]
+           (match [v]
+                  [(_ :when even?)] 1
+                  :else 21))
+         21)))
+
+(deftest else-clause-or-pattern-1
+  (is (= (let [v 3]
+           (match [v]
+                  [(1 | 2)] :a0
+                  :else :a1))
+         :a1)))
