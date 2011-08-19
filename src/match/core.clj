@@ -437,7 +437,7 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw (Exception. "Found FailNode"))))
+    `(throw (Exception. "No match found."))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
