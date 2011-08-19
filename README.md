@@ -3,6 +3,18 @@ match
 
 An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later.
 
+Usage
+----
+
+The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
+
+```clojure
+[match "0.1.0-SNAPSHOT"]
+```
+
+About
+----
+
 This library implements a pattern match compilation algorithm that uses the notion of "necessity" from lazy pattern matching.
 
 For example the following pattern:
