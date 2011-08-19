@@ -961,6 +961,13 @@
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  `~(-> (emit-matrix vars clauses)
-      compile
-      n-to-clj))
+  (let [[vars clauses] (if (not (vector? vars))
+                         [[vars] (mapcat (fn [[row action]]
+                                           (if (not= row :else)
+                                             [[row] action]
+                                             [row action]))
+                                         (partition 2 clauses))]
+                         [vars clauses])]
+   `~(-> (emit-matrix vars clauses)
+         compile
+         n-to-clj)))

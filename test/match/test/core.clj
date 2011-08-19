@@ -213,3 +213,19 @@
                        [_ 0] "Buzz"
                        :else (str x)))))
          '("1" "2" "Fizz" "4" "Buzz" "Fizz" "7" "8" "Fizz"))))
+
+(deftest match-single-1
+  (is (= (let [x 3]
+           (match x
+             1 :a0
+             2 :a1
+             :else :a2))
+         :a2)))
+
+(deftest match-single-2
+  (is (= (let [x 3]
+           (match (mod x 2)
+             1 :a0
+             2 :a1
+             :else :a2))
+         :a0)))
