@@ -529,7 +529,7 @@
                 (and (not (nil? ps))
                      (empty? ps))))]
       (cond
-       (empty? rows) (do (warn "WARNING: Non-exhaustive pattern matrix, consider adding :else clause")
+       (empty? rows) (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
                          (fail-node))
        (empty-row? (first rows)) (let [f (first rows)]
                                    (leaf-node (action f) (bindings f)))
@@ -554,7 +554,7 @@
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
                                     (compile m)
-                                    (do (warn (str "WARNING: Non-exhaustive pattern matrix, " 
+                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                    "consider adding :else clause"))
                                         (fail-node))))]
                     (switch-node
