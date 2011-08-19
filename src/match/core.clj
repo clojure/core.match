@@ -1,9 +1,10 @@
 (ns match.core
   (:refer-clojure :exclude [compile])
+  (:use [clojure.tools.logging :only (warn)])
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
-(def ^:dynamic *match-debug* true)
+(def ^:dynamic *syntax-check* true)
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -528,7 +529,8 @@
                 (and (not (nil? ps))
                      (empty? ps))))]
       (cond
-       (empty? rows) (fail-node)
+       (empty? rows) (do (warn "WARNING: Non-exhaustive pattern matrix, consider adding :else clause")
+                         (fail-node))
        (empty-row? (first rows)) (let [f (first rows)]
                                    (leaf-node (action f) (bindings f)))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
@@ -543,18 +545,21 @@
                 (if (= col 0)
                   (let [this (reduce specialize this (pseudo-patterns this col))
                         constrs (column-constructors this col)
+                        clauses (map (fn [c]
+                                       (let [s (-> this 
+                                                 (specialize c) 
+                                                 compile)]
+                                         [c s]))
+                                     constrs)
                         default (let [m (specialize this (wildcard-pattern))]
                                   (if-not (empty-matrix? m)
                                     (compile m)
-                                    (fail-node)))]
+                                    (do (warn (str "WARNING: Non-exhaustive pattern matrix, " 
+                                                   "consider adding :else clause"))
+                                        (fail-node))))]
                     (switch-node
                      (ocrs col)
-                     (map (fn [c]
-                            (let [s (-> this 
-                                        (specialize c) 
-                                        compile)]
-                              [c s]))
-                          constrs)
+                     clauses
                      default))
                   (compile (swap this col)))))))
 
@@ -869,7 +874,7 @@
     (pattern-row p action)))
 
 ;; This could be scattered around in other functions to be more efficient
-;; Turn off *match-debug* to disable
+;; Turn off *syntax-check* to disable
 (defn- check-matrix-args [vars clauses]
   (cond
    (symbol? vars) (throw (AssertionError.
@@ -913,7 +918,7 @@
 
 
 (defn emit-matrix [vars clauses]
-  (when *match-debug* (check-matrix-args vars clauses))
+  (when *syntax-check* (check-matrix-args vars clauses))
   (let [cs (partition 2 clauses)
         cs (let [[p a] (last cs)]
              (if (= :else p)
