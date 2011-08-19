@@ -5,12 +5,16 @@
 
 (def ^:dynamic *syntax-check* true)
 (def ^:dynamic *line*)
+(def ^:dynamic *warned* (atom false))
 
-(defmacro warn [msg]
-  `(binding [*out* *err*] 
-     (println "WARNING:"
-              (str "Line " *line* ":") 
-              ~msg)))
+(defn warn [msg]
+  (if (not @*warned*)
+    (do
+      (binding [*out* *err*] 
+        (println "WARNING:"
+                 (str "Line " *line* ":") 
+                 msg))
+      (reset! *warned* true))))
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -967,7 +971,8 @@
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  (binding [*line* (-> &form meta :line)]
+  (binding [*line* (-> &form meta :line)
+            *warned* (atom false)]
     (let [[vars clauses] (if (not (vector? vars))
                            [[vars] (mapcat (fn [[row action]]
                                              (if (not= row :else)
