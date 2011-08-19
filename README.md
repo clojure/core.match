@@ -212,6 +212,35 @@ For example, this syntax is illegal:
     ([1] :as w) :a0) ;; Illegal! [1] is a pattern row, not a pattern.
 ```
 
+Matching single variables
+---
+
+`match.core/match-1` is sugar over `match` that allows pattern matching over a single variable, without
+an "extra" pair of `[]` around the occurances and each pattern row.
+
+```clojure
+(let [x 3]
+  (match-1 x
+           1 :a0
+           2 :a1
+           :else :a2))
+;=> :a2
+```
+
+This is equivalent to the following `match`.
+
+```clojure
+(let [x 3]
+  (match [x]
+         [1] :a0
+         [2] :a1
+         :else :a2))
+;=> :a2
+```
+
+As shown, :else clauses are special, in that they are not implicitely wrapped in `[]`.
+
+
 Road Map
 ----
 
