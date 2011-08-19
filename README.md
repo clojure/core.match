@@ -37,7 +37,7 @@ expands into
  (= y false) (cond
               (= z false) (let [] 3)
               (= z true) (let [] 1)
-              :else (throw (java.lang.Exception. "Found FailNode")))
+              :else (throw (java.lang.Exception. "No match found.")))
  (= y true) (cond
              (= x false) (let [] 2)
              :else (cond
@@ -45,11 +45,11 @@ expands into
                     (= z true) 4
                     :else (throw
                            (java.lang.Exception.
-                            "Found FailNode"))))
+                            "No match found."))))
  :else (cond
         (= z false) (let [] 3)
         (= z true) (let [] 4)
-        :else (throw (java.lang.Exception. "Found FailNode"))))
+        :else (throw (java.lang.Exception. "No match found."))))
 ```
 
 Note that y gets tested first. Lazy pattern matching consistently gives compact decision trees. This means faster pattern matching. You can find out more in the top paper cited below.
