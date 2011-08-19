@@ -216,7 +216,7 @@
 
 (deftest match-single-1
   (is (= (let [x 3]
-           (match x
+           (match-1 x
              1 :a0
              2 :a1
              :else :a2))
@@ -224,7 +224,7 @@
 
 (deftest match-single-2
   (is (= (let [x 3]
-           (match (mod x 2)
+           (match-1 (mod x 2)
              1 :a0
              2 :a1
              :else :a2))
