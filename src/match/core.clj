@@ -1,10 +1,16 @@
 (ns match.core
   (:refer-clojure :exclude [compile])
-  (:use [clojure.tools.logging :only (warn)])
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
 (def ^:dynamic *syntax-check* true)
+(def ^:dynamic *line*)
+
+(defmacro warn [msg]
+  `(binding [*out* *err*] 
+     (println "WARNING:"
+              (str "Line " *line* ":") 
+              ~msg)))
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -935,6 +941,7 @@
        ~clj-form)))
 
 (defmacro match [vars & clauses]
-  `~(-> (emit-matrix vars clauses)
-      compile
-      n-to-clj))
+  (binding [*line* (-> &form meta :line)]
+    `~(-> (emit-matrix vars clauses)
+        compile
+        n-to-clj)))
