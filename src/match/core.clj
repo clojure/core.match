@@ -157,7 +157,7 @@
     (MapPattern. m only new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
-    `(or (map? ~ocr) (satisfies? IMatchLookup ~ocr)))
+    `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
     (str m " :only " (or only []))))
@@ -438,7 +438,7 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw (Exception. "Found FailNode"))))
+    `(throw (Exception. "No match found."))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -541,9 +541,7 @@
                                        (leaf-node (action f)
                                                   (concat (bindings f)
                                                           wc-bindings)))
-       :else (let [col (cond
-                        (seq-occurrence? ocrs) 0 ;; TODO: don't hardcode - David
-                        :else (necessary-column this))]
+       :else (let [col (necessary-column this)]
                 (if (= col 0)
                   (let [this (reduce specialize this (pseudo-patterns this col))
                         constrs (column-constructors this col)
@@ -707,28 +705,31 @@
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           all-keys (->> srows
+                        (remove (comp wildcard-pattern? first))
                         (map (fn [row]
                                (let [^MapPattern p (first row)]
                                  [(set (keys (set/map-invert (.m p))))
                                   (set (.only p))])))
                         (reduce concat)
                         (reduce set/union #{})
-                        sort) ;; NOTE: this assumes keys are of a heterogenous type, can't sort #{1 :a} - David
+                        sort) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
           nrows (->> srows
                      (map (fn [row]
-                            (let [^MapPattern p (first row)
-                                  m (set/map-invert (.m p))
-                                  [crash-map wc-map] (if-let [only (.only p)]
-                                                       [(zipmap all-keys
-                                                                (repeat (map-crash-pattern only)))
-                                                        (zipmap only wcs)]
-                                                       [{} wc-map])]
+                            (let [p (first row)
+                                  ocr-map (if (map-pattern? p)
+                                            (let [^MapPattern p p
+                                                  m (set/map-invert (.m p))
+                                                  [crash-map wc-map] (if-let [only (.only p)]
+                                                                       [(zipmap all-keys
+                                                                                (repeat (map-crash-pattern only)))
+                                                                        (zipmap only wcs)]
+                                                                       [{} wc-map])]
+                                              (merge crash-map wc-map m))
+                                            wc-map)]
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (reverse
-                                       (map second
-                                            (sort (merge crash-map wc-map m))))))))
+                                      (reverse (map second (sort ocr-map)))))))
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
@@ -766,10 +767,12 @@
     (let [ps (.ps this)
           nrows (->> (rows matrix)
                      (map (fn [row]
-                            (if (pattern-equals this (first row))
-                              (map (fn [p]
-                                     (update-pattern row 0 p)) ps)
-                              [row])))
+                            (let [p (first row)]
+                              (if (and (pattern-equals this p)
+                                       (not (wildcard-pattern? p)))
+                                (map (fn [p]
+                                       (update-pattern row 0 p)) ps)
+                                [row]))))
                      (apply concat)
                      vec)]
       (pattern-matrix nrows (occurrences matrix)))))
@@ -783,8 +786,11 @@
     (let [nrows (->> (rows matrix)
                      (filter #(pattern-equals this (first %)))
                      (map (fn [row]
-                            (let [^GuardPattern p (first row)]
-                             (update-pattern row 0 (.p p)))))
+                            (let [p (first row)]
+                              (if (guard-pattern? p)
+                                (let [^GuardPattern p p]
+                                  (update-pattern row 0 (.p p)))
+                                row))))
                      vec)]
       (pattern-matrix nrows (occurrences matrix)))))
 

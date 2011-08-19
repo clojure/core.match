@@ -64,7 +64,7 @@
          (let [{a :a b :b c :c} x])))))
 
   ;; small maps are not a good indicator
-  ;; 150ms, map pattern
+  ;; 80ms, map pattern
   (let [x (zipmap (map keyword (take 40 (repeatedly gensym)))
                   (map keyword (take 40 (repeatedly gensym))))
         x (assoc x :a 1)
@@ -77,7 +77,7 @@
           [{1 :a _ :c}] :a1
           [{3 :c _ :d 4 :e}] :a2)))))
 
-  ;; 100ms, map destructure
+  ;; 130ms, map destructure
   (let [x (zipmap (map keyword (take 40 (repeatedly gensym)))
                   (map keyword (take 40 (repeatedly gensym))))
         x (assoc x :a 1)
@@ -87,7 +87,7 @@
        (dotimes [_ 1e6]
          (let [{a :a c :c} x])))))
 
-  ;; 400ms, map match with only
+  ;; 340ms, map match with only
   (let [x {:a 1 :b 2}]
     (dotimes [_ 10]
       (time
@@ -129,6 +129,44 @@
              (if (= 2010 y)
                (.getMonth d)
                nil))))))))
+
+  (deftype Foo [a b]
+    clojure.lang.ILookup
+    (valAt [this k]
+      (.valAt this k nil))
+    (valAt [this k not-found]
+      (case k
+        :a a
+        :b b
+        not-found)))
+
+  ;; 130ms
+  (let [x (Foo. 1 2)]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e6]
+         (match [x]
+           [{3 :a 4 :c}] :a0
+           [{3 :d 4 :e}] :a1
+           [{1 :a}] :a2
+           :else :a3)))))
+
+  ;; hmm we could optimize literals w/ case
+  (let [x '(:tenth foo)]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e7]
+        (match [x]
+          [[:first & r]] :a0
+          [[:second & r]] :a1
+          [[:third & r]] :a2
+          [[:fourth & r]] :a3
+          [[:fifth & r]] :a4
+          [[:sixth & r]] :a5
+          [[:seventh & r]] :a6
+          [[:eigth & r]] :a7
+          [[:ninth & r]] :a8
+          [[:tenth & r]] :a9)))))
 
   ;; 173ms, ok, when the multimethod is first defined 
   (let [^objects v (object-array [zero? :zero even? :even odd? :odd])

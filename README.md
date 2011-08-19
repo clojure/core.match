@@ -3,6 +3,18 @@ match
 
 An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later.
 
+Usage
+----
+
+The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
+
+```clojure
+[match "0.1.0-SNAPSHOT"]
+```
+
+About
+----
+
 This library implements a pattern match compilation algorithm that uses the notion of "necessity" from lazy pattern matching.
 
 For example the following pattern:
@@ -25,7 +37,7 @@ expands into
  (= y false) (cond
               (= z false) (let [] 3)
               (= z true) (let [] 1)
-              :else (throw (java.lang.Exception. "Found FailNode")))
+              :else (throw (java.lang.Exception. "No match found.")))
  (= y true) (cond
              (= x false) (let [] 2)
              :else (cond
@@ -33,11 +45,11 @@ expands into
                     (= z true) 4
                     :else (throw
                            (java.lang.Exception.
-                            "Found FailNode"))))
+                            "No match found."))))
  :else (cond
         (= z false) (let [] 3)
         (= z true) (let [] 4)
-        :else (throw (java.lang.Exception. "Found FailNode"))))
+        :else (throw (java.lang.Exception. "No match found."))))
 ```
 
 Note that y gets tested first. Lazy pattern matching consistently gives compact decision trees. This means faster pattern matching. You can find out more in the top paper cited below.
@@ -153,7 +165,7 @@ Guards are simple boolean tests. You can specify them like so:
 As Patterns
 ----
 
-Sometimees you'd like capture a part of the match with a binding:
+Sometimes you'd like capture a part of the match with a binding:
 
 ```clojure
 (let [v [[1 2]]]
