@@ -170,7 +170,7 @@
                   :else 21))
          21)))
 
-(deftest else-clause-list
+(deftest else-clause-seq-pattern-1
   (is (= (let [v [[1 2]]]
            (match [v]
                   [[1 3]] 1
