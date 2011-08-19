@@ -970,7 +970,7 @@
     `(defn ~name ~vars 
        ~clj-form)))
 
-(defmacro match [vars & clauses]
+(defmacro match-1 [vars & clauses]
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
     (let [[vars clauses] (if (not (vector? vars))
@@ -983,3 +983,10 @@
       `~(-> (emit-matrix vars clauses)
           compile
           n-to-clj))))
+
+(defmacro match [vars & clauses]
+  (binding [*line* (-> &form meta :line)
+            *warned* (atom false)]
+    `~(-> (emit-matrix vars clauses)
+        compile
+        n-to-clj)))
