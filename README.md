@@ -85,7 +85,7 @@ Seq matching
 ```clojure
 (let [x [1 2 nil nil nil]]
    (match [x]
-     [[1]   :a0
+     [[1]]   :a0
      [[1 2]] :a1
      [[1 2 nil nil nil]] :a2))
 ;; => :a2
