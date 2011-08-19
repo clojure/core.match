@@ -87,6 +87,7 @@
   (p-to-clj [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
+     (symbol? l) `(= ~ocr '~l)
      :else `(= ~ocr ~l)))
   Object
   (toString [_]
@@ -839,7 +840,11 @@
 (declare vector-pattern)
 
 (defmethod emit-pattern clojure.lang.ISeq
-  [pat] (emit-pattern-for-syntax pat))
+  [pat] (if (and (= (count pat) 2)
+                 (= (first pat) 'quote)
+                 (symbol? (second pat)))
+          (literal-pattern (second pat))
+          (emit-pattern-for-syntax pat)))
 
 (defmulti emit-pattern-for-syntax (fn [syn] (second syn)))
 
