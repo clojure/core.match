@@ -250,7 +250,7 @@
              :else :a2))
          :a0)))
 
-#_(deftest match-single-3  ;; TODO precondition that switch-node occurance must be symbols fails.. wrong precondition?
+(deftest match-single-3
   (is (= (let [x 3]
            (match-1 [1 2] 
                   [2 1] :a0 

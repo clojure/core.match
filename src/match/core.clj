@@ -486,8 +486,7 @@
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
-   {:pre [(symbol? occurrence)
-          (seq? cases)]}
+   {:pre [(seq? cases)]}
    (SwitchNode. occurrence cases default)))
 
 ;; =============================================================================
@@ -971,6 +970,7 @@
        ~clj-form)))
 
 (defmacro match-1 [vars & clauses]
+  "Pattern match a single pattern"
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
     (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
@@ -983,6 +983,7 @@
           n-to-clj))))
 
 (defmacro match [vars & clauses]
+  "Pattern match a pattern row"
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
     `~(-> (emit-matrix vars clauses)
