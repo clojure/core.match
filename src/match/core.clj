@@ -12,7 +12,7 @@
     (do
       (binding [*out* *err*] 
         (println "WARNING:"
-                 (str "Line " *line* ":") 
+                 (str *ns* ", line " *line* ":") 
                  msg))
       (reset! *warned* true))))
 
