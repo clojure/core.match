@@ -62,32 +62,32 @@
 (deftest map-pattern-match-1
   (is (= (let [x {:a 1 :b 1}]
            (match [x]
-             [{_ :a 2 :b}] :a0
-             [{1 :a _ :c}] :a1
-             [{3 :c _ :d 4 :e}] :a2
+             [{:a _ :b 2}] :a0
+             [{:a 1 :c _}] :a1
+             [{:c 3 :d _ :e 4}] :a2
              :else []))
          :a1)))
 
 (deftest map-pattern-match-only-1
   (is (and (= (let [x {:a 1 :b 2}]
                 (match [x]
-                  [{_ :a 2 :b :only [:a :b]}] :a0
-                  [{1 :a _ :c}] :a1
-                  [{3 :c _ :d 4 :e}] :a2
+                  [({:a _ :b 2} :only [:a :b])] :a0
+                  [{:a 1 :c _}] :a1
+                  [{:c 3 :d _ :e 4}] :a2
                   :else []))
               :a0)
            (= (let [x {:a 1 :b 2 :c 3}]
                 (match [x]
-                  [{_ :a 2 :b :only [:a :b]}] :a0
-                  [{1 :a _ :c}] :a1
-                  [{3 :c _ :d 4 :e}] :a2
+                  [({:a _ :b 2} :only [:a :b])] :a0
+                  [{:a 1 :c _}] :a1
+                  [{:c 3 :d _ :e 4}] :a2
                   :else []))
               :a1))))
 
 (deftest map-pattern-match-bind-1
   (is (= (let [x {:a 1 :b 2}]
            (match [x]
-             [{a :a b :b}] [:a0 a b]
+             [{:a a :b b}] [:a0 a b]
              :else []))
          [:a0 1 2])))
 
@@ -138,8 +138,8 @@
                y nil
                z nil]
            (match [x y z]
-             [{(1 | 2) :a} _ _] :a0
-             [{(3 | 4) :a} _ _] :a1
+             [{:a (1 | 2)} _ _] :a0
+             [{:a (3 | 4)} _ _] :a1
              :else []))
          :a1)))
 
@@ -168,16 +168,16 @@
 (deftest map-pattern-interop-1
   (is (= (let [d (java.util.Date. 2010 10 1 12 30)]
            (match [d]
-             [{2009 :year a :month}] [:a0 a]
-             [{(2010 | 2011) :year b :month}] [:a1 b]
+             [{:year 2009 :month a}] [:a0 a]
+             [{:year (2010 | 2011) :month b}] [:a1 b]
              :else []))
          [:a1 10])))
 
 (deftest map-pattern-ocr-order-1
   (is (= (let [v [{:a 1} 2]]
            (match [v]
-             [[{2 :a} 2]] :a0
-             [[{_ :a} 2]] :a1
+             [[{:a 2} 2]] :a0
+             [[{:a _} 2]] :a1
              :else []))
          :a1)))
 
@@ -206,7 +206,7 @@
 (deftest else-clause-map-pattern-1
   (is (= (let [v {:a 1}]
            (match [v]
-                  [{a :a}] 1
+                  [{:a a}] 1
                   :else 21))
          1)))
 

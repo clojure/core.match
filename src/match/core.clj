@@ -161,24 +161,22 @@
 ;; -----------------------------------------------------------------------------
 ;; Map Pattern
 
-(deftype MapPattern [m only _meta]
+(deftype MapPattern [m _meta]
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
-    (MapPattern. m only new-meta))
+    (MapPattern. m new-meta))
   IPatternCompile
   (p-to-clj [this ocr]
     `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
-    (str m " :only " (or only []))))
+    (str m " :only " (or (:only _meta) []))))
 
 (defn ^MapPattern map-pattern
-  ([] (MapPattern. {} nil nil))
+  ([] (MapPattern. {} nil))
   ([m] {:pre [(map? m)]}
-     (MapPattern. m nil nil))
-  ([m only] {:pre [(map? m)]}
-     (MapPattern. m only nil)))
+     (MapPattern. m nil)))
 
 (def map-pattern? (partial instance? MapPattern))
 
@@ -732,8 +730,8 @@
                         (remove (comp wildcard-pattern? first))
                         (map (fn [row]
                                (let [^MapPattern p (first row)]
-                                 [(set (keys (set/map-invert (.m p))))
-                                  (set (.only p))])))
+                                 [(set (keys (.m p)))
+                                  (set (-> p meta :only))])))
                         (reduce concat)
                         (reduce set/union #{})
                         sort) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
@@ -744,8 +742,8 @@
                             (let [p (first row)
                                   ocr-map (if (map-pattern? p)
                                             (let [^MapPattern p p
-                                                  m (set/map-invert (.m p))
-                                                  [crash-map wc-map] (if-let [only (.only p)]
+                                                  m (.m p)
+                                                  [crash-map wc-map] (if-let [only (-> p meta :only)]
                                                                        [(zipmap all-keys
                                                                                 (repeat (map-crash-pattern only)))
                                                                         (zipmap only wcs)]
@@ -842,11 +840,9 @@
   (map-pattern
     (->> pat
       (map (fn [[k v]]
-             (when (not= k :only)
-               [(emit-pattern k) v])))
+             [k (emit-pattern v)]))
       (remove nil?)
-      (into {}))
-    (:only pat)))
+      (into {}))))
 
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
@@ -887,6 +883,9 @@
 
 (defmethod emit-pattern-for-syntax :vector
   [p])
+
+(defmethod emit-pattern-for-syntax :only
+  [[p _ only]] (with-meta (emit-pattern p) {:only only}))
 
 (defmethod emit-pattern-for-syntax :default
   [[_ s :as l]]
