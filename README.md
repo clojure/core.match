@@ -107,9 +107,9 @@ Map matching
 ```clojure
 (let [x {:a 1 :b 1}]
    (match [x]
-     [{_ :a 2 :b}] :a0
-     [{1 :a _ :c}] :a1
-     [{3 :c _ :d 4 :e}] :a2))
+     [{:a _ :b 2}] :a0
+     [{:a 1 :c _}] :a1
+     [{:c 3 :d _ :e 4}] :a2))
 ;; => :a1
 ```
 
@@ -117,9 +117,9 @@ You can constrain map matching so that only maps with the exact key set will mat
 
 ```clojure
 (match [x]
-  [{_ :a 2 :b :only [:a :b]}] :a0
-  [{1 :a c :c}] :a1
-  [{3 :c d :d 4 :e}] :a2)
+  [({:a _ :b 2} :only [:a :b])] :a0
+  [{:a 1 :c c}] :a1
+  [{:c 3 :d d :e 4}] :a2)
 ```
 
 Special Syntax
@@ -144,8 +144,8 @@ Or patterns are supported anywhere you would use a pattern:
     
 (let [x {:a 3}]
   (match [x y z ]
-    [{(1 | 2) :a}] :a0
-    [{(3 | 4) :a}] :a1))
+    [{:a (1 | 2)}] :a0
+    [{:a (3 | 4)}] :a1))
 ;; => :a1
 ```
 
@@ -194,8 +194,8 @@ By extending Java types to IMatchLookup, Java types can participate in map patte
 
 (let [d (java.util.Date. 2010 10 1 12 30)]
   (match [d]
-    [{2009 :year a :month}] [:a0 a]
-    [{(2010 | 2011) :year b :month}] [:a1 b]))
+    [{:year 2009 :month a}] [:a0 a]
+    [{:year (2010 | 2011) :month b}] [:a1 b]))
 ;; => [:a1 10]
 ```
 
