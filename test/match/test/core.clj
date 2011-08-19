@@ -225,14 +225,14 @@
          :a1)))
 
 (deftest match-expr-1
-  (is (= (->> (range 1 10)
+  (is (= (->> (range 1 16)
               (map (fn [x]
                      (match [(mod x 3) (mod x 5)]
-                       [0 0] "FizzBizz"
+                       [0 0] "FizzBuzz"
                        [0 _] "Fizz"
                        [_ 0] "Buzz"
                        :else (str x)))))
-         '("1" "2" "Fizz" "4" "Buzz" "Fizz" "7" "8" "Fizz"))))
+         '("1" "2" "Fizz" "4" "Buzz" "Fizz" "7" "8" "Fizz" "Buzz" "11" "Fizz" "13" "14" "FizzBuzz"))))
 
 (deftest match-single-1
   (is (= (let [x 3]
