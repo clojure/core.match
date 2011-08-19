@@ -38,7 +38,9 @@
          :a2)))
 
 (deftest seq-pattern-match-bind-1
-  (is (= (let [x '(1 2 4)]
+  (is (= (let [x '(1 2 4)
+               y nil
+               z nil]
            (match [x y z]
              [[1 2 b] _ _] [:a0 b]
              [[a 2 4] _ _] [:a1 a]))
@@ -102,21 +104,25 @@
 
 (deftest or-pattern-match-1
   (is (= (let [x 4 y 6 z 9]
-           (match [x y z ]
+           (match [x y z]
              [(1 | 2 | 3) _ _] :a0
              [4 (5 | 6 | 7) _] :a1))
          :a1)))
 
 (deftest or-pattern-match-seq-1
-  (is (= (let [x '(1 2 3)]
-           (match [x y z ]
+  (is (= (let [x '(1 2 3)
+               y nil
+               z nil]
+           (match [x y z]
              [[1 (3 | 4) 3] _ _] :a0
              [[1 (2 | 3) 3] _ _] :a1))
          :a1)))
 
 (deftest or-pattern-match-map-2
-  (is (= (let [x {:a 3}]
-           (match [x y z ]
+  (is (= (let [x {:a 3}
+               y nil
+               z nil]
+           (match [x y z]
              [{(1 | 2) :a} _ _] :a0
              [{(3 | 4) :a} _ _] :a1))
          :a1)))
@@ -197,3 +203,13 @@
                   [(1 | 2)] :a0
                   :else :a1))
          :a1)))
+
+(deftest match-expr-1
+  (is (= (->> (range 1 10)
+              (map (fn [x]
+                     (match [(mod x 3) (mod x 5)]
+                       [0 0] "FizzBizz"
+                       [0 _] "Fizz"
+                       [_ 0] "Buzz"
+                       :else (str x)))))
+         '("1" "2" "Fizz" "4" "Buzz" "Fizz" "7" "8" "Fizz"))))
