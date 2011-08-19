@@ -973,13 +973,11 @@
 (defmacro match-1 [vars & clauses]
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
-    (let [[vars clauses] (if (not (vector? vars))
-                           [[vars] (mapcat (fn [[row action]]
-                                             (if (not= row :else)
-                                               [[row] action]
-                                               [row action]))
-                                           (partition 2 clauses))]
-                           [vars clauses])]
+    (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
+                                           (if (not= row :else)
+                                             [[row] action]
+                                             [row action]))
+                                         (partition 2 clauses))]]
       `~(-> (emit-matrix vars clauses)
           compile
           n-to-clj))))
