@@ -250,9 +250,7 @@
   IPatternCompile
   (p-to-clj [this ocr]
     `(and ~@(map (fn [expr ocr]
-                   (if (list? expr)
-                     (concat expr [ocr])
-                     (list expr ocr)))
+                   (list expr ocr))
                  gs (repeat ocr))))
   Object
   (toString [this]
@@ -954,13 +952,13 @@
              (if (= :else p)
                (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a])
                cs))
-        clause-sources (into [] (map emit-clause cs))]
-    (let [vars (vec (map (fn [var]
-                       (if (seq? var)
+        clause-sources (into [] (map emit-clause cs))
+        vars (vec (map (fn [var]
+                       (if (not (symbol? var))
                          (with-meta (gensym "ocr-") {:ocr-expr var})
                          var))
                      vars))]
-      (pattern-matrix clause-sources vars))))
+    (pattern-matrix clause-sources vars)))
 
 (defmacro defmatch [name vars & clauses]
   (let [clj-form (-> (emit-matrix vars clauses)
@@ -970,7 +968,7 @@
        ~clj-form)))
 
 (defmacro match-1 [vars & clauses]
-  "Pattern match a single pattern"
+  "Pattern match a single value."
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
     (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
@@ -983,7 +981,7 @@
           n-to-clj))))
 
 (defmacro match [vars & clauses]
-  "Pattern match a pattern row"
+  "Pattern match multiple values."
   (binding [*line* (-> &form meta :line)
             *warned* (atom false)]
     `~(-> (emit-matrix vars clauses)

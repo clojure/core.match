@@ -254,5 +254,6 @@
   (is (= (let [x 3]
            (match-1 [1 2] 
                   [2 1] :a0 
-                  (b :when #(= (count %) 2)) :a1))
+                  (_ :when #(= (count %) 2)) :a1
+                  :else :a2))
          :a1)))
