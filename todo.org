@@ -1,7 +1,9 @@
 * Todo List [25/29]
   - [ ] fail nodes should be more descriptive
+          (Any more sophisticated descriptions would require much more thought. 
+           Comprehensiveness warnings good enough for 0.1 release? - Ambrose)
   - [ ] rename pattern-equals -> constructor-match? or something similar  
-        (equivalent-constructor? ? - Ambrose)
+          (equivalent-constructor? ? - Ambrose)
   - [ ] implement vector pattern matching
   - [ ] constructors of the same type should preserve the order they were
         specified by the user
