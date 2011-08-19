@@ -93,6 +93,7 @@
   (p-to-clj [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
+     (symbol? l) `(= ~ocr '~l)
      :else `(= ~ocr ~l)))
   Object
   (toString [_]
@@ -450,6 +451,18 @@
   (FailNode.))
 
 ;; -----------------------------------------------------------------------------
+;; Bind Node
+
+(defrecord BindNode [bindings node]
+  INodeCompile
+  (n-to-clj [this]
+    `(let [~@bindings]
+       ~(n-to-clj node))))
+
+(defn ^BindNode bind-node [bindings node]
+  (BindNode. bindings node))
+
+;; -----------------------------------------------------------------------------
 ;; Switch Node
 
 (defn dag-clause-to-clj [occurrence pattern action]
@@ -548,26 +561,30 @@
                                                   (concat (bindings f)
                                                           wc-bindings)))
        :else (let [col (necessary-column this)]
-                (if (= col 0)
-                  (let [this (reduce specialize this (pseudo-patterns this col))
-                        constrs (column-constructors this col)
-                        clauses (map (fn [c]
-                                       (let [s (-> this 
-                                                 (specialize c) 
-                                                 compile)]
-                                         [c s]))
-                                     constrs)
-                        default (let [m (specialize this (wildcard-pattern))]
-                                  (if-not (empty-matrix? m)
-                                    (compile m)
-                                    (do (warn (str "Non-exhaustive pattern matrix, " 
-                                                   "consider adding :else clause"))
-                                        (fail-node))))]
-                    (switch-node
-                     (ocrs col)
-                     clauses
-                     default))
-                  (compile (swap this col)))))))
+               (if (= col 0)
+                 (let [this (reduce specialize this (pseudo-patterns this col))
+                       constrs (column-constructors this col)
+                       clauses (map (fn [c]
+                                      (let [s (-> this 
+                                                  (specialize c) 
+                                                  compile)]
+                                        [c s]))
+                                    constrs)
+                       default (let [m (specialize this (wildcard-pattern))]
+                                 (if-not (empty-matrix? m)
+                                   (compile m)
+                                   (do (warn (str "Non-exhaustive pattern matrix, " 
+                                                  "consider adding :else clause"))
+                                       (fail-node))))]
+                   (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
+                     (bind-node (mapcat (fn [ocr]
+                                           (if-let [bind-expr (-> ocr meta :ocr-expr)]
+                                             [ocr bind-expr]
+                                             [ocr ocr]))
+                                        ocrs)
+                                (switch-node (ocrs col) clauses default))
+                     (switch-node (ocrs col) clauses default)))
+                 (compile (swap this col)))))))
 
   (pattern-at [_ i j] ((rows j) i))
 
@@ -845,7 +862,11 @@
 (declare vector-pattern)
 
 (defmethod emit-pattern clojure.lang.ISeq
-  [pat] (emit-pattern-for-syntax pat))
+  [pat] (if (and (= (count pat) 2)
+                 (= (first pat) 'quote)
+                 (symbol? (second pat)))
+          (literal-pattern (second pat))
+          (emit-pattern-for-syntax pat)))
 
 (defmulti emit-pattern-for-syntax (fn [syn] (second syn)))
 
@@ -931,7 +952,12 @@
                (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a])
                cs))
         clause-sources (into [] (map emit-clause cs))]
-    (pattern-matrix clause-sources vars)))
+    (let [vars (vec (map (fn [var]
+                       (if (seq? var)
+                         (with-meta (gensym "ocr-") {:ocr-expr var})
+                         var))
+                     vars))]
+      (pattern-matrix clause-sources vars))))
 
 (defmacro defmatch [name vars & clauses]
   (let [clj-form (-> (emit-matrix vars clauses)
@@ -942,6 +968,13 @@
 
 (defmacro match [vars & clauses]
   (binding [*line* (-> &form meta :line)]
-    `~(-> (emit-matrix vars clauses)
-        compile
-        n-to-clj)))
+    (let [[vars clauses] (if (not (vector? vars))
+                           [[vars] (mapcat (fn [[row action]]
+                                             (if (not= row :else)
+                                               [[row] action]
+                                               [row action]))
+                                           (partition 2 clauses))]
+                           [vars clauses])]
+      `~(-> (emit-matrix vars clauses)
+          compile
+          n-to-clj))))
