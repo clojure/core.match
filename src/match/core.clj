@@ -43,6 +43,11 @@
   (vnth [^int i])
   (vsubvec [^int start ^int end]))
 
+(defprotocol IMatchVectorInline
+  (vcount [this])
+  (vnth [this i])
+  (vsubvec [start end]))
+
 (deftype MatchVector [v]
   IMatchVector
   (vcount [this] (count this))
