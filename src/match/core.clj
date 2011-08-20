@@ -49,12 +49,17 @@
   (vnth [this i] (nth v i))
   (vsubvec [this start end] (subvec this start end)))
 
-(defprotocol IMatchVectorCoerce
-  (vector-coerce [x]))
+(defprotocol IMatchVectorType
+  (mvector? [x])
+  (mvector-coerce [x]))
 
 (extend-type clojure.lang.IPersistentVector
-  IMatchVectorCoerce
-  (vector-coerce [this] (MatchVector. this)))
+  IMatchVectorType
+  (mvector [_] true)
+  (mvector-coerce [this] (MatchVector. this)))
+
+(defn tag-coerce-sym [sym]
+  (with-meta sym (assoc (meta sym) :tag match.core.IMatchVector)))
 
 ;; =============================================================================
 ;; Extensions and Protocols
@@ -242,8 +247,7 @@
     (VectorPattern. v new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
-   `(or (instance? match.core.IMatchVector ~ocr)
-        (satisfies? IMatchVector ~ocr)))
+   `(mvector? ocr))
   Object
   (toString [_]
     (str v)))
@@ -384,7 +388,7 @@
 (defmethod pattern-equals [OrPattern OrPattern]
   [^OrPattern a ^OrPattern b] (let [as (.ps a)
                                     bs (.ps b)]
-                                (and (= (count as) (count bs))
+                                (and (= (count as) (count bs)) ;; TODO: use sets - David
                                      (every? identity (map pattern-equals as bs)))))
 
 (defmethod pattern-equals :default 
@@ -608,7 +612,13 @@
             (empty-row? [row]
               (let [ps (patterns row)] ;; TODO: cleanup
                 (and (not (nil? ps))
-                     (empty? ps))))]
+                     (empty? ps))))
+            (has-ocr-expr? [ocrs]
+              (some (fn [ocr]
+                      (-> ocr meta :ocr-expr))
+                    ocrs))
+            (coerce? [matrix]
+              (-> matrix meta :coerce-bind))]
       (cond
        (empty? rows) (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
                          (fail-node))
@@ -637,15 +647,18 @@
                                    (compile m)
                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                   "consider adding :else clause"))
-                                       (fail-node))))]
-                   (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
-                     (bind-node (mapcat (fn [ocr]
-                                           (if-let [bind-expr (-> ocr meta :ocr-expr)]
-                                             [ocr bind-expr]
-                                             [ocr ocr]))
-                                        ocrs)
-                                (switch-node (ocrs col) clauses default))
-                     (switch-node (ocrs col) clauses default)))
+                                       (fail-node))))
+                       node (switch-node (ocrs col) clauses default)]
+                   (cond
+                    (has-ocr-expr? ocrs) (bind-node (mapcat (fn [ocr]
+                                                               (if-let [bind-expr (-> ocr meta :ocr-expr)]
+                                                                 [ocr bind-expr]
+                                                                 [ocr ocr]))
+                                                             ocrs)
+                                                     node)
+                    (coerce? this) (bind-node (-> this meta :coerce-bind)
+                                              node)
+                    :else node))
                  (compile (swap this col)))))))
 
   (pattern-at [_ i j] ((rows j) i))
@@ -883,7 +896,7 @@
                                      :bind-expr `(let [~ocr (.vnth ~vec-ocr ~i)])})))]
                   (into (into [] (map ocr-sym (range width)))
                         (drop-nth ocrs 0)))]
-      (pattern-matrix nrows nocrs))))
+      (with-meta (pattern-matrix nrows nocrs) {:coerce-bind [focr `(mvector-coerce ~focr)]}))))
 
 ;; ==============================================================================
 ;; Or Pattern Specialization
