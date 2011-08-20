@@ -46,6 +46,23 @@
        (dotimes [_ 1e6]
          (let [[a b c d e] x])))))
 
+  ;; 340ms, vector match
+  (let [x [1 2 2]]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (match [x]
+           [([_ _ 2] :vector)] :a0
+           [([1 1 3] :vector)] :a1
+           [([1 2 3] :vector)] :a2)))))
+
+  ;; 90ms, destructure vector
+  (let [x [1 2 3]]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (let [[a b c] x])))))
+
   ;; 200ms, map match
   (let [x {:a 1 :b 2 :c 3}]
     (dotimes [_ 10]

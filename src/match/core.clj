@@ -50,16 +50,23 @@
   (vsubvec [this start end] (subvec this start end)))
 
 (defprotocol IMatchVectorType
-  (mvector? [x])
-  (mvector-coerce [x]))
+  (mvector? [this])
+  (mvector-coerce* [this]))
 
 (extend-type clojure.lang.IPersistentVector
   IMatchVectorType
-  (mvector [_] true)
-  (mvector-coerce [this] (MatchVector. this)))
+  (mvector? [_] true)
+  (mvector-coerce* [this] (MatchVector. this)))
 
-(defn tag-coerce-sym [sym]
-  (with-meta sym (assoc (meta sym) :tag match.core.IMatchVector)))
+(defn ^IMatchVector mvector-coerce [x]
+  (mvector-coerce* x))
+
+(extend-type Object
+  IMatchVectorType
+  (mvector? [_] false))
+
+(defmacro vnth [x i]
+  `(.vnth ~(with-meta x (assoc (meta x) :tag IMatchVector)) (int ~i)))
 
 ;; =============================================================================
 ;; Extensions and Protocols
@@ -247,7 +254,7 @@
     (VectorPattern. v new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
-   `(mvector? ocr))
+   `(mvector? ~ocr))
   Object
   (toString [_]
     (str v)))
@@ -519,6 +526,7 @@
 (defrecord BindNode [bindings node]
   INodeCompile
   (n-to-clj [this]
+    (println (map (juxt meta identity) bindings))
     `(let [~@bindings]
        ~(n-to-clj node))))
 
@@ -888,15 +896,16 @@
                      vec)
           nocrs (let [vec-ocr focr
                       ocr-sym (fn [i]
-                                (let [ocr (gensym (str (name vec-ocr) "-" i "-"))]
+                                (let [ocr (gensym (str (name vec-ocr) i "__"))]
                                   (with-meta ocr
                                     {:occurrence-type :vec
                                      :vec-sym vec-ocr
                                      :index i
-                                     :bind-expr `(let [~ocr (.vnth ~vec-ocr ~i)])})))]
+                                     :bind-expr `(let [~ocr (.vnth ~vec-ocr (int ~i))])})))]
                   (into (into [] (map ocr-sym (range width)))
                         (drop-nth ocrs 0)))]
-      (with-meta (pattern-matrix nrows nocrs) {:coerce-bind [focr `(mvector-coerce ~focr)]}))))
+      (with-meta (pattern-matrix nrows nocrs)
+        {:coerce-bind [focr `(mvector-coerce ~focr)]}))))
 
 ;; ==============================================================================
 ;; Or Pattern Specialization
@@ -1104,3 +1113,26 @@
     `~(-> (emit-matrix vars clauses)
         compile
         n-to-clj)))
+
+(comment
+  ;; how do we deal with rest patterns?, concat is the constructor
+  (emit-pattern '([1 2 3] :vector))
+
+  ;; FIXME
+  (let [x [1 2 2]
+        y 1]
+    (match [x y]
+      [([_ _ 2] :vector) 1] :a0
+      [([1 1 3] :vector) 2] :a1
+      [([1 2 3] :vector) 3] :a2
+      :else :a3))
+
+  ;; FIXME
+  (let [x [1 2 2]
+        y 1]
+    (match [x]
+      [([_ _ 2] :vector)] :a0
+      [([1 1 3] :vector)] :a1
+      [([1 2 3] :vector)] :a2
+      :else :a3))
+  )
