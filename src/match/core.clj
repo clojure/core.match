@@ -9,6 +9,8 @@
 (def ^:dynamic *line*)
 (def ^:dynamic *warned* (atom false))
 
+(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+
 (defn warn [msg]
   (if (not @*warned*)
     (do
@@ -371,6 +373,9 @@
   [a b] true)
 
 (defmethod pattern-equals [MapPattern MapPattern]
+  [a b] true)
+
+(defmethod pattern-equals [VectorPattern VectorPattern]
   [a b] true)
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
@@ -843,20 +848,27 @@
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
           focr (first ocrs)
-          width (reduce (fn [a b] (max a (count b))) ;; TODO: largest width before rest pattern - David
-                        0 rows)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
+          srows (filter #(pattern-equals this (first %)) rows)
+          width (reduce (fn [w row]
+                          (let [p (first row)]
+                            (if (vector-pattern? p)
+                              (let [^VectorPattern p p
+                                    c (count (.v p))]
+                                (min (or w c) c))
+                              w))) ;; TODO: smallest width before rest pattern - David
+                        nil srows)
+          nrows (->> srows
                      (map (fn [row]
                             (let [p (first row)]
                               (if (vector-pattern? p)
-                                (reduce prepend (drop-nth row 0)
-                                        (reverse p))
+                                (let [^VectorPattern p p]
+                                 (reduce prepend (drop-nth row 0)
+                                         (reverse (.v p))))
                                 (vec (repeatedly width wildcard-pattern))))))
                      vec)
           nocrs (let [vec-ocr focr
                       ocr-sym (fn [i]
-                                (let [ocr (gensym (str (name vec-ocr) "-" i))]
+                                (let [ocr (gensym (str (name vec-ocr) "-" i "-"))]
                                   (with-meta ocr
                                     {:occurrence-type :vec
                                      :vec-sym vec-ocr
