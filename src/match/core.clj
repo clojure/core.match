@@ -3,6 +3,8 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
+(set! *warn-on-reflection* true)
+
 (def ^:dynamic *syntax-check* true)
 (def ^:dynamic *line*)
 (def ^:dynamic *warned* (atom false))
@@ -19,6 +21,9 @@
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
 
+;; =============================================================================
+;; Map Pattern Interop
+
 (extend-type clojure.lang.ILookup
   IMatchLookup
   (val-at* [this k not-found]
@@ -27,6 +32,30 @@
 (defn val-at
   ([m k] (val-at* m k nil))
   ([m k not-found] (val-at* m k not-found)))
+
+;; =============================================================================
+;; Vector Pattern Interop
+
+(definterface IMatchVector
+  (^int vcount [])
+  (vnth [^int i])
+  (vsubvec [^int start ^int end]))
+
+(deftype MatchVector [v]
+  IMatchVector
+  (vcount [this] (count this))
+  (vnth [this i] (nth v i))
+  (vsubvec [this start end] (subvec this start end)))
+
+(defprotocol IMatchVectorCoerce
+  (vector-coerce [x]))
+
+(extend-type clojure.lang.IPersistentVector
+  IMatchVectorCoerce
+  (vector-coerce [this] (MatchVector. this)))
+
+;; =============================================================================
+;; Extensions and Protocols
 
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
@@ -201,6 +230,31 @@
 
 (defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
   (.write writer (str "<MapCrashPattern>")))
+
+;; -----------------------------------------------------------------------------
+
+(deftype VectorPattern [v _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (VectorPattern. v new-meta))
+  IPatternCompile
+  (p-to-clj [_ ocr]
+   `(or (instance? match.core.IMatchVector ~ocr)
+        (satisfies? IMatchVector ~ocr)))
+  Object
+  (toString [_]
+    (str v)))
+
+(defn ^VectorPattern vector-pattern
+  ([] (VectorPattern. [] nil))
+  ([v] {:pre [(vector? v)]}
+     (VectorPattern. v nil)))
+
+(def vector-pattern? (partial instance? VectorPattern))
+
+(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
+  (.write writer (str "<VectorPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; Or Patterns
@@ -780,6 +834,38 @@
         (let [row (first nrows)]
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
+;; =============================================================================
+;; Vector Pattern Specialization
+
+(extend-type VectorPattern
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          width (reduce (fn [a b] (max a (count b))) ;; TODO: largest width before rest pattern - David
+                        0 rows)
+          nrows (->> rows
+                     (filter #(pattern-equals this (first %)))
+                     (map (fn [row]
+                            (let [p (first row)]
+                              (if (vector-pattern? p)
+                                (reduce prepend (drop-nth row 0)
+                                        (reverse p))
+                                (vec (repeatedly width wildcard-pattern))))))
+                     vec)
+          nocrs (let [vec-ocr focr
+                      ocr-sym (fn [i]
+                                (let [ocr (gensym (str (name vec-ocr) "-" i))]
+                                  (with-meta ocr
+                                    {:occurrence-type :vec
+                                     :vec-sym vec-ocr
+                                     :index i
+                                     :bind-expr `(let [~ocr (.vnth ~vec-ocr ~i)])})))]
+                  (into (into [] (map ocr-sym (range width)))
+                        (drop-nth ocrs 0)))]
+      (pattern-matrix nrows nocrs))))
+
 ;; ==============================================================================
 ;; Or Pattern Specialization
 
@@ -882,7 +968,7 @@
               (guard-pattern (emit-pattern p) (set gs))))
 
 (defmethod emit-pattern-for-syntax :vector
-  [p])
+  [[p _]] (vector-pattern (vec (map emit-pattern p))))
 
 (defmethod emit-pattern-for-syntax :only
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))
