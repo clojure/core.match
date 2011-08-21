@@ -74,6 +74,7 @@
 (defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
 (defmulti vtest-inline (fn [t & r] t))
+(defmulti vtest-and-size-inline (fn [t & r] t))
 (defmulti vcount-inline (fn [t & r] t))
 (defmulti vnth-inline (fn [t & r] t))
 (defmulti vnth-offset-inline (fn [t & r] t))
@@ -85,6 +86,8 @@
   [_] false)
 (defmethod vtest-inline ::vector
   [_ ocr] `(vector? ~ocr))
+(defmethod vtest-and-size-inline ::vector
+  [_ ocr size] `(and (vector? ~ocr) (= (count ~ocr) ~size)))
 (defmethod vcount-inline ::vector
   [_ ocr] `(count ~ocr))
 (defmethod vnth-inline ::vector
@@ -273,11 +276,11 @@
 
 ;; -----------------------------------------------------------------------------
 
-(deftype VectorPattern [v t offset  _meta]
+(deftype VectorPattern [v t size offset  _meta]
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
-    (VectorPattern. v t offset new-meta))
+    (VectorPattern. v t size offset new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
     (vtest-inline t ocr))
@@ -286,13 +289,15 @@
     (str v ":" t)))
 
 (defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. [] ::vector nil nil))
+  ([] (VectorPattern. [] ::vector nil nil nil))
   ([v] {:pre [(vector? v)]}
-     (VectorPattern. v ::vector nil nil))
+     (VectorPattern. v ::vector nil nil nil))
   ([v t] {:pre [(vector? v)]}
-     (VectorPattern. v t nil nil))
-  ([v t offset] {:pre [(vector? v)]}
-     (VectorPattern. v t offset nil)))
+     (VectorPattern. v t nil nil nil))
+  ([v t size] {:pre [(vector? v)]}
+     (VectorPattern. v t size nil nil))
+  ([v t size offset] {:pre [(vector? v)]}
+     (VectorPattern. v t size offset nil)))
 
 (def vector-pattern? (partial instance? VectorPattern))
 
