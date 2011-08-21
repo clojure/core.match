@@ -412,7 +412,7 @@
   [a b] true)
 
 (defmethod pattern-equals [VectorPattern VectorPattern]
-  [a b] true)
+  [^VectorPattern a ^VectorPattern b] (= (.t a)  (.t b)))
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
   [a b] true)
