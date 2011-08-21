@@ -46,15 +46,33 @@
        (dotimes [_ 1e6]
          (let [[a b c d e] x])))))
 
-  ;; 340ms, vector match
-  (let [x [1 2 2]]
+  ;; 50ms, vector match
+  (let [x [1 1 2]]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]
          (match [x]
-           [([_ _ 2] :vector)] :a0
-           [([1 1 3] :vector)] :a1
-           [([1 2 3] :vector)] :a2)))))
+           [([_ _ 2] :vec)] :a0
+           [([1 1 3] :vec)] :a1
+           [([1 2 3] :vec)] :a2)))))
+
+  (def intsc (class (int-array [])))
+
+  (defmethod vtest-inline ::int-array
+    [_ ocr] `(instance? intsc ~ocr))
+  (defmethod vnth-inline ::int-array
+    [_ ocr i] `(aget ~ocr ~i))
+
+  ;; 60ms
+  (let [x (int-array [1 2 3])]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+        (match [x]
+          [([_ _ 2] :vec ::int-array)] :a0
+          [([1 1 3] :vec ::int-array)] :a1
+          [([1 2 3] :vec ::int-array)] :a2)))))
+
 
   ;; 90ms, destructure vector
   (let [x [1 2 3]]

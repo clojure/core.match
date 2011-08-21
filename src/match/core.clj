@@ -38,21 +38,21 @@
 ;; =============================================================================
 ;; Vector Pattern Interop
 
+;; NOTE: we might need coercing / wrapper types when we get to
+;; open dispatch - David
+
 (definterface IMatchVector
   (^int vcount [])
   (vnth [^int i])
-  (vsubvec [^int start ^int end]))
-
-(defprotocol IMatchVectorInline
-  (vcount [this])
-  (vnth [this i])
-  (vsubvec [start end]))
+  (vsubvec [^int start ^int end])
+  (unwrap []))
 
 (deftype MatchVector [v]
   IMatchVector
   (vcount [this] (count this))
   (vnth [this i] (nth v i))
-  (vsubvec [this start end] (subvec this start end)))
+  (vsubvec [this start end] (subvec this start end))
+  (unwrap [_] v))
 
 (defprotocol IMatchVectorType
   (mvector? [this])
@@ -70,8 +70,26 @@
   IMatchVectorType
   (mvector? [_] false))
 
-(defmacro vnth [x i]
-  `(.vnth ~(with-meta x (assoc (meta x) :tag IMatchVector)) (int ~i)))
+(defmulti coerce? identity)
+(defmulti coerce-element? identity)
+(defmulti coerce-element (fn [t & r] t))
+(defmulti vtest-inline (fn [t & r] t))
+(defmulti vcount-inline (fn [t & r] t))
+(defmulti vnth-inline (fn [t & r] t))
+(defmulti vsubvec-inline (fn [t & r] t))
+
+(defmethod coerce? :default
+  [_] false)
+(defmethod coerce-element? :default
+  [_] false)
+(defmethod vtest-inline ::vector
+  [_ ocr] `(vector? ~ocr))
+(defmethod vcount-inline ::vector
+  [_ ocr] `(count ~ocr))
+(defmethod vnth-inline ::vector
+  [_ ocr i] `(nth ~ocr ~i))
+(defmethod vsubvec-inline ::vector
+  [_ ocr start end] `(subvec ~ocr ~start ~end))
 
 ;; =============================================================================
 ;; Extensions and Protocols
@@ -252,22 +270,24 @@
 
 ;; -----------------------------------------------------------------------------
 
-(deftype VectorPattern [v _meta]
+(deftype VectorPattern [v t _meta]
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
-    (VectorPattern. v new-meta))
+    (VectorPattern. v t new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
-   `(mvector? ~ocr))
+    (vtest-inline t ocr))
   Object
   (toString [_]
-    (str v)))
+    (str v ":" t)))
 
 (defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. [] nil))
+  ([] (VectorPattern. [] ::vector nil))
   ([v] {:pre [(vector? v)]}
-     (VectorPattern. v nil)))
+     (VectorPattern. v ::vector  nil))
+  ([v t] {:pre [(vector? v)]}
+     (VectorPattern. v t nil)))
 
 (def vector-pattern? (partial instance? VectorPattern))
 
@@ -531,7 +551,6 @@
 (defrecord BindNode [bindings node]
   INodeCompile
   (n-to-clj [this]
-    (println (map (juxt meta identity) bindings))
     `(let [~@bindings]
        ~(n-to-clj node))))
 
@@ -892,25 +911,28 @@
                         nil srows)
           nrows (->> srows
                      (map (fn [row]
-                            (let [p (first row)]
-                              (if (vector-pattern? p)
-                                (let [^VectorPattern p p]
-                                 (reduce prepend (drop-nth row 0)
-                                         (reverse (.v p))))
-                                (vec (repeatedly width wildcard-pattern))))))
+                            (let [p (first row)
+                                  ps (if (vector-pattern? p)
+                                       (reverse (.v ^VectorPattern p))
+                                       (repeatedly width wildcard-pattern))]
+                              (reduce prepend (drop-nth row 0) ps))))
                      vec)
           nocrs (let [vec-ocr focr
                       ocr-sym (fn [i]
-                                (let [ocr (gensym (str (name vec-ocr) i "__"))]
+                                (let [ocr (gensym (str (name vec-ocr) i "__"))
+                                      t (.t this)]
                                   (with-meta ocr
-                                    {:occurrence-type :vec
+                                    {:occurrence-type t
                                      :vec-sym vec-ocr
                                      :index i
-                                     :bind-expr `(let [~ocr (.vnth ~vec-ocr (int ~i))])})))]
+                                     :bind-expr `(let [~ocr ~(vnth-inline t focr i)])})))]
                   (into (into [] (map ocr-sym (range width)))
-                        (drop-nth ocrs 0)))]
-      (with-meta (pattern-matrix nrows nocrs)
-        {:coerce-bind [focr `(mvector-coerce ~focr)]}))))
+                        (drop-nth ocrs 0)))
+          matrix (pattern-matrix nrows nocrs)]
+      (if (coerce? (.t this))
+        (with-meta matrix
+          {:coerce-bind [focr `(mvector-coerce ~focr)]})
+        matrix))))
 
 ;; ==============================================================================
 ;; Or Pattern Specialization
@@ -1013,8 +1035,8 @@
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
 
-(defmethod emit-pattern-for-syntax :vector
-  [[p _]] (vector-pattern (vec (map emit-pattern p))))
+(defmethod emit-pattern-for-syntax :vec
+  [[p _ t]] (vector-pattern (vec (map emit-pattern p)) (or t ::vector)))
 
 (defmethod emit-pattern-for-syntax :only
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))

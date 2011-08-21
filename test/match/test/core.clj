@@ -257,3 +257,12 @@
                   (_ :when #(= (count %) 2)) :a1
                   :else :a2))
          :a1)))
+
+(deftest vector-pattern-match-1
+  (is (= (let [x [1 2 3]]
+           (match [x]
+             [([_ _ 2] :vec)] :a0
+             [([1 1 3] :vec)] :a1
+             [([1 2 3] :vec)] :a2
+             :else :a3))
+         :a2)))
