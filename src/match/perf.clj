@@ -62,6 +62,8 @@
     [_ ocr] `(instance? intsc ~ocr))
   (defmethod vnth-inline ::int-array
     [_ ocr i] `(aget ~ocr ~i))
+  (defmethod vsubvec-inline ::int-array
+    [_ ocr i] ocr)
 
   ;; 60ms
   (let [x (int-array [1 2 3])]
@@ -69,9 +71,32 @@
       (time
        (dotimes [_ 1e7]
         (match [x]
-          [([_ _ 2] :vec ::int-array)] :a0
-          [([1 1 3] :vec ::int-array)] :a1
-          [([1 2 3] :vec ::int-array)] :a2)))))
+          [([_ _ 2] :vec ::int-array :offset 0)] :a0
+          [([1 1 3] :vec ::int-array :offset 0)] :a1
+          [([1 2 3] :vec ::int-array :offset 0)] :a2)))))
+
+  ;; better syntax
+  (let [x (int-array [1 2 3])]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+        (match [^{:vec ::int-array :offset 0} x]
+          [[_ _ 2]] :a0
+          [[1 1 3]] :a1
+          [[1 2 3]] :a2)))))
+
+  (defmethod vtest-inline ::bits
+    [_ ocr] `(instance? Long ~ocr))
+  (defmethod vnth-inline ::bits
+    [_ ocr i] `(bit-shift-right (bit-and ~ocr (bit-shift-left 1 ~i)) ~i))
+
+  (let [x 5]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (match [x]
+           [([_ _ 1 1] :vec ::bits)] :a0
+           [([1 0 1 _] :vec ::bits)] :a1)))))
 
 
   ;; 90ms, destructure vector
