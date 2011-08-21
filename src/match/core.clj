@@ -414,7 +414,8 @@
   [a b] true)
 
 (defmethod pattern-equals [VectorPattern VectorPattern]
-  [^VectorPattern a ^VectorPattern b] (= (.t a)  (.t b)))
+  [^VectorPattern a ^VectorPattern b] (and (= (.t a)  (.t b))
+                                           (= (.offset a) (.offset b))))
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
   [a b] true)
