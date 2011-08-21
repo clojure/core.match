@@ -76,6 +76,7 @@
 (defmulti vtest-inline (fn [t & r] t))
 (defmulti vcount-inline (fn [t & r] t))
 (defmulti vnth-inline (fn [t & r] t))
+(defmulti vnth-offset-inline (fn [t & r] t))
 (defmulti vsubvec-inline (fn [t & r] t))
 
 (defmethod coerce? :default
@@ -88,6 +89,8 @@
   [_ ocr] `(count ~ocr))
 (defmethod vnth-inline ::vector
   [_ ocr i] `(nth ~ocr ~i))
+(defmethod vnth-offset-inline ::vector
+  [_ ocr i offset] `(nth ~ocr (unchecked-add ~i ~offset)))
 (defmethod vsubvec-inline ::vector
   [_ ocr start end] `(subvec ~ocr ~start ~end))
 
@@ -283,11 +286,11 @@
     (str v ":" t)))
 
 (defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. [] ::vector 0 nil))
+  ([] (VectorPattern. [] ::vector nil nil))
   ([v] {:pre [(vector? v)]}
-     (VectorPattern. v ::vector 0 nil))
+     (VectorPattern. v ::vector nil nil))
   ([v t] {:pre [(vector? v)]}
-     (VectorPattern. v t 0 nil))
+     (VectorPattern. v t nil nil))
   ([v t offset] {:pre [(vector? v)]}
      (VectorPattern. v t offset nil)))
 
@@ -928,7 +931,9 @@
                                     {:occurrence-type t
                                      :vec-sym vec-ocr
                                      :index i
-                                     :bind-expr `(let [~ocr ~(vnth-inline t focr i)])})))]
+                                     :bind-expr `(let [~ocr ~(if-let [offset (.offset this)]
+                                                               (vnth-offset-inline t focr i offset)
+                                                               (vnth-inline t focr i))])})))]
                   (into (into [] (map ocr-sym (range width)))
                         (drop-nth ocrs 0)))
           matrix (pattern-matrix nrows nocrs)]
