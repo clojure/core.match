@@ -421,8 +421,12 @@
 (defmethod pattern-equals [MapPattern MapPattern]
   [a b] true)
 
+;; TODO: when we get supporting rest we need to change this
+;; so that smaller vector patterns that include rest pattern
+;; should be grouped with larger vector patterns - David
 (defmethod pattern-equals [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b] (and (= (.t a)  (.t b))
+                                           (= (.size a)  (.size b))
                                            (= (.offset a) (.offset b))))
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
