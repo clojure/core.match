@@ -270,11 +270,11 @@
 
 ;; -----------------------------------------------------------------------------
 
-(deftype VectorPattern [v t _meta]
+(deftype VectorPattern [v t offset  _meta]
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
-    (VectorPattern. v t new-meta))
+    (VectorPattern. v t offset new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
     (vtest-inline t ocr))
@@ -283,11 +283,13 @@
     (str v ":" t)))
 
 (defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. [] ::vector nil))
+  ([] (VectorPattern. [] ::vector 0 nil))
   ([v] {:pre [(vector? v)]}
-     (VectorPattern. v ::vector  nil))
+     (VectorPattern. v ::vector 0 nil))
   ([v t] {:pre [(vector? v)]}
-     (VectorPattern. v t nil)))
+     (VectorPattern. v t 0 nil))
+  ([v t offset] {:pre [(vector? v)]}
+     (VectorPattern. v t offset nil)))
 
 (def vector-pattern? (partial instance? VectorPattern))
 
@@ -1036,7 +1038,8 @@
               (guard-pattern (emit-pattern p) (set gs))))
 
 (defmethod emit-pattern-for-syntax :vec
-  [[p _ t]] (vector-pattern (vec (map emit-pattern p)) (or t ::vector)))
+  [[p _ t _ offset]] (vector-pattern (vec (map emit-pattern p))
+                                     (or t ::vector) offset))
 
 (defmethod emit-pattern-for-syntax :only
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))

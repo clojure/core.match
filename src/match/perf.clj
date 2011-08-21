@@ -56,13 +56,13 @@
            [([1 1 3] :vec)] :a1
            [([1 2 3] :vec)] :a2)))))
 
-  (def intsc (class (int-array [])))
+  (def IntArray (class (int-array [])))
 
-  (defmethod vtest-inline ::int-array
-    [_ ocr] `(instance? intsc ~ocr))
-  (defmethod vnth-inline ::int-array
+  (defmethod vtest-inline ::ints
+    [_ ocr] `(instance? IntArray ~ocr))
+  (defmethod vnth-inline ::ints
     [_ ocr i] `(aget ~ocr ~i))
-  (defmethod vsubvec-inline ::int-array
+  (defmethod vsubvec-inline ::ints
     [_ ocr i] ocr)
 
   ;; 60ms
@@ -71,16 +71,16 @@
       (time
        (dotimes [_ 1e7]
         (match [x]
-          [([_ _ 2] :vec ::int-array :offset 0)] :a0
-          [([1 1 3] :vec ::int-array :offset 0)] :a1
-          [([1 2 3] :vec ::int-array :offset 0)] :a2)))))
+          [([_ _ 2] :vec ::ints :offset 0)] :a0
+          [([1 1 3] :vec ::ints :offset 0)] :a1
+          [([1 2 3] :vec ::ints :offset 0)] :a2)))))
 
   ;; better syntax
   (let [x (int-array [1 2 3])]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e7]
-        (match [^{:vec ::int-array :offset 0} x]
+        (match [^{:vec ::ints :offset 0} x]
           [[_ _ 2]] :a0
           [[1 1 3]] :a1
           [[1 2 3]] :a2)))))
