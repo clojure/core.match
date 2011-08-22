@@ -4,7 +4,7 @@
 
 (defrecord RegexPattern [regex]
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     `(re-matches ~regex ~ocr)))
 
 (defmethod emit-pattern java.util.regex.Pattern
