@@ -1,5 +1,5 @@
 (ns match.regex
-  (:use [match.core :only [IPatternCompile match to-source emit-pattern
+  (:use [match.core :only [IPatternCompile match-1 to-source emit-pattern
                            pattern-equals pattern-compare]]))
 
 (defrecord RegexPattern [regex]
@@ -16,8 +16,8 @@
 
 (comment
   (let [s "hello world"]
-    (match [s]
-      [#"hello.+"] :a0
-      [#"goodbye.+"] :a1
+    (match-1 s
+      #"hello.+" :a0
+      #"goodbye.+" :a1
       :else :a2))
   )
