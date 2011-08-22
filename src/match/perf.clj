@@ -133,16 +133,16 @@
       (time
        (dotimes [_ 1e6]
         (match [x]
-          [{_ :a 2 :b :only [:a :b]}] :a0
-          [{1 :a _ :c}] :a1
-          [{3 :c _ :d 4 :e}] :a2)))))
+          [({:a _ :b 2} :only [:a :b])] :a0
+          [{:a 1 :c _}] :a1
+          [{:c 3 :d _ :e 4}] :a2)))))
 
   ;; 200, map destructure
   (let [x {:a 1 :b 2 :c 3}]
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e6]
-         (let [{a :a b :b c :c} x])))))
+         (let [{:a a :b b :c c} x])))))
 
   ;; small maps are not a good indicator
   ;; 80ms, map pattern
@@ -154,9 +154,9 @@
       (time
        (dotimes [_ 1e6]
         (match [x]
-          [{_ :a 2 :b :only [:a :b]}] :a0
-          [{1 :a _ :c}] :a1
-          [{3 :c _ :d 4 :e}] :a2)))))
+          [({:a _ :b 2} :only [:a :b])] :a0
+          [{:a 1 :c _}] :a1
+          [{:c 3 :d _ :e 4}] :a2)))))
 
   ;; 130ms, map destructure
   (let [x (zipmap (map keyword (take 40 (repeatedly gensym)))
@@ -166,7 +166,7 @@
     (dotimes [_ 10]
       (time
        (dotimes [_ 1e6]
-         (let [{a :a c :c} x])))))
+         (let [{:a a :c c} x])))))
 
   ;; 340ms, map match with only
   (let [x {:a 1 :b 2}]
@@ -174,9 +174,9 @@
       (time
        (dotimes [_ 1e6]
          (match [x]
-           [{_ :a 2 :b :only [:a :b]}] :a0
-           [{1 :a _ :c}] :a1
-           [{3 :c _ :d 4 :e}] :a2)))))
+           [({:a _ :b 2 } :only [:a :b])] :a0
+           [{:a 1 :c _}] :a1
+           [{:c 3 :d _ :e 4}] :a2)))))
 
    ;; 240ms
   (do
@@ -195,8 +195,8 @@
         (time
          (dotimes [_ 1e6]
            (match [d]
-             [{2009 :year a :month}] a
-             [{(2010 | 2011) :year b :month}] b))))))
+             [{:year 2009 :month a}] a
+             [{:year (2010 | 2011) :month b}] b))))))
 
   ;; satisfies call is a bit slow
   (let [d (java.util.Date. 2010 10 1 12 30)]
@@ -227,9 +227,9 @@
       (time
        (dotimes [_ 1e6]
          (match [x]
-           [{3 :a 4 :c}] :a0
-           [{3 :d 4 :e}] :a1
-           [{1 :a}] :a2
+           [{:a 3 :c 4}] :a0
+           [{:d 3 :e 4}] :a1
+           [{:a 1}] :a2
            :else :a3)))))
 
   ;; hmm we could optimize literals w/ case
