@@ -276,28 +276,32 @@
 
 ;; -----------------------------------------------------------------------------
 
-(deftype VectorPattern [v t size offset  _meta]
+(deftype VectorPattern [v t size offset rest? _meta]
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
-    (VectorPattern. v t size offset new-meta))
+    (VectorPattern. v t size offset rest? new-meta))
   IPatternCompile
   (p-to-clj [_ ocr]
-    (vtest-inline t ocr))
+    (if size
+      (vtest-and-size-inline t ocr size)
+      (vtest-inline t ocr)))
   Object
   (toString [_]
     (str v ":" t)))
 
 (defn ^VectorPattern vector-pattern
-  ([] (VectorPattern. [] ::vector nil nil nil))
-  ([v] {:pre [(vector? v)]}
-     (VectorPattern. v ::vector nil nil nil))
-  ([v t] {:pre [(vector? v)]}
-     (VectorPattern. v t nil nil nil))
-  ([v t size] {:pre [(vector? v)]}
-     (VectorPattern. v t size nil nil))
-  ([v t size offset] {:pre [(vector? v)]}
-     (VectorPattern. v t size offset nil)))
+  ([] (vector-pattern [] ::vector nil nil))
+  ([v]
+     (vector-pattern v ::vector nil nil))
+  ([v t]
+     (vector-pattern v t nil nil nil))
+  ([v t offset]
+     (vector-pattern v t offset nil))
+  ([v t offset rest?] {:pre [(vector? v)]}
+     (let [c (count v)
+           size (if rest? (dec c) c)]
+      (VectorPattern. v t size offset rest? nil))))
 
 (def vector-pattern? (partial instance? VectorPattern))
 
