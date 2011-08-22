@@ -430,7 +430,9 @@
 ;; should be grouped with larger vector patterns - David
 (defmethod pattern-equals [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b] (and (= (.t a)  (.t b))
-                                           (= (.size a)  (.size b))
+                                           (let [sa (.size a) sb (.size b)]
+                                             (or (= sa sb)
+                                                 (and (>= sa sb) (.rest? b))))
                                            (= (.offset a) (.offset b))))
 
 (defmethod pattern-equals [MapCrashPattern MapCrashPattern]
