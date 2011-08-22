@@ -966,10 +966,14 @@
     `(defn ~name ~vars 
        ~clj-form)))
 
+(defmacro with-warning [[line] & body]
+  `(binding [*line* ~line
+             *warned* (atom false)]
+     ~@body))
+
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
-  (binding [*line* (-> &form meta :line)
-            *warned* (atom false)]
+  (with-warning [(-> &form meta :line)]
     (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
                                            (if (not= row :else)
                                              [[row] action]
@@ -981,8 +985,7 @@
 
 (defmacro match [vars & clauses]
   "Pattern match multiple values."
-  (binding [*line* (-> &form meta :line)
-            *warned* (atom false)]
+  (with-warning [(-> &form meta :line)]
     `~(-> (emit-matrix vars clauses)
         compile
         n-to-clj)))
