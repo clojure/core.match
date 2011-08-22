@@ -8,7 +8,7 @@
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned* (atom false))
 
-(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+#_(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -1068,9 +1068,9 @@
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
 
-(defmethod emit-pattern-for-syntax :vec
-  [[p _ t _ offset]] (vector-pattern (vec (map emit-pattern p))
-                                     (or t ::vector) offset))
+(defmethod emit-pattern-for-syntax ::vector
+  [[p t offset-key offset]] (vector-pattern (vec (map emit-pattern p))
+                                            t offset))
 
 (defmethod emit-pattern-for-syntax :only
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))
