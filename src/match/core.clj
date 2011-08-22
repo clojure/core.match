@@ -833,10 +833,10 @@
                       seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
                       sym-meta {:occurrence-type :seq
                                 :seq-sym seq-ocr}
-                      hsym (gensym (str (name seq-sym) "-head-"))
+                      hsym (gensym (str (name seq-sym) "_head__"))
                       hsym (with-meta hsym
                              (assoc sym-meta :bind-expr `(let [~hsym (first ~seq-ocr)])))
-                      tsym (gensym (str (name seq-sym) "-tail-"))
+                      tsym (gensym (str (name seq-sym) "_tail__"))
                       tsym (with-meta tsym
                              (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
                   (into [hsym tsym] (drop-nth ocrs 0)))]
@@ -881,7 +881,7 @@
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
-                                (let [ocr (gensym (str (name map-ocr) "-" (name k)))]
+                                (let [ocr (gensym (str (name map-ocr) "_" (name k) "__"))]
                                   (with-meta ocr
                                     {:occurrence-type :map
                                      :key k
@@ -934,7 +934,7 @@
                      vec)
           nocrs (let [vec-ocr focr
                       ocr-sym (fn [i]
-                                (let [ocr (gensym (str (name vec-ocr) i "__"))
+                                (let [ocr (gensym (str (name vec-ocr) "_" i "__"))
                                       t (.t this)]
                                   (with-meta ocr
                                     {:occurrence-type t
