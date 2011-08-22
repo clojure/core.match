@@ -257,6 +257,15 @@
                   :else :a2)
          :a1)))
 
+(deftest match-local-1
+  (is (= (let [x 2
+               y 2]
+           (match [x]
+             [0] :a0
+             [1] :a1
+             [y] :a2
+             :else :a3))
+         :a2)))
 (deftest vector-pattern-match-1
   (is (= (let [x [1 2 3]]
            (match [x]

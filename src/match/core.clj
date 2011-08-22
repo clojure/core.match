@@ -3,11 +3,10 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
-(set! *warn-on-reflection* true)
-
-(def ^:dynamic *syntax-check* true)
-(def ^:dynamic *line*)
-(def ^:dynamic *warned* (atom false))
+(def ^{:dynamic true} *syntax-check* true)
+(def ^{:dynamic true} *line*)
+(def ^{:dynamic true} *locals*)
+(def ^{:dynamic true} *warned* (atom false))
 
 (prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
 
@@ -169,7 +168,7 @@
   (to-source [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
-     (symbol? l) `(= ~ocr '~l)
+     (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
      :else `(= ~ocr ~l)))
   Object
   (toString [_]
@@ -393,7 +392,13 @@
 ;; Pattern Comparison
 
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
-  [^LiteralPattern a ^LiteralPattern b] (compare (.l a) (.l b)))
+  [^LiteralPattern a ^LiteralPattern b]
+  (let [la (.l a)
+        lb (.l b)]
+    (cond
+     (symbol? la) 1
+     (symbol? lb) -1
+     :else (compare (.l a) (.l b)))))
 
 (defmethod pattern-compare [LiteralPattern Object]
   [a b] -1)
@@ -1026,7 +1031,9 @@
 
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
-  (wildcard-pattern pat))
+  (if (get *locals* pat)
+    (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
+    (wildcard-pattern pat)))
 
 (defmethod emit-pattern :default
   [pat]
@@ -1150,6 +1157,7 @@
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
   (binding [*line* (-> &form meta :line)
+            *locals* &env
             *warned* (atom false)]
     (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
                                            (if (not= row :else)
@@ -1163,6 +1171,7 @@
 (defmacro match [vars & clauses]
   "Pattern match multiple values."
   (binding [*line* (-> &form meta :line)
+            *locals* &env
             *warned* (atom false)]
     `~(-> (emit-matrix vars clauses)
         compile
