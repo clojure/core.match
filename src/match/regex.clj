@@ -1,6 +1,6 @@
 (ns match.regex
-  (:refer-clojure :exclude [compile])
-  (:use match.core))
+  (:use [match.core :only [IPatternCompile match to-source emit-pattern
+                           pattern-equals pattern-compare]]))
 
 (defrecord RegexPattern [regex]
   IPatternCompile
