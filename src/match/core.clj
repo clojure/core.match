@@ -106,7 +106,7 @@
   (n-to-clj [this]))
 
 (defprotocol IPatternCompile
-  (p-to-clj [this ocr]))
+  (to-source [this ocr]))
 
 (defprotocol IVecMod
   (prepend [this x])
@@ -166,7 +166,7 @@
   (withMeta [_ new-meta]
     (LiteralPattern. l new-meta))
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
      (symbol? l) `(= ~ocr '~l)
@@ -194,7 +194,7 @@
   (withMeta [_ new-meta]
     (SeqPattern. s new-meta))
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     `(or (seq? ~ocr) (sequential? ~ocr)))
   Object
   (toString [_]
@@ -239,7 +239,7 @@
   (withMeta [_ new-meta]
     (MapPattern. m new-meta))
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
@@ -261,7 +261,7 @@
   (withMeta [_ new-meta]
     (MapCrashPattern. only new-meta))
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
       `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
   Object
@@ -282,7 +282,7 @@
   (withMeta [_ new-meta]
     (VectorPattern. v t size offset rest? new-meta))
   IPatternCompile
-  (p-to-clj [_ ocr]
+  (to-source [_ ocr]
     (if size
       (vtest-and-size-inline t ocr size)
       (vtest-inline t ocr)))
@@ -352,7 +352,7 @@
   (withMeta [_ new-meta]
     (GuardPattern. p gs new-meta))
   IPatternCompile
-  (p-to-clj [this ocr]
+  (to-source [this ocr]
     `(and ~@(map (fn [expr ocr]
                    (list expr ocr))
                  gs (repeat ocr))))
@@ -579,7 +579,7 @@
 ;; Switch Node
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector (p-to-clj pattern occurrence) 
+  (vector (to-source pattern occurrence) 
           (n-to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
