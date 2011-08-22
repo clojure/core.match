@@ -472,8 +472,12 @@
 ;; -----------------------------------------------------------------------------
 ;; Switch Node
 
+(declare to-source)
+
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector (p-to-clj pattern occurrence) 
+  (vector (if (extends? IPatternCompile (class pattern))
+            (p-to-clj pattern occurrence) 
+            (to-source pattern occurrence))
           (n-to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
@@ -826,6 +830,8 @@
 ;; =============================================================================
 ;; Interface
 
+(defmulti to-source (fn [pattern ocr] (:type pattern)))
+
 (defmulti emit-pattern class)
 
 (defmethod emit-pattern clojure.lang.IPersistentVector
@@ -903,6 +909,33 @@
                "Valid syntax: "
                (vec (remove #(= % :default)
                             (keys (.getMethodTable emit-pattern-for-syntax))))))))
+
+;; Regex extension
+(defmethod emit-pattern java.util.regex.Pattern
+  [pat]
+  {:type ::regex :regex pat})
+
+(defmethod to-source ::regex
+  [pat ocr]
+  `(re-matches ~(:regex pat) ~ocr))
+
+(defmethod pattern-equals [::regex ::regex]
+  [a b] (= (:regex a) (:regex b)))
+
+
+(comment 
+  
+  ;; TODO somehow 1 gets replaces with a fail-node
+  (binding [match.core/*line* 1]
+    (m-to-clj [x]
+              [#"a"] 1))
+  ;=>
+  ;(cond
+  ;  (re-matches #"a" x) (throw (java.lang.Exception. "No match found."))
+  ;  :else (throw (java.lang.Exception. "No match found.")))
+  ;nil
+  
+  )
 
 
 (defn emit-clause [[pat action]]
