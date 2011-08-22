@@ -1,3 +1,3 @@
-(ns match.bit
+(ns match.array
   (:refer-clojure :exclude [compile])
   (:use match.core))
