@@ -14,13 +14,10 @@
 (defmethod pattern-equals [RegexPattern RegexPattern]
   [a b] (= (:regex a) (:regex b)))
 
-(defmethod pattern-compare [RegexPattern RegexPattern]
-  [a b] -1)
-
 (comment
   (let [s "hello world"]
-   (match [s]
-     [#"hello.+"] :a0
-     [#"goodbye.+"] :a1
-     :else :a2))
+    (match [s]
+      [#"hello.+"] :a0
+      [#"goodbye.+"] :a1
+      :else :a2))
   )

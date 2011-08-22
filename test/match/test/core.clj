@@ -251,11 +251,10 @@
          :a0)))
 
 (deftest match-single-3
-  (is (= (let [x 3]
-           (match-1 [1 2] 
+  (is (= (match-1 [1 2] 
                   [2 1] :a0 
                   (_ :when #(= (count %) 2)) :a1
-                  :else :a2))
+                  :else :a2)
          :a1)))
 
 (deftest vector-pattern-match-1

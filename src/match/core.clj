@@ -401,11 +401,17 @@
 (defmethod pattern-compare [Object LiteralPattern]
   [a b] 1)
 
+(defmethod pattern-compare [GuardPattern Object]
+  [^GuardPattern a ^GuardPattern b] -1)
+
+(defmethod pattern-compare [GuardPattern LiteralPattern]
+  [^GuardPattern a ^GuardPattern b] 1)
+
 (defmethod pattern-compare [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
+  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
 
 (defmethod pattern-compare :default
-  [a b] (if (= (class a) (class b)) 0 -1))
+  [a b] 1)
 
 ;; =============================================================================
 ;; Pattern Equality
