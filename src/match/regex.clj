@@ -2,24 +2,17 @@
   (:refer-clojure :exclude [compile])
   (:use match.core))
 
-(deftype RegexPattern [regex _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (RegexPattern. regex new-meta))
+(defrecord RegexPattern [regex]
   IPatternCompile
   (p-to-clj [this ocr]
-    `(re-matches ~regex ~ocr))
-  Object
-  (toString [_]
-    (str regex)))
+    `(re-matches ~regex ~ocr)))
 
 (defmethod emit-pattern java.util.regex.Pattern
   [pat]
-  (RegexPattern. pat nil))
+  (RegexPattern. pat))
 
 (defmethod pattern-equals [RegexPattern RegexPattern]
-  [^RegexPattern a ^RegexPattern b] (= (.regex a) (.regex b)))
+  [^RegexPattern a ^RegexPattern b] (= (:regex a) (:regex b)))
 
 (defmethod pattern-compare [RegexPattern RegexPattern]
   [a b] -1)
