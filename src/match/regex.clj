@@ -12,7 +12,7 @@
   (RegexPattern. pat))
 
 (defmethod pattern-equals [RegexPattern RegexPattern]
-  [^RegexPattern a ^RegexPattern b] (= (:regex a) (:regex b)))
+  [a b] (= (:regex a) (:regex b)))
 
 (defmethod pattern-compare [RegexPattern RegexPattern]
   [a b] -1)
