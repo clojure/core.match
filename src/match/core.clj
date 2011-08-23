@@ -420,12 +420,26 @@
 (defmethod pattern-compare [MapPattern MapPattern]
   [^GuardPattern a ^GuardPattern b] 0)
 
+(defmethod pattern-compare [SeqPattern SeqPattern]
+  [^GuardPattern a ^GuardPattern b] 0)
+
+(defmethod pattern-compare [VectorPattern VectorPattern]
+  [^VectorPattern a ^VectorPattern b] (if (and (= (.t a)  (.t b))
+                                            (let [sa (.size a) sb (.size b)]
+                                              (or (= sa sb)
+                                                  (and (>= sa sb) (.rest? b))))
+                                            (= (.offset a) (.offset b)))
+                                        0 1))
+
 (defmethod pattern-compare :default
   [a b] 1)
 
 ;; =============================================================================
 ;; Pattern Equality
 ;;   - use to filter similar patterns in the matrix
+
+;; TODO: the following is a bit redundant and confusing, we can probably
+;; eliminate and simply test that pattern-compare returns 0
 
 (defmethod pattern-equals [Object WildcardPattern]
   [a b] true)
