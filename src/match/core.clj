@@ -596,11 +596,11 @@
                                     constrs)
                        default (let [m (specialize this (wildcard-pattern))]
                                  (if-not (empty-matrix? m)
-                                   (do (trace-dag "Compile default matrix")
+                                   (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
                                        (compile m))
                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                   "consider adding :else clause"))
-                                       (trace-dag "Add fail-node as default matrix")
+                                       (trace-dag "Add fail-node as default matrix (specialized matrix empty), for next node")
                                        (fail-node))))]
                    (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
                      (let [b (mapcat (fn [ocr]
@@ -610,13 +610,13 @@
                                         ocrs)
                            o (ocrs col)
                            n (switch-node o clauses default)
-                           _ (trace-dag "Add bind-node on occurance " o)]
+                           _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]
                        (bind-node b n))
                      (let [o (ocrs col)
                            _ (trace-dag "Add switch-node on occurance " o)]
                        (switch-node o clauses default))))
                  (do (trace-dag "Swap column " col)
-                   (compile (swap this col))))))))
+                     (compile (swap this col))))))))
 
   (pattern-at [_ i j] ((rows j) i))
 
@@ -707,8 +707,8 @@
                      (map #(drop-nth-bind % 0 focr))
                      vec)
           nocrs (drop-nth ocrs 0)
-          _ (trace-dag "Perform default matrix specialization on occurance:" focr
-                       ", New occurances: " 
+          _ (trace-dag "Perform default matrix specialization on ocr" focr
+                       ", new num ocrs: " 
                        (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
@@ -750,8 +750,8 @@
                       tsym (with-meta tsym
                              (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
                   (into [hsym tsym] (drop-nth ocrs 0)))
-          _ (trace-dag "Perform SeqPattern specialization"
-                       ", New occurances: " 
+          _ (trace-dag "SeqPattern specialization on ocr " focr
+                       ", new num ocrs" 
                        (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
@@ -802,7 +802,7 @@
                                      :bind-expr `(let [~ocr (val-at ~map-ocr ~k)])})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))
-          _ (trace-dag "Perform MapPattern specialization")]
+          _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
 
@@ -815,7 +815,7 @@
                      (filter #(pattern-equals this (first %)))
                      (map #(drop-nth % 0))
                      vec)
-          _ (trace-dag "Perform MapCrashPattern specialization")]
+          _ (trace-dag "MapCrashPattern specialization")]
       (if (empty? nrows)
         (pattern-matrix [] [])
         (let [row (first nrows)]
@@ -838,7 +838,7 @@
                                 [row]))))
                      (apply concat)
                      vec)
-          _ (trace-dag "Perform OrPattern specialization")]
+          _ (trace-dag "OrPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
@@ -856,7 +856,7 @@
                                   (update-pattern row 0 (.p p)))
                                 row))))
                      vec)
-          _ (trace-dag "Perform GuardPattern specialization")]
+          _ (trace-dag "GuardPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
@@ -995,13 +995,15 @@
         cs (let [[p a] (last cs)]
              (if (= :else p)
                (do (trace-matrix "Convert :else clause to row of wildcards")
-                 (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
+                   (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
                cs))
         clause-sources (into [] (map emit-clause cs))
         vars (vec (map (fn [var]
-                       (if (not (symbol? var))
-                         (with-meta (gensym "ocr-") {:ocr-expr var})
-                         var))
+                         (if (not (symbol? var))
+                           (let [nsym (gensym "ocr-")
+                                 _ (trace-dag "Bind ocr" var "to" nsym)]
+                             (with-meta nsym {:ocr-expr var}))
+                           var))
                      vars))]
     (pattern-matrix clause-sources vars)))
 
