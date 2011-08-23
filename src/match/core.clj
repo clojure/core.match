@@ -3,11 +3,17 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
+;; ============================================
+;; Debugging tools
+
 (def ^{:dynamic true} *syntax-check* true)
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
-(def ^{:dynamic true} *warned* (atom false))
-(def ^{:dynamic true} *trace* true) ;; TODO default to false
+(def ^{:dynamic true} *warned*)
+(def ^{:dynamic true} *trace* (atom false))
+
+(defn set-trace []
+  (reset! *trace* true))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -19,11 +25,16 @@
       (reset! *warned* true))))
 
 (defn trace-matrix [& p]
-  (when *trace*
-    (apply println "TRACE: MATRIX:" p)))
+  (when @*trace*
+    (apply println "TRACE: MATRIX:" p)
+    (flush)))
 (defn trace-dag [& p]
-  (when *trace*
-    (apply println "TRACE: DAG:" p)))
+  (when @*trace*
+    (apply println "TRACE: DAG:" p)
+    (flush)))
+
+;; ==================================
+;; Protocols
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -460,7 +471,9 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw (Exception. "No match found."))))
+    `(throw (Exception. (str "No match found. " 
+                             "Followed " @*runtime-branches* " branches."
+                             " Breadcrumbs: " @*runtime-breadcrumbs*)))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -480,8 +493,18 @@
 ;; -----------------------------------------------------------------------------
 ;; Switch Node
 
+(def ^{:dynamic true} *runtime-branches*)
+(def ^{:dynamic true} *runtime-breadcrumbs*)
+
+(defn runtime-stats [test]
+  `(if ~test
+     (do (swap! *runtime-branches* clojure.core/inc)
+         (swap! *runtime-breadcrumbs* #(conj % '~test))
+       true)
+     false))
+
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector (p-to-clj pattern occurrence) 
+  (vector (runtime-stats (p-to-clj pattern occurrence))
           (n-to-clj action)))
 
 (defrecord SwitchNode [occurrence cases default]
@@ -1007,17 +1030,23 @@
                      vars))]
     (pattern-matrix clause-sources vars)))
 
-(defmacro defmatch [name vars & clauses]
-  (let [clj-form (-> (emit-matrix vars clauses)
-                   compile
-                   n-to-clj)]
-    `(defn ~name ~vars 
-       ~clj-form)))
+(defn add-prefix [form]
+  `(binding [*runtime-branches* (atom 0)
+             *runtime-breadcrumbs* (atom [])]
+     ~form))
 
-(defmacro with-warning [[line] & body]
-  `(binding [*line* ~line
-             *warned* (atom false)]
-     ~@body))
+(defn executable-form [node]
+  (-> (n-to-clj node)
+      add-prefix))
+
+(defn clj-form [vars clauses]
+  (-> (emit-matrix vars clauses)
+    compile
+    executable-form))
+
+(defmacro defmatch [name vars & clauses]
+  `(defn ~name ~vars 
+     ~(clj-form vars clauses)))
 
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
@@ -1029,15 +1058,11 @@
                                              [[row] action]
                                              [row action]))
                                          (partition 2 clauses))]]
-      `~(-> (emit-matrix vars clauses)
-          compile
-          n-to-clj))))
+      `~(clj-form vars clauses))))
 
 (defmacro match [vars & clauses]
   "Pattern match multiple values."
   (binding [*line* (-> &form meta :line)
             *locals* &env
             *warned* (atom false)]
-    `~(-> (emit-matrix vars clauses)
-        compile
-        n-to-clj)))
+    `~(clj-form vars clauses)))
