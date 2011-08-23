@@ -390,6 +390,8 @@
 
 ;; =============================================================================
 ;; Pattern Comparison
+;;   - used to determine the set of constructors presents in a column and the
+;;     order which they should be considered
 
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
   [^LiteralPattern a ^LiteralPattern b]
@@ -415,11 +417,15 @@
 (defmethod pattern-compare [GuardPattern GuardPattern]
   [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
 
+(defmethod pattern-compare [MapPattern MapPattern]
+  [^GuardPattern a ^GuardPattern b] 0)
+
 (defmethod pattern-compare :default
   [a b] 1)
 
 ;; =============================================================================
 ;; Pattern Equality
+;;   - use to filter similar patterns in the matrix
 
 (defmethod pattern-equals [Object WildcardPattern]
   [a b] true)
