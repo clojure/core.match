@@ -7,6 +7,7 @@
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned* (atom false))
+(def ^{:dynamic true} *trace* true) ;; TODO default to false
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -16,6 +17,13 @@
                  (str *ns* ", line " *line* ":") 
                  msg))
       (reset! *warned* true))))
+
+(defn trace-matrix [& p]
+  (when *trace*
+    (apply println "TRACE: MATRIX:" p)))
+(defn trace-dag [& p]
+  (when *trace*
+    (apply println "TRACE: DAG:" p)))
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -555,21 +563,31 @@
                      (empty? ps))))]
       (cond
        (empty? rows) (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
+                         (trace-dag "No rows left, add fail-node")
                          (fail-node))
-       (empty-row? (first rows)) (let [f (first rows)]
-                                   (leaf-node (action f) (bindings f)))
+       (empty-row? (first rows)) (let [f (first rows)
+                                       a (action f)
+                                       b (bindings f)
+                                       _ (trace-dag "Empty row, add leaf-node."
+                                                    "Action:" a
+                                                    "Bindings:" b)]
+                                   (leaf-node a b))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
                                            ps (.ps f)
                                            wc-syms (map #(.sym ^WildcardPattern %) ps)
                                            wc-bindings (map vector wc-syms
-                                                            (map leaf-bind-expr ocrs))]
-                                       (leaf-node (action f)
-                                                  (concat (bindings f)
-                                                          wc-bindings)))
-       :else (let [col (necessary-column this)]
+                                                            (map leaf-bind-expr ocrs))
+                                           a (action f)
+                                           b (concat (bindings f)
+                                                     wc-bindings)
+                                           _ (trace-dag "First row all wildcards, add leaf-node.")]
+                                       (leaf-node a b))
+       :else (let [col (necessary-column this)
+                   _ (trace-dag "Picked column" col "as nessessary column.")]
                (if (= col 0)
                  (let [this (reduce specialize this (pseudo-patterns this col))
                        constrs (column-constructors this col)
+                       _ (trace-dag "Column" col ":" constrs)
                        clauses (map (fn [c]
                                       (let [s (-> this 
                                                   (specialize c) 
@@ -583,14 +601,20 @@
                                                   "consider adding :else clause"))
                                        (fail-node))))]
                    (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
-                     (bind-node (mapcat (fn [ocr]
+                     (let [b (mapcat (fn [ocr]
                                            (if-let [bind-expr (-> ocr meta :ocr-expr)]
                                              [ocr bind-expr]
                                              [ocr ocr]))
                                         ocrs)
-                                (switch-node (ocrs col) clauses default))
-                     (switch-node (ocrs col) clauses default)))
-                 (compile (swap this col)))))))
+                           o (ocrs col)
+                           n (switch-node o clauses default)
+                           _ (trace-dag "Add bind-node on occurance " o)]
+                       (bind-node b n))
+                     (let [o (ocrs col)
+                           _ (trace-dag "Add switch-node on occurance " o)]
+                       (switch-node o clauses default))))
+                 (do (trace-dag "Swapping column " col)
+                   (compile (swap this col))))))))
 
   (pattern-at [_ i j] ((rows j) i))
 
@@ -958,7 +982,8 @@
   (let [cs (partition 2 clauses)
         cs (let [[p a] (last cs)]
              (if (= :else p)
-               (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a])
+               (do (trace-matrix "Convert :else clause to row of wildcards")
+                 (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
                cs))
         clause-sources (into [] (map emit-clause cs))
         vars (vec (map (fn [var]
