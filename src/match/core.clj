@@ -294,7 +294,7 @@
     (cond
      (symbol? la) 1
      (symbol? lb) -1
-     :else (compare (.l a) (.l b)))))
+     :else (compare la lb))))
 
 (defmethod pattern-compare [LiteralPattern Object]
   [a b] -1)
@@ -860,7 +860,7 @@
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
   (if (get *locals* pat)
-    (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
+    (literal-pattern (vary-meta pat assoc :local true))
     (wildcard-pattern pat)))
 
 (defmethod emit-pattern :default
