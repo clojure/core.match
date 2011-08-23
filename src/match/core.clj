@@ -72,28 +72,28 @@
 (defmulti coerce? identity)
 (defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
-(defmulti vtest-inline (fn [t & r] t))
-(defmulti vtest-and-size-inline (fn [t & r] t))
-(defmulti vcount-inline (fn [t & r] t))
-(defmulti vnth-inline (fn [t & r] t))
-(defmulti vnth-offset-inline (fn [t & r] t))
-(defmulti vsubvec-inline (fn [t & r] t))
+(defmulti test-inline (fn [t & r] t))
+(defmulti test-with-size-inline (fn [t & r] t))
+(defmulti count-inline (fn [t & r] t))
+(defmulti nth-inline (fn [t & r] t))
+(defmulti nth-offset-inline (fn [t & r] t))
+(defmulti subvec-inline (fn [t & r] t))
 
 (defmethod coerce? :default
   [_] false)
 (defmethod coerce-element? :default
   [_] false)
-(defmethod vtest-inline ::vector
+(defmethod test-inline ::vector
   [_ ocr] `(vector? ~ocr))
-(defmethod vtest-and-size-inline ::vector
+(defmethod test-with-size-inline ::vector
   [_ ocr size] `(and (vector? ~ocr) (= (count ~ocr) ~size)))
-(defmethod vcount-inline ::vector
+(defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
-(defmethod vnth-inline ::vector
+(defmethod nth-inline ::vector
   [_ ocr i] `(nth ~ocr ~i))
-(defmethod vnth-offset-inline ::vector
+(defmethod nth-offset-inline ::vector
   [_ ocr i offset] `(nth ~ocr (unchecked-add ~i ~offset)))
-(defmethod vsubvec-inline ::vector
+(defmethod subvec-inline ::vector
   [_ ocr start end] `(subvec ~ocr ~start ~end))
 
 ;; =============================================================================
@@ -283,8 +283,8 @@
   IPatternCompile
   (to-source [_ ocr]
     (if size
-      (vtest-and-size-inline t ocr size)
-      (vtest-inline t ocr)))
+      (test-with-size-inline t ocr size)
+      (test-inline t ocr)))
   Object
   (toString [_]
     (str v ":" t)))
@@ -955,8 +955,8 @@
                                      :vec-sym vec-ocr
                                      :index i
                                      :bind-expr `(let [~ocr ~(if-let [offset (.offset this)]
-                                                               (vnth-offset-inline t focr i offset)
-                                                               (vnth-inline t focr i))])})))]
+                                                               (nth-offset-inline t focr i offset)
+                                                               (nth-inline t focr i))])})))]
                   (into (into [] (map ocr-sym (range width)))
                         (drop-nth ocrs 0)))
           matrix (pattern-matrix nrows nocrs)]
@@ -1178,24 +1178,4 @@
         n-to-clj)))
 
 (comment
-  ;; how do we deal with rest patterns?, concat is the constructor
-  (emit-pattern '([1 2 3] :vector))
-
-  ;; FIXME
-  (let [x [1 2 2]
-        y 1]
-    (match [x y]
-      [([_ _ 2] :vector) 1] :a0
-      [([1 1 3] :vector) 2] :a1
-      [([1 2 3] :vector) 3] :a2
-      :else :a3))
-
-  ;; FIXME
-  (let [x [1 2 2]
-        y 1]
-    (match [x]
-      [([_ _ 2] :vector)] :a0
-      [([1 1 3] :vector)] :a1
-      [([1 2 3] :vector)] :a2
-      :else :a3))
   )

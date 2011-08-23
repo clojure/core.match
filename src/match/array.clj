@@ -1,21 +1,35 @@
 (ns match.array
   (:refer-clojure :exclude [compile])
-  (:use match.core))
+  (:use [match.core :as m]))
 
 (def IntArray (class (int-array [])))
 
-(defmethod vtest-inline ::ints
+(derive ::ints ::m/vector)
+
+(defmethod test-inline ::ints
   [_ ocr] `(instance? IntArray ~ocr))
-(defmethod vnth-inline ::ints
+
+(defmethod test-with-size-inline ::ints
+  [_ ocr size] `(and (instance? IntArray ~ocr) (= (alength ~ocr) ~size)))
+
+(defmethod nth-inline ::ints
   [_ ocr i] `(aget ~ocr ~i))
-(defmethod vnth-offset-inline ::ints
+
+(defmethod nth-offset-inline ::ints
   [_ ocr i offset] `(aget ~ocr (unchecked-add ~i ~offset)))
-(defmethod vsubvec-inline ::ints
+
+(defmethod subvec-inline ::ints
   [_ ocr i] ocr)
 
 (comment
+  (let [x (int-array [1 2 3])]
+    (match [x]
+      [([_ _ 2] ::ints)] :a0
+      [([1 1 3] ::ints)] :a1
+      [([1 2 3] ::ints)] :a2))
+  
  ;; 60ms
- (let [x (int-array [1 2 3])]
+  (let [x (int-array [1 2 3])]
    (dotimes [_ 10]
      (time
       (dotimes [_ 1e7]
