@@ -583,7 +583,7 @@
                                            _ (trace-dag "First row all wildcards, add leaf-node.")]
                                        (leaf-node a b))
        :else (let [col (necessary-column this)
-                   _ (trace-dag "Picked column" col "as nessessary column.")]
+                   _ (trace-dag "Pick column" col "as necessary column.")]
                (if (= col 0)
                  (let [this (reduce specialize this (pseudo-patterns this col))
                        constrs (column-constructors this col)
@@ -596,9 +596,11 @@
                                     constrs)
                        default (let [m (specialize this (wildcard-pattern))]
                                  (if-not (empty-matrix? m)
-                                   (compile m)
+                                   (do (trace-dag "Compile default matrix")
+                                       (compile m))
                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                   "consider adding :else clause"))
+                                       (trace-dag "Add fail-node as default matrix")
                                        (fail-node))))]
                    (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
                      (let [b (mapcat (fn [ocr]
@@ -613,7 +615,7 @@
                      (let [o (ocrs col)
                            _ (trace-dag "Add switch-node on occurance " o)]
                        (switch-node o clauses default))))
-                 (do (trace-dag "Swapping column " col)
+                 (do (trace-dag "Swap column " col)
                    (compile (swap this col))))))))
 
   (pattern-at [_ i j] ((rows j) i))
@@ -704,7 +706,10 @@
                      (filter #(pattern-equals this (first %)))
                      (map #(drop-nth-bind % 0 focr))
                      vec)
-          nocrs (drop-nth ocrs 0)]
+          nocrs (drop-nth ocrs 0)
+          _ (trace-dag "Perform default matrix specialization on occurance:" focr
+                       ", New occurances: " 
+                       (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
@@ -744,7 +749,10 @@
                       tsym (gensym (str (name seq-sym) "-tail-"))
                       tsym (with-meta tsym
                              (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
-                  (into [hsym tsym] (drop-nth ocrs 0)))]
+                  (into [hsym tsym] (drop-nth ocrs 0)))
+          _ (trace-dag "Perform SeqPattern specialization"
+                       ", New occurances: " 
+                       (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
@@ -793,7 +801,8 @@
                                      :map-sym map-ocr
                                      :bind-expr `(let [~ocr (val-at ~map-ocr ~k)])})))]
                   (into (into [] (map ocr-sym all-keys))
-                        (drop-nth ocrs 0)))]
+                        (drop-nth ocrs 0)))
+          _ (trace-dag "Perform MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
 
@@ -805,7 +814,8 @@
           nrows (->> rows
                      (filter #(pattern-equals this (first %)))
                      (map #(drop-nth % 0))
-                     vec)]
+                     vec)
+          _ (trace-dag "Perform MapCrashPattern specialization")]
       (if (empty? nrows)
         (pattern-matrix [] [])
         (let [row (first nrows)]
@@ -827,7 +837,8 @@
                                        (update-pattern row 0 p)) ps)
                                 [row]))))
                      (apply concat)
-                     vec)]
+                     vec)
+          _ (trace-dag "Perform OrPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
@@ -844,7 +855,8 @@
                                 (let [^GuardPattern p p]
                                   (update-pattern row 0 (.p p)))
                                 row))))
-                     vec)]
+                     vec)
+          _ (trace-dag "Perform GuardPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
