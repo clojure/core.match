@@ -69,6 +69,7 @@
   IMatchVectorType
   (mvector? [_] false))
 
+(defmulti check-size? identity)
 (defmulti coerce? identity)
 (defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
@@ -79,6 +80,8 @@
 (defmulti nth-offset-inline (fn [t & r] t))
 (defmulti subvec-inline (fn [t & r] t))
 
+(defmethod check-size? :default
+  [_] true)
 (defmethod coerce? :default
   [_] false)
 (defmethod coerce-element? :default
@@ -282,7 +285,7 @@
     (VectorPattern. v t size offset rest? new-meta))
   IPatternCompile
   (to-source [_ ocr]
-    (if size
+    (if (and size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
   Object
