@@ -1029,19 +1029,22 @@
 
 (defmulti emit-pattern class)
 
+(defn emit-patterns
+  ([ps] (emit-patterns ps []))
+  ([ps v]
+     (if (nil? ps)
+       v
+       (let [p (first ps)]
+         (cond
+          (= p '&) (let [p (second ps)]
+                     (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
+          :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))
+
 (defmethod emit-pattern clojure.lang.IPersistentVector
   [pat]
   (if (empty? pat)
     (literal-pattern ())
-    (seq-pattern
-      (loop [ps pat v []]
-        (if (nil? ps)
-          v
-          (let [p (first ps)]
-            (cond
-              (= p '&) (let [p (second ps)]
-                         (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
-              :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))))
+    (seq-pattern (emit-patterns pat))))
 
 (defmethod emit-pattern clojure.lang.IPersistentMap
   [pat]
@@ -1092,7 +1095,7 @@
               (guard-pattern (emit-pattern p) (set gs))))
 
 (defmethod emit-pattern-for-syntax ::vector
-  [[p t offset-key offset]] (vector-pattern (vec (map emit-pattern p))
+  [[p t offset-key offset]] (vector-pattern (emit-patterns p)
                                             t offset))
 
 (defmethod emit-pattern-for-syntax :only
