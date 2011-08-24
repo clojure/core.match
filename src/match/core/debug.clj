@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [compile])
   (:use [match.core :only [emit-matrix compile occurrences
                            rows patterns action-for-row n-to-clj
-                           clj-form]])
+                           clj-form set-trace! no-trace!]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]
@@ -15,12 +15,15 @@
 
 (defmacro m-to-matrix [vars & clauses]
   `(-> (build-matrix ~vars ~@clauses)
-       pp/pprint))
+     pprint-matrix))
 
 (defmacro m-to-dag [vars & clauses]
-  `(-> (build-matrix ~vars ~@clauses)
-     compile
-     pp/pprint))
+  (binding [match.core/*line* (-> &form meta :line)
+            match.core/*locals* &env
+            match.core/*warned* (atom false)]
+    `~(-> (emit-matrix vars clauses)
+        compile
+        pp/pprint)))
 
 (defmacro m-to-clj [vars & clauses]
   (binding [match.core/*line* (-> &form meta :line)

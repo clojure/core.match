@@ -14,6 +14,8 @@
 
 (defn set-trace! []
   (reset! *trace* true))
+(defn no-trace! []
+  (reset! *trace* nil))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -628,7 +630,7 @@
                                        (compile m))
                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                   "consider adding :else clause"))
-                                       (trace-dag "Add fail-node as default matrix (specialized matrix empty), for next node")
+                                       (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                                        (fail-node))))]
                    (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
                      (let [b (mapcat (fn [ocr]
@@ -890,7 +892,7 @@
 ;; =============================================================================
 ;; Interface
 
-(defmulti to-source (fn [pattern ocr] (:type pattern)))
+(defmulti to-source (fn [pattern ocr] (type pattern)))
 
 (defmulti emit-pattern class)
 
@@ -969,34 +971,6 @@
                "Valid syntax: "
                (vec (remove #(= % :default)
                             (keys (.getMethodTable emit-pattern-for-syntax))))))))
-
-;; Regex extension
-(defmethod emit-pattern java.util.regex.Pattern
-  [pat]
-  {:type ::regex :regex pat})
-
-(defmethod to-source ::regex
-  [pat ocr]
-  `(re-matches ~(:regex pat) ~ocr))
-
-(defmethod pattern-equals [::regex ::regex]
-  [a b] (= (:regex a) (:regex b)))
-
-
-(comment 
-  
-  ;; TODO somehow 1 gets replaces with a fail-node
-  (binding [match.core/*line* 1]
-    (m-to-clj [x]
-              [#"a"] 1))
-  ;=>
-  ;(cond
-  ;  (re-matches #"a" x) (throw (java.lang.Exception. "No match found."))
-  ;  :else (throw (java.lang.Exception. "No match found.")))
-  ;nil
-  
-  )
-
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
