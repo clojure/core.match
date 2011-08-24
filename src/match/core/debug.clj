@@ -1,7 +1,8 @@
 (ns match.core.debug
   (:refer-clojure :exclude [compile])
   (:use [match.core :only [emit-matrix compile occurrences
-                           rows patterns action-for-row n-to-clj]])
+                           rows patterns action-for-row n-to-clj
+                           executable-form]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]
@@ -22,10 +23,12 @@
      pp/pprint))
 
 (defmacro m-to-clj [vars & clauses]
-  `(-> (build-matrix ~vars ~@clauses)
-     compile
-     n-to-clj
-     source-pprint))
+  (let [l (-> &form :line)]
+    `(binding [match.core/*line* ~l]
+       (-> (build-matrix ~vars ~@clauses)
+         compile
+         executable-form
+         source-pprint))))
 
 (defn pprint-matrix
   ([pm] (pprint-matrix pm 4))
