@@ -896,6 +896,30 @@
 
 (defmulti emit-pattern class)
 
+;; =============================================================================
+;; Regex extension
+
+(defrecord RegexPattern [regex])
+
+(defmethod emit-pattern java.util.regex.Pattern
+  [pat]
+  (RegexPattern. pat))
+
+(defmethod to-source RegexPattern
+  [pat ocr]
+  `(re-matches ~(:regex pat) ~ocr))
+
+(defmethod pattern-equals [RegexPattern RegexPattern]
+  [a b] (= (.pattern (:regex a)) (.pattern (:regex b))))
+
+(defmethod pattern-compare [RegexPattern RegexPattern]
+  [a b] (if (= (.pattern (:regex a)) (.pattern (:regex b)))
+          0
+          -1))
+
+;; ============================================================================
+;; emit-pattern Methods
+
 (defmethod emit-pattern clojure.lang.IPersistentVector
   [pat]
   (if (empty? pat)
@@ -1051,6 +1075,9 @@
   (-> (emit-matrix vars clauses)
     compile
     executable-form))
+
+;; ============================================================================
+;; Match macros
 
 (defmacro defmatch [name vars & clauses]
   `(defn ~name ~vars 

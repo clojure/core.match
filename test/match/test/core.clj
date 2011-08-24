@@ -267,3 +267,9 @@
              [y] :a2
              :else :a3))
          :a2)))
+
+(deftest basic-regex
+         (is (= (match ["asdf"]
+                       [#"asdf"] 1
+                       :else 2)
+                1)))
