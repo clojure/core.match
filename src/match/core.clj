@@ -12,7 +12,7 @@
 (def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *trace* (atom false))
 
-(defn set-trace []
+(defn set-trace! []
   (reset! *trace* true))
 
 (defn warn [msg]
