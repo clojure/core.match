@@ -320,6 +320,7 @@
   (let [la (.l a)
         lb (.l b)]
     (cond
+     (identical? la lb) 0
      (symbol? la) 1
      (symbol? lb) -1
      :else (compare la lb))))
