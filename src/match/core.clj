@@ -634,10 +634,11 @@
                                        (fail-node))))]
                    (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
                      (let [b (mapcat (fn [ocr]
-                                           (if-let [bind-expr (-> ocr meta :ocr-expr)]
-                                             [ocr bind-expr]
-                                             [ocr ocr]))
-                                        ocrs)
+                                       (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
+                                         (if (not= bind-expr ::not-found)
+                                           [ocr bind-expr]
+                                           [ocr ocr])))
+                                     ocrs)
                            o (ocrs col)
                            n (switch-node o clauses default)
                            _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]

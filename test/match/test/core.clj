@@ -273,3 +273,8 @@
                        [#"asdf"] 1
                        :else 2)
                 1)))
+
+(def test-false-expr-works-1
+  (is (= (match [true false]
+           [true false] 1)
+         1)))
