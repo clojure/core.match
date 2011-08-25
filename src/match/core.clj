@@ -458,7 +458,7 @@
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
 (defmethod leaf-bind-expr :seq
-  [ocr] (concat (-> ocr meta :bind-expr) `(~ocr)))
+  [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
@@ -517,12 +517,12 @@
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (n-to-clj [this]
-    (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
+    (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr (concat `(cond ~@clauses)
-                            `(:else ~(n-to-clj default)))]
+          cond-expr (doall (concat `(cond ~@clauses)
+                                   `(:else ~(n-to-clj default))))]
       (if bind-expr
-        (concat bind-expr (list cond-expr))
+        (doall (concat bind-expr (list cond-expr)))
         cond-expr))))
 
 (defn ^SwitchNode switch-node
