@@ -29,7 +29,12 @@
   (binding [match.core/*line* (-> &form meta :line)
             match.core/*locals* &env
             match.core/*warned* (atom false)]
-    `~(source-pprint (clj-form vars clauses))))
+    (try 
+      (-> (clj-form vars clauses)
+        source-pprint)
+      (catch AssertionError e
+        `(throw (AssertionError. ~(.getMessage e)))))))
+
 
 (defn pprint-matrix
   ([pm] (pprint-matrix pm 4))
