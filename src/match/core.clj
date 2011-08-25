@@ -7,9 +7,9 @@
 ;; Debugging tools
 
 (def ^{:dynamic true} *syntax-check* true)
-(def ^{:dynamic true} *line* "No line number.")
-(def ^{:dynamic true} *locals* {})
-(def ^{:dynamic true} *warned* (atom false))
+(def ^{:dynamic true} *line*)
+(def ^{:dynamic true} *locals*)
+(def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *trace* (atom false))
 
 (defn set-trace! []
