@@ -1,7 +1,8 @@
 (ns match.test.core
   (:refer-clojure :exclude [reify == inc compile])
   (:use [match.core]
-        [match.core.debug])
+        [match.core.debug]
+        [match.regex])
   (:use [clojure.test]))
 
 (deftest pattern-match-1
@@ -268,6 +269,15 @@
              :else :a3))
          :a2)))
 
+(deftest match-local-2
+  (is (= (let [x 2]
+           (match [x]
+             [0] :a0
+             [1] :a1
+             [2] :a2
+             :else :a3))
+         :a2)))
+
 (deftest basic-regex
          (is (= (match ["asdf"]
                        [#"asdf"] 1
@@ -276,7 +286,8 @@
 
 (deftest test-false-expr-works-1
   (is (= (match [true false]
-           [true false] 1)
+           [true false] 1
+           [false true] 2)
          1)))
 
 (deftest test-lazy-source-case-1

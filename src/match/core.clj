@@ -77,7 +77,6 @@
 ;; =============================================================================
 ;; Patterns
 
-(defmulti pattern-equals (fn [a b] [(type a) (type b)]))
 (defmulti pattern-compare (fn [a b] [(type a) (type b)]))
 
 ;; -----------------------------------------------------------------------------
@@ -279,9 +278,6 @@
 
 (def guard-pattern? (partial instance? GuardPattern))
 
-(defmethod pattern-equals [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (= (.gs a) (.gs b)))
-
 (defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
   (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
 
@@ -305,6 +301,20 @@
 ;; =============================================================================
 ;; Pattern Comparison
 
+(defn pattern-equals [a b]
+  (zero? (pattern-compare a b)))
+
+(defmethod pattern-compare [Object WildcardPattern]
+  [a b] 0)
+
+(defmethod pattern-compare [LiteralPattern Object]
+  [a b] -1)
+
+(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
+
+(defmethod pattern-compare [Object LiteralPattern]
+  [a b] 1)
+
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
   [^LiteralPattern a ^LiteralPattern b]
   (let [la (.l a)
@@ -314,47 +324,18 @@
      (symbol? lb) -1
      :else (compare la lb))))
 
-(defmethod pattern-compare [LiteralPattern Object]
-  [a b] -1)
-
-(defmethod pattern-compare [Object LiteralPattern]
-  [a b] 1)
-
 (defmethod pattern-compare [GuardPattern GuardPattern]
   [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
 
-(defmethod pattern-compare :default
-  [a b] (if (= (class a) (class b)) 0 -1))
-
-;; =============================================================================
-;; Pattern Equality
-
-(defmethod pattern-equals [Object WildcardPattern]
-  [a b] true)
-
-(defmethod pattern-equals [LiteralPattern LiteralPattern]
-  [^LiteralPattern a ^LiteralPattern b] (= (.l a) (.l b)))
-
-(defmethod pattern-equals [SeqPattern SeqPattern]
-  [a b] true)
-
-(defmethod pattern-equals [RestPattern RestPattern]
-  [a b] true)
-
-(defmethod pattern-equals [MapPattern MapPattern]
-  [a b] true)
-
-(defmethod pattern-equals [MapCrashPattern MapCrashPattern]
-  [a b] true)
-
-(defmethod pattern-equals [OrPattern OrPattern]
+(defmethod pattern-compare [OrPattern OrPattern]
   [^OrPattern a ^OrPattern b] (let [as (.ps a)
                                     bs (.ps b)]
-                                (and (= (count as) (count bs))
-                                     (every? identity (map pattern-equals as bs)))))
+                                (if (and (= (count as) (count bs))
+                                         (every? identity (map pattern-equals as bs)))
+                                  0 -1)))
 
-(defmethod pattern-equals :default 
-  [a b] false)
+(defmethod pattern-compare :default
+  [a b] (if (= (class a) (class b)) 0 -1))
 
 ;; =============================================================================
 ;; Pattern Rows
@@ -470,9 +451,11 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw (Exception. (str "No match found. " 
-                             "Followed " @*rt-branches* " branches."
-                             " Breadcrumbs: " @*rt-breadcrumbs*)))))
+    (if @*trace*
+      `(throw (Exception. (str "No match found. " 
+                               "Followed " @*rt-branches* " branches."
+                               " Breadcrumbs: " @*rt-breadcrumbs*)))
+      `(throw (Exception. (str "No match found."))))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -497,11 +480,13 @@
 (declare to-source)
 
 (defn rt-branches [test]
-  `(if ~test
-     (do (swap! *rt-branches* clojure.core/inc)
-         (swap! *rt-breadcrumbs* #(conj % '~test))
-       true)
-     false))
+  (if @*trace*
+   `(if ~test
+      (do (swap! *rt-branches* clojure.core/inc)
+          (swap! *rt-breadcrumbs* #(conj % '~test))
+          true)
+      false)
+   test))
 
 (defn dag-clause-to-clj [occurrence pattern action]
   (vector (rt-branches
@@ -894,27 +879,6 @@
 
 (defmulti emit-pattern class)
 
-;; =============================================================================
-;; Regex extension
-
-(defrecord RegexPattern [regex])
-
-(defmethod emit-pattern java.util.regex.Pattern
-  [pat]
-  (RegexPattern. pat))
-
-(defmethod to-source RegexPattern
-  [pat ocr]
-  `(re-matches ~(:regex pat) ~ocr))
-
-(defmethod pattern-equals [RegexPattern RegexPattern]
-  [a b] (= (.pattern (:regex a)) (.pattern (:regex b))))
-
-(defmethod pattern-compare [RegexPattern RegexPattern]
-  [a b] (if (= (.pattern (:regex a)) (.pattern (:regex b)))
-          0
-          -1))
-
 ;; ============================================================================
 ;; emit-pattern Methods
 
@@ -1061,9 +1025,11 @@
     (pattern-matrix clause-sources vars)))
 
 (defn add-prefix [form]
-  `(binding [*rt-branches* (atom 0)
-             *rt-breadcrumbs* (atom [])]
-     ~form))
+  (if @*trace*
+   `(binding [*rt-branches* (atom 0)
+              *rt-breadcrumbs* (atom [])]
+      ~form)
+   form))
 
 (defn executable-form [node]
   (-> (n-to-clj node)
