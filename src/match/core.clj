@@ -242,9 +242,6 @@
 
 (def or-pattern? (partial instance? OrPattern))
 
-(defmethod pattern-equals [OrPattern OrPattern]
-  [^OrPattern a ^OrPattern b] (= (.ps a) (.ps b)))
-
 (defmethod print-method OrPattern [^OrPattern p ^Writer writer]
   (.write writer (str "<OrPattern: " (.ps p) ">")))
 
