@@ -1,7 +1,8 @@
 (ns match.test.core
   (:refer-clojure :exclude [compile])
-  (:use [match.core]
-        [match.core.debug])
+  (:use match.core
+        match.core.debug
+        match.regex)
   (require [match.core :as m])
   (:use [clojure.test]))
 
@@ -268,7 +269,31 @@
              :else :a3))
          :a2)))
 
-(alias 'm 'match.core)
+(deftest match-local-2
+  (is (= (let [x 2]
+           (match [x]
+             [0] :a0
+             [1] :a1
+             [2] :a2
+             :else :a3))
+         :a2)))
+
+(deftest basic-regex
+         (is (= (match ["asdf"]
+                       [#"asdf"] 1
+                       :else 2)
+                1)))
+
+(deftest test-false-expr-works-1
+  (is (= (match [true false]
+           [true false] 1
+           [false true] 2)
+         1)))
+
+(deftest test-lazy-source-case-1
+  (is (= (let [x [1 2]]
+           (match [x] [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0))
+         :a0)))
 
 (deftest vector-pattern-match-1
   (is (= (let [x [1 2 3]]

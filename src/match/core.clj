@@ -3,12 +3,19 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
+;; ============================================
+;; Debugging tools
+
 (def ^{:dynamic true} *syntax-check* true)
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
-(def ^{:dynamic true} *warned* (atom false))
+(def ^{:dynamic true} *warned*)
+(def ^{:dynamic true} *trace* (atom false))
 
-#_(prefer-method print-method clojure.lang.IType clojure.lang.ISeq)
+(defn set-trace! []
+  (reset! *trace* true))
+(defn no-trace! []
+  (reset! *trace* nil))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -18,6 +25,18 @@
                  (str *ns* ", line " *line* ":") 
                  msg))
       (reset! *warned* true))))
+
+(defn trace-matrix [& p]
+  (when @*trace*
+    (apply println "TRACE: MATRIX:" p)
+    (flush)))
+(defn trace-dag [& p]
+  (when @*trace*
+    (apply println "TRACE: DAG:" p)
+    (flush)))
+
+;; ==================================
+;; Protocols
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -109,7 +128,7 @@
   (n-to-clj [this]))
 
 (defprotocol IPatternCompile
-  (to-source [this ocr]))
+  (to-source* [this ocr]))
 
 (defprotocol IVecMod
   (prepend [this x])
@@ -130,7 +149,6 @@
 ;; =============================================================================
 ;; Patterns
 
-(defmulti pattern-equals (fn [a b] [(type a) (type b)]))
 (defmulti pattern-compare (fn [a b] [(type a) (type b)]))
 
 ;; -----------------------------------------------------------------------------
@@ -169,7 +187,7 @@
   (withMeta [_ new-meta]
     (LiteralPattern. l new-meta))
   IPatternCompile
-  (to-source [this ocr]
+  (to-source* [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
      (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
@@ -197,7 +215,7 @@
   (withMeta [_ new-meta]
     (SeqPattern. s new-meta))
   IPatternCompile
-  (to-source [this ocr]
+  (to-source* [this ocr]
     `(or (seq? ~ocr) (sequential? ~ocr)))
   Object
   (toString [_]
@@ -242,7 +260,7 @@
   (withMeta [_ new-meta]
     (MapPattern. m new-meta))
   IPatternCompile
-  (to-source [this ocr]
+  (to-source* [this ocr]
     `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
   Object
   (toString [_]
@@ -264,7 +282,7 @@
   (withMeta [_ new-meta]
     (MapCrashPattern. only new-meta))
   IPatternCompile
-  (to-source [this ocr]
+  (to-source* [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
       `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
   Object
@@ -288,7 +306,7 @@
   (withMeta [_ new-meta]
     (VectorPattern. v t size offset rest? new-meta))
   IPatternCompile
-  (to-source [_ ocr]
+  (to-source* [_ ocr]
     (if (and size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
@@ -367,7 +385,7 @@
   (withMeta [_ new-meta]
     (GuardPattern. p gs new-meta))
   IPatternCompile
-  (to-source [this ocr]
+  (to-source* [this ocr]
     `(and ~@(map (fn [expr ocr]
                    (list expr ocr))
                  gs (repeat ocr))))
@@ -380,9 +398,6 @@
   (GuardPattern. p gs nil))
 
 (def guard-pattern? (partial instance? GuardPattern))
-
-(defmethod pattern-equals [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (= (.gs a) (.gs b)))
 
 (defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
   (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
@@ -409,87 +424,42 @@
 ;;   - used to determine the set of constructors presents in a column and the
 ;;     order which they should be considered
 
+(defn pattern-equals [a b]
+  (zero? (pattern-compare a b)))
+
+(defmethod pattern-compare [Object WildcardPattern]
+  [a b] 0)
+
+(defmethod pattern-compare [LiteralPattern Object]
+  [a b] -1)
+
+(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
+
+(defmethod pattern-compare [Object LiteralPattern]
+  [a b] 1)
+
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
   [^LiteralPattern a ^LiteralPattern b]
   (let [la (.l a)
         lb (.l b)]
     (cond
+     (= la lb) 0
      (symbol? la) 1
      (symbol? lb) -1
-     :else (compare (.l a) (.l b)))))
-
-(defmethod pattern-compare [LiteralPattern Object]
-  [a b] -1)
-
-(defmethod pattern-compare [Object LiteralPattern]
-  [a b] 1)
-
-(defmethod pattern-compare [GuardPattern Object]
-  [^GuardPattern a ^GuardPattern b] -1)
-
-(defmethod pattern-compare [GuardPattern LiteralPattern]
-  [^GuardPattern a ^GuardPattern b] 1)
+     :else (compare la lb))))
 
 (defmethod pattern-compare [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
+  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
 
-(defmethod pattern-compare [MapPattern MapPattern]
-  [^GuardPattern a ^GuardPattern b] 0)
-
-(defmethod pattern-compare [SeqPattern SeqPattern]
-  [^GuardPattern a ^GuardPattern b] 0)
-
-(defmethod pattern-compare [VectorPattern VectorPattern]
-  [^VectorPattern a ^VectorPattern b] (if (and (= (.t a) (.t b))
-                                            (let [sa (.size a) sb (.size b)]
-                                              (or (= sa sb)
-                                                  (and (>= sa sb) (.rest? b))))
-                                            (= (.offset a) (.offset b)))
-                                        0 1))
-
-(defmethod pattern-compare :default
-  [a b] 1)
-
-;; =============================================================================
-;; Pattern Equality
-;;   - use to filter similar patterns in the matrix
-
-;; TODO: the following is a bit redundant and confusing, we can probably
-;; eliminate and simply test that pattern-compare returns 0
-
-(defmethod pattern-equals [Object WildcardPattern]
-  [a b] true)
-
-(defmethod pattern-equals [LiteralPattern LiteralPattern]
-  [^LiteralPattern a ^LiteralPattern b] (= (.l a) (.l b)))
-
-(defmethod pattern-equals [SeqPattern SeqPattern]
-  [a b] true)
-
-(defmethod pattern-equals [RestPattern RestPattern]
-  [a b] true)
-
-(defmethod pattern-equals [MapPattern MapPattern]
-  [a b] true)
-
-(defmethod pattern-equals [VectorPattern VectorPattern]
-  [^VectorPattern a ^VectorPattern b] (and (= (.t a) (.t b))
-                                           (let [sa (.size a) sb (.size b)]
-                                             (or (= sa sb)
-                                                 (and (>= sa sb) (.rest? b))))
-                                           (= (.offset a) (.offset b))))
-
-(defmethod pattern-equals [MapCrashPattern MapCrashPattern]
-  [a b] true)
-
-(defmethod pattern-equals [OrPattern OrPattern]
+(defmethod pattern-compare [OrPattern OrPattern]
   [^OrPattern a ^OrPattern b] (let [as (.ps a)
                                     bs (.ps b)]
-                                (and (= (count as) (count bs)) ;; TODO: use sets - David
-                                     (every? identity (map pattern-equals as bs)))))
+                                (if (and (= (count as) (count bs))
+                                         (every? identity (map pattern-equals as bs)))
+                                  0 -1)))
 
-(defmethod pattern-equals :default 
-  [a b] false)
+(defmethod pattern-compare :default
+  [a b] (if (= (class a) (class b)) 0 -1))
 
 ;; =============================================================================
 ;; Pattern Rows
@@ -590,7 +560,7 @@
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
 (defmethod leaf-bind-expr :seq
-  [ocr] (concat (-> ocr meta :bind-expr) `(~ocr)))
+  [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
@@ -605,7 +575,11 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw (Exception. "No match found."))))
+    (if @*trace*
+      `(throw (Exception. (str "No match found. " 
+                               "Followed " @*rt-branches* " branches."
+                               " Breadcrumbs: " @*rt-breadcrumbs*)))
+      `(throw (Exception. (str "No match found."))))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -625,19 +599,36 @@
 ;; -----------------------------------------------------------------------------
 ;; Switch Node
 
+(def ^{:dynamic true} *rt-branches*)
+(def ^{:dynamic true} *rt-breadcrumbs*)
+(declare to-source)
+
+(defn rt-branches [test]
+  (if @*trace*
+   `(if ~test
+      (do (swap! *rt-branches* clojure.core/inc)
+          (swap! *rt-breadcrumbs* #(conj % '~test))
+          true)
+      false)
+   test))
+
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector (to-source pattern occurrence) 
+  (vector (rt-branches
+            (if (extends? IPatternCompile (class pattern))
+              (to-source* pattern occurrence) 
+              (to-source pattern occurrence)))
           (n-to-clj action)))
+
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (n-to-clj [this]
-    (let [clauses (mapcat (partial apply dag-clause-to-clj occurrence) cases)
+    (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr (concat `(cond ~@clauses)
-                            `(:else ~(n-to-clj default)))]
+          cond-expr (doall (concat `(cond ~@clauses)
+                                   `(:else ~(n-to-clj default))))]
       (if bind-expr
-        (concat bind-expr (list cond-expr))
+        (doall (concat bind-expr (list cond-expr)))
         cond-expr))))
 
 (defn ^SwitchNode switch-node
@@ -718,21 +709,31 @@
               (-> matrix meta :coerce-bind))]
       (cond
        (empty? rows) (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
+                         (trace-dag "No rows left, add fail-node")
                          (fail-node))
-       (empty-row? (first rows)) (let [f (first rows)]
-                                   (leaf-node (action f) (bindings f)))
+       (empty-row? (first rows)) (let [f (first rows)
+                                       a (action f)
+                                       b (bindings f)
+                                       _ (trace-dag "Empty row, add leaf-node."
+                                                    "Action:" a
+                                                    "Bindings:" b)]
+                                   (leaf-node a b))
        (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
                                            ps (.ps f)
                                            wc-syms (map #(.sym ^WildcardPattern %) ps)
                                            wc-bindings (map vector wc-syms
-                                                            (map leaf-bind-expr ocrs))]
-                                       (leaf-node (action f)
-                                                  (concat (bindings f)
-                                                          wc-bindings)))
-       :else (let [col (necessary-column this)]
+                                                            (map leaf-bind-expr ocrs))
+                                           a (action f)
+                                           b (concat (bindings f)
+                                                     wc-bindings)
+                                           _ (trace-dag "First row all wildcards, add leaf-node.")]
+                                       (leaf-node a b))
+       :else (let [col (necessary-column this)
+                   _ (trace-dag "Pick column" col "as necessary column.")]
                (if (= col 0)
                  (let [this (reduce specialize this (pseudo-patterns this col))
                        constrs (column-constructors this col)
+                       _ (trace-dag "Column" col ":" constrs)
                        clauses (map (fn [c]
                                       (let [s (-> this 
                                                   (specialize c) 
@@ -741,22 +742,28 @@
                                     constrs)
                        default (let [m (specialize this (wildcard-pattern))]
                                  (if-not (empty-matrix? m)
-                                   (compile m)
+                                   (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
+                                       (compile m))
                                    (do (warn (str "Non-exhaustive pattern matrix, " 
                                                   "consider adding :else clause"))
-                                       (fail-node))))
-                       node (switch-node (ocrs col) clauses default)]
-                   (cond
-                    (has-ocr-expr? ocrs) (bind-node (mapcat (fn [ocr]
-                                                               (if-let [bind-expr (-> ocr meta :ocr-expr)]
-                                                                 [ocr bind-expr]
-                                                                 [ocr ocr]))
-                                                             ocrs)
-                                                     node)
-                    (coerce? this) (bind-node (-> this meta :coerce-bind)
-                                              node)
-                    :else node))
-                 (compile (swap this col)))))))
+                                       (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
+                                       (fail-node))))]
+                   (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
+                     (let [b (mapcat (fn [ocr]
+                                       (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
+                                         (if (not= bind-expr ::not-found)
+                                           [ocr bind-expr]
+                                           [ocr ocr])))
+                                     ocrs)
+                           o (ocrs col)
+                           n (switch-node o clauses default)
+                           _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]
+                       (bind-node b n))
+                     (let [o (ocrs col)
+                           _ (trace-dag "Add switch-node on occurance " o)]
+                       (switch-node o clauses default))))
+                 (do (trace-dag "Swap column " col)
+                     (compile (swap this col))))))))
 
   (pattern-at [_ i j] ((rows j) i))
 
@@ -849,7 +856,10 @@
                      (filter #(pattern-equals this (first %)))
                      (map #(drop-nth-bind % 0 focr))
                      vec)
-          nocrs (drop-nth ocrs 0)]
+          nocrs (drop-nth ocrs 0)
+          _ (trace-dag "Perform default matrix specialization on ocr" focr
+                       ", new num ocrs: " 
+                       (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
@@ -889,7 +899,10 @@
                       tsym (gensym (str (name seq-sym) "_tail__"))
                       tsym (with-meta tsym
                              (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
-                  (into [hsym tsym] (drop-nth ocrs 0)))]
+                  (into [hsym tsym] (drop-nth ocrs 0)))
+          _ (trace-dag "SeqPattern specialization on ocr " focr
+                       ", new num ocrs" 
+                       (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
@@ -938,7 +951,8 @@
                                      :map-sym map-ocr
                                      :bind-expr `(let [~ocr (val-at ~map-ocr ~k)])})))]
                   (into (into [] (map ocr-sym all-keys))
-                        (drop-nth ocrs 0)))]
+                        (drop-nth ocrs 0)))
+          _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
 
@@ -950,7 +964,8 @@
           nrows (->> rows
                      (filter #(pattern-equals this (first %)))
                      (map #(drop-nth % 0))
-                     vec)]
+                     vec)
+          _ (trace-dag "MapCrashPattern specialization")]
       (if (empty? nrows)
         (pattern-matrix [] [])
         (let [row (first nrows)]
@@ -1039,7 +1054,8 @@
                                        (update-pattern row 0 p)) ps)
                                 [row]))))
                      (apply concat)
-                     vec)]
+                     vec)
+          _ (trace-dag "OrPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
@@ -1056,13 +1072,19 @@
                                 (let [^GuardPattern p p]
                                   (update-pattern row 0 (.p p)))
                                 row))))
-                     vec)]
+                     vec)
+          _ (trace-dag "GuardPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
 ;; Interface
 
+(defmulti to-source (fn [pattern ocr] (type pattern)))
+
 (defmulti emit-pattern class)
+
+;; ============================================================================
+;; emit-pattern Methods
 
 (defn emit-patterns
   ([ps] (emit-patterns ps []))
@@ -1093,7 +1115,7 @@
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
   (if (get *locals* pat)
-    (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
+    (literal-pattern (vary-meta pat assoc :local true))
     (wildcard-pattern pat)))
 
 (defmethod emit-pattern :default
@@ -1143,7 +1165,6 @@
                "Valid syntax: "
                (vec (remove #(= % :default)
                             (keys (.getMethodTable emit-pattern-for-syntax))))))))
-
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
@@ -1198,22 +1219,41 @@
   (let [cs (partition 2 clauses)
         cs (let [[p a] (last cs)]
              (if (= :else p)
-               (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a])
+               (do (trace-matrix "Convert :else clause to row of wildcards")
+                   (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
                cs))
         clause-sources (into [] (map emit-clause cs))
         vars (vec (map (fn [var]
-                       (if (not (symbol? var))
-                         (with-meta (gensym "ocr-") {:ocr-expr var})
-                         var))
+                         (if (not (symbol? var))
+                           (let [nsym (gensym "ocr-")
+                                 _ (trace-dag "Bind ocr" var "to" nsym)]
+                             (with-meta nsym {:ocr-expr var}))
+                           var))
                      vars))]
     (pattern-matrix clause-sources vars)))
 
+(defn add-prefix [form]
+  (if @*trace*
+   `(binding [*rt-branches* (atom 0)
+              *rt-breadcrumbs* (atom [])]
+      ~form)
+   form))
+
+(defn executable-form [node]
+  (-> (n-to-clj node)
+      add-prefix))
+
+(defn clj-form [vars clauses]
+  (-> (emit-matrix vars clauses)
+      compile
+      executable-form))
+
+;; ============================================================================
+;; Match macros
+
 (defmacro defmatch [name vars & clauses]
-  (let [clj-form (-> (emit-matrix vars clauses)
-                   compile
-                   n-to-clj)]
-    `(defn ~name ~vars 
-       ~clj-form)))
+  `(defn ~name ~vars 
+     ~(clj-form vars clauses)))
 
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
@@ -1225,18 +1265,12 @@
                                              [[row] action]
                                              [row action]))
                                          (partition 2 clauses))]]
-      `~(-> (emit-matrix vars clauses)
-          compile
-          n-to-clj))))
+      `~(clj-form vars clauses))))
 
 (defmacro match [vars & clauses]
   "Pattern match multiple values."
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
-    `~(-> (emit-matrix vars clauses)
-        compile
-        n-to-clj)))
-
-(comment
-  )
+    (let [src (clj-form vars clauses)]
+      `~src)))
