@@ -7,9 +7,9 @@
 ;; Debugging tools
 
 (def ^{:dynamic true} *syntax-check* true)
-(def ^{:dynamic true} *line*)
-(def ^{:dynamic true} *locals*)
-(def ^{:dynamic true} *warned*)
+(def ^{:dynamic true} *line* "No line number.")
+(def ^{:dynamic true} *locals* {})
+(def ^{:dynamic true} *warned* (atom false))
 (def ^{:dynamic true} *trace* (atom false))
 
 (defn set-trace! []
@@ -1074,8 +1074,8 @@
 
 (defn clj-form [vars clauses]
   (-> (emit-matrix vars clauses)
-    compile
-    executable-form))
+      compile
+      executable-form))
 
 ;; ============================================================================
 ;; Match macros
@@ -1101,4 +1101,5 @@
   (binding [*line* (-> &form meta :line)
             *locals* &env
             *warned* (atom false)]
-    `~(clj-form vars clauses)))
+    (let [src (clj-form vars clauses)]
+      `~src)))

@@ -274,7 +274,12 @@
                        :else 2)
                 1)))
 
-(def test-false-expr-works-1
+(deftest test-false-expr-works-1
   (is (= (match [true false]
            [true false] 1)
          1)))
+
+(deftest test-lazy-source-case-1
+  (is (= (let [x [1 2]]
+           (match [x] [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0))
+         :a0)))
