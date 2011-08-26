@@ -1051,7 +1051,7 @@
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
   (binding [*line* (-> &form meta :line)
-            *locals* &env
+            *locals* (dissoc &env '_)
             *warned* (atom false)]
     (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
                                            (if (not= row :else)
@@ -1063,7 +1063,7 @@
 (defmacro match [vars & clauses]
   "Pattern match multiple values."
   (binding [*line* (-> &form meta :line)
-            *locals* &env
+            *locals* (dissoc &env '_)
             *warned* (atom false)]
     (let [src (clj-form vars clauses)]
       `~src)))
