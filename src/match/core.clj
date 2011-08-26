@@ -6,11 +6,14 @@
 ;; ============================================
 ;; Debugging tools
 
+(set! *warn-on-reflection* true)
+
 (def ^{:dynamic true} *syntax-check* true)
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *trace* (atom false))
+(def ^{:dynamic true} *count* (atom 0))
 
 (defn set-trace! []
   (reset! *trace* true))
@@ -458,6 +461,8 @@
                                          (every? identity (map pattern-equals as bs)))
                                   0 -1)))
 
+;; TODO: vector pattern compare - David
+
 (defmethod pattern-compare :default
   [a b] (if (= (class a) (class b)) 0 -1))
 
@@ -633,7 +638,7 @@
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
-   {:pre [(seq? cases)]}
+   {:pre [(sequential? cases)]}
    (SwitchNode. occurrence cases default)))
 
 ;; =============================================================================
@@ -690,6 +695,7 @@
   (column [_ i] (vec (map #(nth % i) rows)))
 
   (compile [this]
+    (swap! *count* inc)
     (letfn [(column-constructors [this i]
               (->> (column this i)
                    (filter (comp not wildcard-pattern?))
@@ -734,12 +740,12 @@
                  (let [this (reduce specialize this (pseudo-patterns this col))
                        constrs (column-constructors this col)
                        _ (trace-dag "Column" col ":" constrs)
-                       clauses (map (fn [c]
-                                      (let [s (-> this 
-                                                  (specialize c) 
-                                                  compile)]
-                                        [c s]))
-                                    constrs)
+                       clauses (into [] (map (fn [c]
+                                               (let [s (-> this 
+                                                           (specialize c) 
+                                                           compile)]
+                                                 [c s]))
+                                             constrs))
                        default (let [m (specialize this (wildcard-pattern))]
                                  (if-not (empty-matrix? m)
                                    (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
@@ -987,8 +993,8 @@
           [rest? min-size] (->> srows
                                 (reduce (fn [[rest? min-size] [p & ps]]
                                           (if (vector-pattern? p)
-                                            [(or rest? (.rest? p))
-                                             (min min-size (.size p))]
+                                            [(or rest? (.rest? ^VectorPattern p))
+                                             (min min-size (.size ^VectorPattern p))]
                                             [rest? min-size]))
                                         [false (.size ^VectorPattern fp)]))
           [nrows nocrs] (if rest?
@@ -1274,3 +1280,80 @@
             *warned* (atom false)]
     (let [src (clj-form vars clauses)]
       `~src)))
+
+(comment
+  ;; this takes forever to compile
+  (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
+    (match [n]
+      [([:black ([:red ([:red _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
+      [([:black ([:red _ _ ([:red _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
+      [([:black _ _ ([:red ([:red _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
+      :else :invalid))
+
+  (use 'match.core.debug)
+
+  ;; foo
+  (binding [*locals* {}]
+    (def m (build-matrix [n]
+                         [([:black ([:red ([:red _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
+                         [([:black ([:red _ _ ([:red _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
+                         [([:black _ _ ([:red ([:red _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
+                         :else :invalid)))
+
+  (time (-> m compile))
+  
+  ;; 119 seconds, 2 minutes!
+  ;; only 35 switch nodes
+  (time (-> m compile))
+
+  (binding [*locals* {}]
+    (def m (build-matrix [n]
+                         [([1 ([1 ([1 _] ::vector)] ::vector) _] ::vector)] :a0
+                         [([_ ([([1 _] ::vector) _] ::vector) _] ::vector)] :a1
+                         [([1 ([_ ([1 _] ::vector)] ::vector) ([_ 1] ::vector)] ::vector)] :a2
+                         :else :a3)))
+
+  ;; 105ms
+  (time (-> m compile))
+
+  ;; trying to recreate, adding wildcards
+  (binding [*locals* {}]
+    (def m (build-matrix [n]
+                         [([1 ([2 ([2 _ _] ::vector)] ::vector) _] ::vector)] :a0
+                         [([_ ([([2 _ _] ::vector) _] ::vector) _] ::vector)] :a1
+                         [([1 ([_ ([2 _ _] ::vector)] ::vector) ([_ 1 _] ::vector)] ::vector)] :a2
+                         :else :a3)))
+
+  ;; 160ms
+  (time (-> m compile))
+
+  ;; 45
+  (binding [*count* (atom 0)]
+    (-> m compile)
+    @*count*)
+  
+  (binding [*locals* {}]
+    (def m (build-matrix [n]
+                         [([:f ([:f ([:f _] ::vector)] ::vector) _] ::vector)] :a0
+                         [([_ ([([:f _] ::vector) _] ::vector) _] ::vector)] :a1
+                         [([:f ([_ ([:f _] ::vector)] ::vector) ([_ :f] ::vector)] ::vector)] :a2
+                         :else :a3)))
+
+  ;; 90ms
+  (time (-> m compile))
+
+  (binding [*locals* {}]
+    (def m (build-matrix [n]
+                         [([1 ([2 ([2 _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
+                         [([1 ([2 _ _ ([2 _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
+                         [([1 _ _ ([2 ([2 _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
+                         :else :invalid)))
+
+  ;; hmm
+  (time (-> m compile))
+
+  ;; 77, something really crazy is going on
+  (binding [*count* (atom 0)]
+    (-> m compile)
+    @*count*)
+  )
