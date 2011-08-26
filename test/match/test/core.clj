@@ -295,6 +295,17 @@
            (match [x] [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0))
          :a0)))
 
+(deftest test-wildcard-local-1
+  (is (= (let [_ 1
+               x 2
+               y 3]
+           (match [x y]
+             [1 1] :a0
+             [_ 2] :a1
+             [2 3] :a2
+             :else :a3))
+         :a2)))
+
 (deftest vector-pattern-match-1
   (is (= (let [x [1 2 3]]
            (match [x]
