@@ -130,14 +130,6 @@
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
 
-(derive ::array ::vector)
-(defmethod nth-inline ::array
-  [_ ocr i] `(aget ~ocr ~i))
-(defmethod count-inline ::array
-  [_ ocr] `(alength ~ocr))
-(defmethod subvec-inline ::array
-  [_ ocr i] ocr)
-
 ;; =============================================================================
 ;; Extensions and Protocols
 

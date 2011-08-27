@@ -2,8 +2,22 @@
   (:refer-clojure :exclude [compile])
   (:use [match.core :as m]))
 
+;; =============================================================================
+;; Shared
+
+(derive ::array ::m/vector)
+(defmethod nth-inline ::array
+  [_ ocr i] `(aget ~ocr ~i))
+(defmethod count-inline ::array
+  [_ ocr] `(alength ~ocr))
+(defmethod subvec-inline ::array
+  [_ ocr i] ocr)
+
+;; =============================================================================
+;; ints
+
 (def IntArray (class (int-array [])))
-(derive ::ints ::m/array)
+(derive ::ints ::array)
 (defmethod tag ::ints
   [_] IntArray)
 
