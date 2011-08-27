@@ -93,7 +93,6 @@
 
 (defmulti check-size? identity)
 (defmulti coerce? identity)
-(defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
 (defmulti tag (fn [t] t))
 (defmulti test-inline (fn [t & r] t))
@@ -106,8 +105,6 @@
 (defmethod check-size? :default
   [_] true)
 (defmethod coerce? :default
-  [_] false)
-(defmethod coerce-element? :default
   [_] false)
 (defmethod tag :default
   [t] (throw (Exception. (str "No tag specified for vector specialization " t))))
