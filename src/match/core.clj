@@ -3,7 +3,7 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
-;; ============================================
+;; =============================================================================
 ;; Debugging tools
 
 (set! *warn-on-reflection* true)
@@ -38,7 +38,7 @@
     (apply println "TRACE: DAG:" p)
     (flush)))
 
-;; ==================================
+;; =============================================================================
 ;; Protocols
 
 (defprotocol IMatchLookup
