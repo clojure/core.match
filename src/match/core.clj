@@ -118,8 +118,6 @@
   [t ocr] `(instance? ~(tag t) ~ocr))
 (defmethod test-with-size-inline ::vector
   [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t ocr) ~size)))
-;; NOTE: we can consolidate, test-with-size-inline can use test-inline
-;; as well as count-inline - no one should have to write this - David
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
 (defmethod nth-inline ::vector
@@ -308,6 +306,8 @@
 
 ;; -----------------------------------------------------------------------------
 
+(defprotocol ITypedPattern
+  (cast-expr [this ocr]))
 (defprotocol IVectorPattern
   (split [this n]))
 
@@ -321,6 +321,9 @@
     (if (and size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
+  ITypedPattern
+  (cast-expr [_ ocr]
+    `(let [~(with-meta ocr (merge (meta ocr) {:tag (tag t)})) ~ocr]))
   Object
   (toString [_]
     (str v ":" t))
