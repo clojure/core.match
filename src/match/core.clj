@@ -95,6 +95,7 @@
 (defmulti coerce? identity)
 (defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
+(defmulti tag (fn [t & r] t))
 (defmulti test-inline (fn [t & r] t))
 (defmulti test-with-size-inline (fn [t & r] t))
 (defmulti count-inline (fn [t & r] t))
@@ -108,6 +109,8 @@
   [_] false)
 (defmethod coerce-element? :default
   [_] false)
+(defmethod tag :default
+  [_ ocr] ocr)
 (defmethod test-inline ::vector
   [_ ocr] `(vector? ~ocr))
 (defmethod test-with-size-inline ::vector
@@ -121,6 +124,14 @@
 (defmethod subvec-inline ::vector
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
+
+(derive ::array ::vector)
+(defmethod nth-inline ::array
+  [_ ocr i] `(aget ~ocr ~i))
+(defmethod nth-offset-inline ::array
+  [_ ocr i offset] `(aget ~ocr (unchecked-add ~i ~offset)))
+(defmethod subvec-inline ::array
+  [_ ocr i] ocr)
 
 ;; =============================================================================
 ;; Extensions and Protocols
@@ -1123,7 +1134,7 @@
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
   (if (get *locals* pat)
-    (literal-pattern (vary-meta pat assoc :local true))
+    (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
     (wildcard-pattern pat)))
 
 (defmethod emit-pattern :default

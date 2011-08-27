@@ -4,22 +4,13 @@
 
 (def IntArray (class (int-array [])))
 
-(derive ::ints ::m/vector)
+(derive ::ints ::m/array)
 
 (defmethod test-inline ::ints
   [_ ocr] `(instance? IntArray ~ocr))
 
 (defmethod test-with-size-inline ::ints
   [_ ocr size] `(and (instance? IntArray ~ocr) (= (alength ~ocr) ~size)))
-
-(defmethod nth-inline ::ints
-  [_ ocr i] `(aget ~ocr ~i))
-
-(defmethod nth-offset-inline ::ints
-  [_ ocr i offset] `(aget ~ocr (unchecked-add ~i ~offset)))
-
-(defmethod subvec-inline ::ints
-  [_ ocr i] ocr)
 
 (comment
   (let [x (int-array [1 2 3])]
