@@ -3,14 +3,9 @@
   (:use [match.core :as m]))
 
 (def IntArray (class (int-array [])))
-
 (derive ::ints ::m/array)
-
-(defmethod test-inline ::ints
-  [_ ocr] `(instance? IntArray ~ocr))
-
-(defmethod test-with-size-inline ::ints
-  [_ ocr size] `(and (instance? IntArray ~ocr) (= (alength ~ocr) ~size)))
+(defmethod tag ::ints
+  [_] IntArray)
 
 (comment
   (let [x (int-array [1 2 3])]

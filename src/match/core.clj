@@ -95,7 +95,7 @@
 (defmulti coerce? identity)
 (defmulti coerce-element? identity)
 (defmulti coerce-element (fn [t & r] t))
-(defmulti tag (fn [t & r] t))
+(defmulti tag (fn [t] t))
 (defmulti test-inline (fn [t & r] t))
 (defmulti test-with-size-inline (fn [t & r] t))
 (defmulti count-inline (fn [t & r] t))
@@ -110,11 +110,16 @@
 (defmethod coerce-element? :default
   [_] false)
 (defmethod tag :default
-  [_ ocr] ocr)
+  [t] (throw (Exception. (str "No tag specified for vector specialization " t))))
+
+(defmethod tag ::vector
+  [_] clojure.lang.IPersistentVector)
 (defmethod test-inline ::vector
-  [_ ocr] `(vector? ~ocr))
+  [t ocr] `(instance? ~(tag t) ~ocr))
 (defmethod test-with-size-inline ::vector
-  [_ ocr size] `(and (vector? ~ocr) (= (count ~ocr) ~size)))
+  [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t ocr) ~size)))
+;; NOTE: we can consolidate, test-with-size-inline can use test-inline
+;; as well as count-inline - no one should have to write this - David
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
 (defmethod nth-inline ::vector
@@ -128,6 +133,8 @@
 (derive ::array ::vector)
 (defmethod nth-inline ::array
   [_ ocr i] `(aget ~ocr ~i))
+(defmethod count-inline ::array
+  [_ ocr] `(alength ~ocr))
 (defmethod nth-offset-inline ::array
   [_ ocr i offset] `(aget ~ocr (unchecked-add ~i ~offset)))
 (defmethod subvec-inline ::array
@@ -1293,3 +1300,30 @@
             *warned* (atom false)]
     (let [src (clj-form vars clauses)]
       `~src)))
+
+(comment
+  (def ObjectArray (class (object-array [])))
+  (derive ::objects ::array)
+  (defmethod tag ::objects
+    [_ ocr] ObjectArray)
+
+  ;; hmm interesting, this is where type information would help
+  (do
+    (set! *warn-on-reflection* true)
+    (let [t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
+      (match [t]
+        [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
+          ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
+          ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
+          :else :invalid)))
+
+  (let [^objects t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e6]
+        (match [t]
+          [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
+            ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
+            ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
+            :else :invalid)))))
+  )
