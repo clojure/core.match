@@ -314,3 +314,12 @@
              [([1 2 3] ::m/vector)] :a2
              :else :a3))
          :a2)))
+
+(deftest red-black-tree-pattern-1
+  (is (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
+             (match [n]
+               [([:black ([:red ([:red _ _ _] ::m/vector) _ _] ::m/vector) _ _] ::m/vector)] :valid
+               [([:black ([:red _ _ ([:red _ _ _] ::m/vector)] ::m/vector) _ _] ::m/vector)] :valid
+               [([:black _ _ ([:red ([:red _ _ _] ::m/vector) _ _] ::m/vector)] ::m/vector)] :valid
+               :else :invalid))
+         :valid)))

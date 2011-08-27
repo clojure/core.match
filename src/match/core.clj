@@ -842,7 +842,9 @@
     (crash-pattern? p) ::crash
     (constructor? p) (every? #(not (wildcard-pattern? %))
                              (take j (column pm i)))
-    (wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+    ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+    ;;IMPORTANT NOTE: this calculation is very very slow,
+    ;;we should look at this more closely - David
     :else false)))
 
 (defn useful? [pm j]
@@ -1170,7 +1172,7 @@
           (str "Invalid list syntax " s " in " l ". "
                "Valid syntax: "
                (vec (remove #(= % :default)
-                            (keys (.getMethodTable emit-pattern-for-syntax))))))))
+                            (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
 
 (defn emit-clause [[pat action]]
   (let [p (into [] (map emit-pattern pat))]
@@ -1280,80 +1282,3 @@
             *warned* (atom false)]
     (let [src (clj-form vars clauses)]
       `~src)))
-
-(comment
-  ;; this takes forever to compile
-  (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
-    (match [n]
-      [([:black ([:red ([:red _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
-      [([:black ([:red _ _ ([:red _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
-      [([:black _ _ ([:red ([:red _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
-      :else :invalid))
-
-  (use 'match.core.debug)
-
-  ;; foo
-  (binding [*locals* {}]
-    (def m (build-matrix [n]
-                         [([:black ([:red ([:red _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
-                         [([:black ([:red _ _ ([:red _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
-                         [([:black _ _ ([:red ([:red _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
-                         :else :invalid)))
-
-  (time (-> m compile))
-  
-  ;; 119 seconds, 2 minutes!
-  ;; only 35 switch nodes
-  (time (-> m compile))
-
-  (binding [*locals* {}]
-    (def m (build-matrix [n]
-                         [([1 ([1 ([1 _] ::vector)] ::vector) _] ::vector)] :a0
-                         [([_ ([([1 _] ::vector) _] ::vector) _] ::vector)] :a1
-                         [([1 ([_ ([1 _] ::vector)] ::vector) ([_ 1] ::vector)] ::vector)] :a2
-                         :else :a3)))
-
-  ;; 105ms
-  (time (-> m compile))
-
-  ;; trying to recreate, adding wildcards
-  (binding [*locals* {}]
-    (def m (build-matrix [n]
-                         [([1 ([2 ([2 _ _] ::vector)] ::vector) _] ::vector)] :a0
-                         [([_ ([([2 _ _] ::vector) _] ::vector) _] ::vector)] :a1
-                         [([1 ([_ ([2 _ _] ::vector)] ::vector) ([_ 1 _] ::vector)] ::vector)] :a2
-                         :else :a3)))
-
-  ;; 160ms
-  (time (-> m compile))
-
-  ;; 45
-  (binding [*count* (atom 0)]
-    (-> m compile)
-    @*count*)
-  
-  (binding [*locals* {}]
-    (def m (build-matrix [n]
-                         [([:f ([:f ([:f _] ::vector)] ::vector) _] ::vector)] :a0
-                         [([_ ([([:f _] ::vector) _] ::vector) _] ::vector)] :a1
-                         [([:f ([_ ([:f _] ::vector)] ::vector) ([_ :f] ::vector)] ::vector)] :a2
-                         :else :a3)))
-
-  ;; 90ms
-  (time (-> m compile))
-
-  (binding [*locals* {}]
-    (def m (build-matrix [n]
-                         [([1 ([2 ([2 _ _ _] ::vector) _ _] ::vector) _ _] ::vector)] :valid
-                         [([1 ([2 _ _ ([2 _ _ _] ::vector)] ::vector) _ _] ::vector)] :valid
-                         [([1 _ _ ([2 ([2 _ _ _] ::vector) _ _] ::vector)] ::vector)] :valid
-                         :else :invalid)))
-
-  ;; hmm
-  (time (-> m compile))
-
-  ;; 77, something really crazy is going on
-  (binding [*count* (atom 0)]
-    (-> m compile)
-    @*count*)
-  )
