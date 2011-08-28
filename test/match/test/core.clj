@@ -30,16 +30,16 @@
   (is (= (let [x [1]]
            (match [x]
              [1] 1
-             [[1]] 2
+             [([1] :seq)] 2
              :else []))
          2)))
 
 (deftest seq-pattern-match-2
   (is (= (let [x [1 2 nil nil nil]]
            (match [x]
-             [[1]]     :a0
-             [[1 2]]   :a1
-             [[1 2 nil nil nil]] :a2
+             [([1] :seq)]     :a0
+             [([1 2] :seq)]   :a1
+             [([1 2 nil nil nil] :seq)] :a2
              :else []))
          :a2)))
 
@@ -48,16 +48,16 @@
                y nil
                z nil]
            (match [x y z]
-             [[1 2 b] _ _] [:a0 b]
-             [[a 2 4] _ _] [:a1 a]
+             [([1 2 b] :seq) _ _] [:a0 b]
+             [([a 2 4] :seq) _ _] [:a1 a]
              :else []))
          [:a0 4])))
 
 (deftest seq-pattern-match-wildcard-row
   (is (= (let [x '(1 2 3)]
            (match [x]
-             [[1 z 4]] z
-             [[_ _ _]] :a2
+             [([1 z 4] :seq)] z
+             [([_ _ _] :seq)] :a2
              :else [])
            :a2))))
 
@@ -96,24 +96,26 @@
 (deftest seq-pattern-match-empty-1
   (is (= (let [x '()]
            (match [x]
-             [[]] :a0
-             [[1 & r]] [:a1 r]
+             [([] :seq)] :a0
+             [([1 & r] :seq)] [:a1 r]
              :else []))
          :a0)))
 
 (deftest seq-pattern-match-rest-1
   (is (= (let [x '(1 2)]
            (match [x]
-             [[1]] :a0
-             [[1 & r]] [:a1 r]
+             [([1] :seq)] :a0
+             [([1 & r] :seq)] [:a1 r]
              :else []))
          [:a1 '(2)])))
+
+;; FIXME: stack overflow if vector pattern - David
 
 (deftest seq-pattern-match-rest-2
   (is (= (let [x '(1 2 3 4)]
            (match [x]
-             [[1]] :a0
-             [[_ 2 & [a & b]]] [:a1 a b]
+             [([1] :seq)] :a0
+             [([_ 2 & ([a & b] :seq)] :seq)] [:a1 a b]
              :else []))
          [:a1 3 '(4)])))
 
@@ -130,8 +132,8 @@
                y nil
                z nil]
            (match [x y z]
-             [[1 (3 | 4) 3] _ _] :a0
-             [[1 (2 | 3) 3] _ _] :a1
+             [([1 (3 | 4) 3] :seq) _ _] :a0
+             [([1 (2 | 3) 3] :seq) _ _] :a1
              :else []))
          :a1)))
 
@@ -151,8 +153,8 @@
 (deftest guard-pattern-match-1
   (is (= (let [y '(2 3 4 5)]
            (match [y]
-             [[_ (a :when even?) _ _]] :a0
-             [[_ (b :when [odd? div3?]) _ _]] :a1
+             [([_ (a :when even?) _ _] :seq)] :a0
+             [([_ (b :when [odd? div3?]) _ _] :seq)] :a1
              :else []))
          :a1)))
 
@@ -186,8 +188,8 @@
 (deftest as-pattern-match-1
   (is (= (let [v [[1 2]]]
            (match [v]
-             [[3 1]] :a0
-             [[([1 a] :as b)]] [:a1 a b]
+             [([3 1] :seq)] :a0
+             [([(([1 a] :seq) :as b)] :seq)] [:a1 a b]
              :else []))
          [:a1 2 [1 2]])))
 
@@ -201,7 +203,7 @@
 (deftest else-clause-seq-pattern-1
   (is (= (let [v [[1 2]]]
            (match [v]
-                  [[1 3]] 1
+                  [([1 3] :seq)] 1
                   :else 21))
          21)))
 

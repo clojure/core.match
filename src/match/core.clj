@@ -49,8 +49,8 @@
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned*)
+(def ^{:dynamic true} *vector-type* ::vector)
 (def ^{:dynamic true} *trace* (atom false))
-(def ^{:dynamic true} *count* (atom 0))
 
 (defn set-trace! []
   (reset! *trace* true))
@@ -792,7 +792,6 @@
   (column [_ i] (vec (map #(nth % i) rows)))
 
   (compile [this]
-    (swap! *count* inc)
     (letfn [(column-constructors [this i]
               (->> (column this i)
                    (filter (comp not wildcard-pattern?))
@@ -1202,9 +1201,8 @@
 
 (defmethod emit-pattern clojure.lang.IPersistentVector
   [pat]
-  (if (empty? pat)
-    (literal-pattern ())
-    (seq-pattern (emit-patterns pat))))
+  (let [ps (emit-patterns pat)]
+    (vector-pattern ps *vector-type* 0 (some rest-pattern? ps))))
 
 (defmethod emit-pattern clojure.lang.IPersistentMap
   [pat]
@@ -1253,6 +1251,12 @@
 (defmethod emit-pattern-for-syntax :when
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
+
+(defmethod emit-pattern-for-syntax :seq
+  [pat]
+  (if (empty? pat)
+    (literal-pattern ())
+    (seq-pattern (emit-patterns (first pat)))))
 
 (defmethod emit-pattern-for-syntax ::vector
   [[p t offset-key offset]] (let [ps (emit-patterns p)]
@@ -1375,5 +1379,18 @@
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
-    (let [src (clj-form vars clauses)]
-      `~src)))
+    `~(clj-form vars clauses)))
+
+(defmacro matchv [type vars & clauses]
+  (binding [*vector-type* type
+            *line* (-> &form meta :line)
+            *locals* (dissoc &env '_)
+            *warned* (atom false)]
+    `~(clj-form vars clauses)))
+
+(comment
+  (let [v [1 2 3]]
+    (match [v]
+      [([1 2 3] :seq)] :a0
+      :else :a1))
+  )

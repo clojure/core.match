@@ -80,4 +80,14 @@
             ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
             ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
             :else :invalid)))))
+
+  (let [^objects t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e7]
+        (matchv ::objects [t]
+                [([:black [:red [:red _ _ _] _ _] _ _] |
+                  [:black [:red _ _ [:red _ _ _]] _ _] |
+                  [:black _ _ [:red [:red _ _ _] _ _]])] :valid
+            :else :invalid)))))
  )
