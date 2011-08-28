@@ -42,7 +42,7 @@
        (~'val-at* [~this k# not-found#]
           (case k#
             ~@(mapcat 
-                (fn [n] [(keywordize n) `(. ~this ~(symbol n))]) 
+                (fn [n] [(keywordize n) `(. ~this (~(symbol n)))]) 
                 method-names)
             not-found#)))))
 
