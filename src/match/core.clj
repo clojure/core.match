@@ -323,7 +323,7 @@
     (VectorPattern. v t size offset rest? new-meta))
   IPatternCompile
   (to-source* [_ ocr]
-    (if (and size (check-size? t))
+    (if (and (not rest?) size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
   ITypedPattern
@@ -583,12 +583,17 @@
 (defmethod leaf-bind-expr :seq
   [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
 
+(defmethod leaf-bind-expr ::vector
+  [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
+
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
             `(val-at ~(:map-sym m) ~(:key m))))
 
 (defmethod leaf-bind-expr :default
-  [ocr] ocr)
+  [ocr]
+  (println "leaf-bind-expr" ocr (-> ocr meta))
+  ocr)
 
 ;; -----------------------------------------------------------------------------
 ;; Fail Node
@@ -1028,14 +1033,14 @@
                                 vec)
                            (let [vec-ocr focr
                                  t (.t this)
-                                 ocr-meta {:occurence-type t
+                                 ocr-meta {:occurrence-type t
                                            :vec-sym vec-ocr}
                                  vl-ocr (gensym (str (name vec-ocr) "_left__"))
                                  vl-ocr (with-meta vl-ocr
-                                          (assoc ocr-meta :bind-expr `(let [~vl-ocr ~(subvec-inline t (with-tag t vl-ocr) 0 min-size )])))
+                                          (assoc ocr-meta :bind-expr `(let [~vl-ocr ~(subvec-inline t (with-tag t vec-ocr) 0 min-size )])))
                                  vr-ocr (gensym (str (name vec-ocr) "_right__"))
                                  vr-ocr (with-meta vr-ocr
-                                          (assoc ocr-meta :bind-expr `(let [~vr-ocr ~(subvec-inline t (with-tag t vr-ocr) min-size)])))]
+                                          (assoc ocr-meta :bind-expr `(let [~vr-ocr ~(subvec-inline t (with-tag t vec-ocr) min-size)])))]
                              (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))]
                           [(->> srows
                                 (map (fn [row]
@@ -1054,8 +1059,8 @@
                                                 :vec-sym vec-ocr
                                                 :index i
                                                 :bind-expr `(let [~ocr ~(if-let [offset (.offset this)]
-                                                                          (nth-offset-inline t (with-tag t focr) i offset)
-                                                                          (nth-inline t (with-tag t focr) i))])})))]
+                                                                          (nth-offset-inline t (with-tag t vec-ocr) i offset)
+                                                                          (nth-inline t (with-tag t vec-ocr) i))])})))]
                              (into (into [] (map ocr-sym (range min-size)))
                                    (drop-nth ocrs 0)))])
           matrix (pattern-matrix nrows nocrs)]
