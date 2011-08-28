@@ -591,9 +591,7 @@
             `(val-at ~(:map-sym m) ~(:key m))))
 
 (defmethod leaf-bind-expr :default
-  [ocr]
-  (println "leaf-bind-expr" ocr (-> ocr meta))
-  ocr)
+  [ocr] ocr)
 
 ;; -----------------------------------------------------------------------------
 ;; Fail Node
