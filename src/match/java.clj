@@ -25,8 +25,8 @@
     getText         -> :text
     getAbsolutePath -> :absolute-path 
   "
-  [klass] 
-  (let [method-names (->> (.getMethods ^Class (resolve klass))
+  [class] 
+  (let [method-names (->> (.getMethods ^Class (resolve class))
                        ; Methods that have is/get naming
                        (filter (fn [^java.lang.reflect.Method m] 
                                  (re-find method-name-pattern (.getName m)))) 
@@ -37,7 +37,7 @@
                        (map    (fn [^java.lang.reflect.Method m] 
                                  (.getName m))))
         this (gensym "this")]
-    `(extend-type ~klass
+    `(extend-type ~class
        IMatchLookup
        (~'val-at* [~this k# not-found#]
           (case k#
