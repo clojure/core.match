@@ -2,7 +2,7 @@
   (:use [match.core :only [IMatchLookup val-at* match]]
         [clojure.string :only [lower-case]]))
 
-(def ^:private method-name-pattern #"^(is|get)(.*)$")
+(def ^:private method-name-pattern #"^(is|get)([A-Z].*)$")
 
 (defn- dash-case 
   [^String s] 
@@ -17,32 +17,34 @@
   (let [[_ pre n] (re-find (re-matcher method-name-pattern s))]
     (-> n dash-case (str (if (= pre "is") "?")) keyword)))
 
-(defmacro object-match
-  "Generate an implementation of match.core/IMatchLookup for the given Java class.
-  Keys are mapped like this:
+(defmacro bean-match
+  "Generate an implementation of match.core/IMatchLookup for a Java bean.
+  Accessor method names are mapped to keys like this:
   
     isVisible       -> :visible?
     getText         -> :text
     getAbsolutePath -> :absolute-path 
+    isFUD           -> :fud?
+    getFUDFactor    -> :fud-factor
+
   "
-  [klass] 
-  (let [method-names (->> (.getMethods ^Class (resolve klass))
-                       ; Methods that have is/get naming
+  [class] 
+  (let [method-names (->> (.getMethods ^Class (resolve class))
+                       ; Methods that have is/get naming, no args and non-void return
                        (filter (fn [^java.lang.reflect.Method m] 
-                                 (re-find method-name-pattern (.getName m)))) 
-                       ; Methods with no args
-                       (filter (fn [^java.lang.reflect.Method m] 
-                                 (= 0 (count (.getParameterTypes m))))) 
+                                 (and (re-find method-name-pattern (.getName m))
+                                      (= 0 (count (.getParameterTypes m)))
+                                      (not= Void (.getReturnType m))))) 
                        ; Grab name as a symbol
                        (map    (fn [^java.lang.reflect.Method m] 
                                  (.getName m))))
         this (gensym "this")]
-    `(extend-type ~klass
+    `(extend-type ~class
        IMatchLookup
        (~'val-at* [~this k# not-found#]
           (case k#
             ~@(mapcat 
-                (fn [n] [(keywordize n) `(. ~this ~(symbol n))]) 
+                (fn [n] [(keywordize n) `(. ~this (~(symbol n)))]) 
                 method-names)
             not-found#)))))
 
