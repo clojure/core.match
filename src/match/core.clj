@@ -164,7 +164,7 @@
 (defmethod nth-inline ::vector
   [_ ocr i] `(nth ~ocr ~i))
 (defmethod nth-offset-inline ::vector
-  [t ocr i offset] (nth-inline t ocr `(unchecked-add ~i ~offset)))
+  [t ocr i offset] (nth-inline t ocr `(+ ~i ~offset)))
 (defmethod subvec-inline ::vector
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
