@@ -33,6 +33,7 @@
   (when @*trace*
     (apply println "TRACE: MATRIX:" p)
     (flush)))
+
 (defn trace-dag [& p]
   (when @*trace*
     (apply println "TRACE: DAG:" p)
@@ -111,10 +112,16 @@
 
 (defmethod tag ::vector
   [_] clojure.lang.IPersistentVector)
+(defn with-tag [t ocr]
+  (let [the-tag (tag t)
+        the-tag (if (.isArray ^Class the-tag)
+                  (.getName ^Class the-tag)
+                  the-tag)]
+    (with-meta ocr (assoc (ocr meta) :tag the-tag))))
 (defmethod test-inline ::vector
   [t ocr] `(instance? ~(tag t) ~ocr))
 (defmethod test-with-size-inline ::vector
-  [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t ocr) ~size)))
+  [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t (with-tag t ocr)) ~size)))
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
 (defmethod nth-inline ::vector
@@ -127,6 +134,9 @@
 
 ;; =============================================================================
 ;; Extensions and Protocols
+
+(defprotocol ITypedPattern
+  (cast-expr [this ocr]))
 
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
@@ -303,8 +313,6 @@
 
 ;; -----------------------------------------------------------------------------
 
-(defprotocol ITypedPattern
-  (cast-expr [this ocr]))
 (defprotocol IVectorPattern
   (split [this n]))
 
@@ -626,12 +634,16 @@
    test))
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (vector (rt-branches
-            (if (extends? IPatternCompile (class pattern))
-              (to-source* pattern occurrence) 
-              (to-source pattern occurrence)))
-          (n-to-clj action)))
-
+  (let [cast-expr (when (satisfies? ITypedPattern pattern)
+                    (cast-expr pattern occurrence))]
+    [(rt-branches
+      (if (extends? IPatternCompile (class pattern))
+        (to-source* pattern occurrence) 
+        (to-source pattern occurrence)))
+     (let [source (n-to-clj action)]
+       (if cast-expr
+         (doall (concat cast-expr (list source)))
+         source))]))
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
@@ -990,8 +1002,6 @@
 ;; =============================================================================
 ;; Vector Pattern Specialization
 
-(declare split)
-
 (extend-type VectorPattern
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -1044,8 +1054,8 @@
                                                 :vec-sym vec-ocr
                                                 :index i
                                                 :bind-expr `(let [~ocr ~(if-let [offset (.offset this)]
-                                                                          (nth-offset-inline t focr i offset)
-                                                                          (nth-inline t focr i))])})))]
+                                                                          (nth-offset-inline t (with-tag t focr) i offset)
+                                                                          (nth-inline t (with-tag t focr) i))])})))]
                              (into (into [] (map ocr-sym (range min-size)))
                                    (drop-nth ocrs 0)))])
           matrix (pattern-matrix nrows nocrs)]
@@ -1290,30 +1300,3 @@
             *warned* (atom false)]
     (let [src (clj-form vars clauses)]
       `~src)))
-
-(comment
-  (def ObjectArray (class (object-array [])))
-  (derive ::objects ::array)
-  (defmethod tag ::objects
-    [_ ocr] ObjectArray)
-
-  ;; hmm interesting, this is where type information would help
-  (do
-    (set! *warn-on-reflection* true)
-    (let [t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
-      (match [t]
-        [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
-          ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
-          ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
-          :else :invalid)))
-
-  (let [^objects t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e6]
-        (match [t]
-          [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
-            ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
-            ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
-            :else :invalid)))))
-  )

@@ -7,9 +7,11 @@
 
 (derive ::array ::m/vector)
 (defmethod nth-inline ::array
-  [_ ocr i] `(aget ~ocr ~i))
+  [t ocr i]
+  `(aget ~ocr ~i))
 (defmethod count-inline ::array
-  [_ ocr] `(alength ~ocr))
+  [t ocr]
+  `(alength ~ocr))
 (defmethod subvec-inline ::array
   [_ ocr i] ocr)
 
@@ -20,6 +22,37 @@
 (derive ::ints ::array)
 (defmethod tag ::ints
   [_] IntArray)
+
+;; =============================================================================
+;; objects
+
+(def ObjectArray (class (object-array [])))
+(derive ::objects ::array)
+(defmethod tag ::objects
+  [_] ObjectArray)
+
+(comment
+  ;; hmm interesting, this is where type information would help
+  (do
+    (set! *warn-on-reflection* true)
+    (let [t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
+      (match [t]
+        [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
+          ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
+          ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
+          :else :invalid)))
+
+  ;; 220ms
+  (let [^objects t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
+   (dotimes [_ 10]
+     (time
+      (dotimes [_ 1e7]
+        (match [t]
+          [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
+            ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
+            ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
+            :else :invalid)))))
+  )
 
 (comment
   (let [x (int-array [1 2 3])]
