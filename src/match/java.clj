@@ -17,13 +17,16 @@
   (let [[_ pre n] (re-find (re-matcher method-name-pattern s))]
     (-> n dash-case (str (if (= pre "is") "?")) keyword)))
 
-(defmacro object-match
-  "Generate an implementation of match.core/IMatchLookup for the given Java class.
-  Keys are mapped like this:
+(defmacro bean-match
+  "Generate an implementation of match.core/IMatchLookup for a Java bean.
+  Accessor method names are mapped to keys like this:
   
     isVisible       -> :visible?
     getText         -> :text
     getAbsolutePath -> :absolute-path 
+    isFUD           -> :fud?
+    getFUDFactor    -> :fud-factor
+
   "
   [class] 
   (let [method-names (->> (.getMethods ^Class (resolve class))

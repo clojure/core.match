@@ -4,17 +4,17 @@
         [match.java]
         [clojure.test]))
 
-(object-match java.util.Date)
+(bean-match java.util.Date)
 
-(deftest object-match-date
+(deftest bean-match-date
   (is (= 10 (match [(java.util.Date. 2009 10 1 12 30)]
                     [{:year 2009 :month a}] a
                     [{:year (2010 | 2011) :month b}] b
                     :else :wrong))))
 
-(object-match java.io.File)
+(bean-match java.io.File)
 
-(deftest object-match-file
+(deftest bean-match-file
   (is (= (.getAbsolutePath (java.io.File. ".")) 
          (match [(java.io.File. ".")]
                 [{:directory? true :absolute-path p}] p
