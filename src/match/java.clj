@@ -2,7 +2,7 @@
   (:use [match.core :only [IMatchLookup val-at* match]]
         [clojure.string :only [lower-case]]))
 
-(def ^:private method-name-pattern #"^(is|get)(.*)$")
+(def ^:private method-name-pattern #"^(is|get)([A-Z].*)$")
 
 (defn- dash-case 
   [^String s] 
