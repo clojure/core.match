@@ -79,15 +79,54 @@ Wherever you would use a wildcard you can use a binding:
 ;; => [:a0 4]
 ```
 
+Vector matching
+----
+
+Vector patterns support pattern matching any data type that supports the notion of random access. Clojure's persistent vectors are supported out of the box - note however the feature is extensible to primitive arrays and even for pattern matching bits in a primitive byte.
+
+```clojure
+(let [v [1 2 3]]
+  (match [v]
+    [[1 1 1]] :a0
+    [[1 2 1]] :a1
+    [[1 2 _]] :a2))
+;; => :a2
+```
+
+Vector patterns also support the familiar rest syntax from destructuring.
+
+```clojure
+(let [v [3 2 3]]
+  (match [v]
+    [[1 1 3]] :a0
+    [[2 & r]] :a1
+    [[3 & r]] :a2))
+;; => :a2
+```
+
+It's simple to extend match to support primitive arrays so you can write the following:
+
+```clojure
+(matchv ::objects [t]
+  [([:black [:red [:red _ _ _] _ _] _ _] |
+    [:black [:red _ _ [:red _ _ _]] _ _] |
+    [:black _ _ [:red [:red _ _ _] _ _]])] :valid
+  :else :invalid)
+```
+
+See <code>match.array</code> for some ideas.
+
 Seq matching
 ----
+
+Seq patterns are optimized for working with sequences.
 
 ```clojure
 (let [x [1 2 nil nil nil]]
    (match [x]
-     [[1]]   :a0
-     [[1 2]] :a1
-     [[1 2 nil nil nil]] :a2))
+     [([1] :seq)]   :a0
+     [([1 2] :seq)] :a1
+     [([1 2 nil nil nil] :seq)] :a2))
 ;; => :a2
 ```
 
@@ -96,8 +135,8 @@ Seq patterns also support the familiar rest syntax from destructuring.
 ```clojure
 (let [x '(1 2 3 4)]
   (match [x]
-    [[1]] :a0
-    [[_ 2 & [a & b]]] [:a1 a b]))
+    [([1] :seq)] :a0
+    [([_ 2 & ([a & b] :seq)] :seq)] [:a1 a b]))
 ;; => [:a1 3 '(4)]
 ```
 
