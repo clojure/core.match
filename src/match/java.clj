@@ -27,12 +27,11 @@
   "
   [class] 
   (let [method-names (->> (.getMethods ^Class (resolve class))
-                       ; Methods that have is/get naming
+                       ; Methods that have is/get naming, no args and non-void return
                        (filter (fn [^java.lang.reflect.Method m] 
-                                 (re-find method-name-pattern (.getName m)))) 
-                       ; Methods with no args
-                       (filter (fn [^java.lang.reflect.Method m] 
-                                 (= 0 (count (.getParameterTypes m))))) 
+                                 (and (re-find method-name-pattern (.getName m))
+                                      (= 0 (count (.getParameterTypes m)))
+                                      (not= Void (.getReturnType m))))) 
                        ; Grab name as a symbol
                        (map    (fn [^java.lang.reflect.Method m] 
                                  (.getName m))))
