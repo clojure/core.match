@@ -3,8 +3,45 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
+;; # Introduction
+;;
+;; This namespace contains an implementation of closed pattern matching. It uses
+;; an algorithm based on Luc Maranget's paper "Compiling Pattern Matching to Good Decision Trees".
+;;
+;; There are three main steps to this implementation:
+;;
+;; 1. Converting Clojure syntax to a Pattern Matrix
+;;  
+;;    The function `emit-matrix` does this work.
+;;
+;;    A Pattern Matrix is represented by PatternMatrix.
+;;
+;; 2. Compiling the Pattern Matrix to a Directed Acyclic Graph 
+;;    
+;;    The function `compile` does this work. This step
+;;    is where Maranget's algorithm is implemented.
+;;
+;; 3. Converting the DAG to Clojure code.
+;;    
+;;    This is mostly a 1-1 conversion. See function `executable-form`.
+;;
+;; # Nomenclature
+;;
+;; (match [x y]
+;;        [1 2] :a0 
+;;        [3 4] :a1)
+;;
+;; * x and y are called _occurances_
+;; * 1, 2, 3 and 4 are _patterns_
+;; * [1 2] and [3 4] are _pattern rows_
+;; * :a0 and :a1 are _actions_
+
+
 ;; ============================================
-;; Debugging tools
+;; # Debugging tools
+;;
+;; These debugging aids are most useful in steps 2 and 3 of compilation.
+;;
 
 (def ^{:dynamic true} *syntax-check* true)
 (def ^{:dynamic true} *line*)
@@ -36,7 +73,7 @@
     (flush)))
 
 ;; ==================================
-;; Protocols
+;; # Protocols
 
 (defprotocol IMatchLookup
   (val-at* [this k not-found]))
@@ -75,12 +112,17 @@
       (prepend (drop-nth this n) x))))
 
 ;; =============================================================================
-;; Patterns
+;; # Patterns
+;;
 
 (defmulti pattern-compare (fn [a b] [(type a) (type b)]))
 
 ;; -----------------------------------------------------------------------------
-;; Wildcard Pattern
+;; ## Wildcard Pattern
+;; 
+;; A wildcard pattern accepts any value.
+;;
+;; In practice, the DAG compilation eliminates any wildcard patterns.
 
 (deftype WildcardPattern [sym _meta]
   clojure.lang.IObj
@@ -99,6 +141,9 @@
 
 (def wildcard-pattern? (partial instance? WildcardPattern))
 
+;; Local bindings in pattern matching are emulated by using named wildcards.
+;; See clojure.lang.Symbol dispatch for `emit-pattern` 
+
 (defn named-wildcard-pattern? [x]
   (when (instance? WildcardPattern x)
     (not= (.sym ^WildcardPattern x) '_)))
@@ -107,7 +152,12 @@
   (.write writer (str "<WildcardPattern: " (.sym p) ">")))
 
 ;; -----------------------------------------------------------------------------
-;; Literal Pattern
+;; ## Literal Pattern
+;;
+;; A literal pattern is not further split into further patterns in the DAG
+;; compilation phase.
+;;
+;; It "literally" matches a given occurance.
 
 (deftype LiteralPattern [l _meta]
   clojure.lang.IObj
@@ -135,7 +185,12 @@
   (.write writer (str "<LiteralPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
-;; Seq Pattern
+;; ## Seq Pattern
+;;
+;; A Seq Pattern is intended for matching `seq`s. 
+;;
+;; They are split into multiple patterns, testing each element of the seq in order.
+;;
 
 (deftype SeqPattern [s _meta]
   clojure.lang.IObj
@@ -160,7 +215,11 @@
   (.write writer (str "<SeqPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
-;; Rest Pattern
+;; ### Rest Pattern
+;; 
+;; A rest pattern represents the case of matching [2 3] in [1 & [2 3]]
+;;
+;; It is an implementation detail of other patterns, like SeqPattern.
 
 (deftype RestPattern [p _meta]
   clojure.lang.IObj
@@ -180,7 +239,9 @@
   (.write writer (str "<RestPattern: " (.p p) ">")))
 
 ;; -----------------------------------------------------------------------------
-;; Map Pattern
+;; # Map Pattern
+;; 
+;; Map patterns match maps, or any object that satisfies IMatchLookup.
 
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
@@ -204,6 +265,15 @@
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
 
+;; ### MapCrashPattern
+;;
+;; MapCrashPatterns are an implementation detail of MapPatterns.
+;;
+;; They ensure a map has only the keys [:key1 :key2] in 
+;; the pattern:
+;;   ({:key1 1, :key2 2} :only [:key1 :key2])
+;;
+
 (deftype MapCrashPattern [only _meta]
   clojure.lang.IObj
   (meta [_] _meta)
@@ -224,7 +294,9 @@
   (.write writer (str "<MapCrashPattern>")))
 
 ;; -----------------------------------------------------------------------------
-;; Or Patterns
+;; ## Or Patterns
+;;
+;; Or patterns provide logical disjunction between patterns.
 
 (deftype OrPattern [ps _meta]
   clojure.lang.IObj
@@ -256,7 +328,11 @@
   [x] false)
 
 ;; -----------------------------------------------------------------------------
-;; Guard Patterns
+;; ## Guard Patterns
+;;
+;; Guard patterns are used to represent guards on patterns, for example
+;;   `(1 :when even?)`
+;;
 
 (deftype GuardPattern [p gs _meta]
   clojure.lang.IObj
