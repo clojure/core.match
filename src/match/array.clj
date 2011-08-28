@@ -13,7 +13,8 @@
   [t ocr]
   `(alength ~ocr))
 (defmethod subvec-inline ::array
-  [_ ocr i] ocr)
+  ([_ ocr start] ocr)
+  ([_ ocr start end] ocr))
 
 ;; =============================================================================
 ;; ints

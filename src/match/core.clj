@@ -336,8 +336,8 @@
   (split [this n]
     (let [lv (subvec v 0 n)
           rv (subvec v n)
-          pr (VectorPattern. lv t n offset false _meta)
-          pl (if (rest-pattern? (first rv))
+          pl (VectorPattern. lv t n offset false _meta)
+          pr (if (rest-pattern? (first rv))
                (let [^RestPattern p (first rv)] (.p p))
                (let [rest? (some rest-pattern? rv)
                      rvc (count rv)
@@ -1024,7 +1024,7 @@
                                              ps (cond
                                                  (vector-pattern? p) (split p min-size)
                                                  :else [(wildcard-pattern) (wildcard-pattern)])]
-                                         (reduce prepend (drop-nth row 0) ps))))
+                                         (reduce prepend (drop-nth row 0) (reverse ps)))))
                                 vec)
                            (let [vec-ocr focr
                                  t (.t this)
@@ -1032,10 +1032,10 @@
                                            :vec-sym vec-ocr}
                                  vl-ocr (gensym (str (name vec-ocr) "_left__"))
                                  vl-ocr (with-meta vl-ocr
-                                          (assoc ocr-meta :bind-expr (subvec-inline t vl-ocr 0 min-size )))
+                                          (assoc ocr-meta :bind-expr `(let [~vl-ocr ~(subvec-inline t (with-tag t vl-ocr) 0 min-size )])))
                                  vr-ocr (gensym (str (name vec-ocr) "_right__"))
                                  vr-ocr (with-meta vr-ocr
-                                          (assoc ocr-meta :bind-expr (subvec-inline t vr-ocr min-size)))]
+                                          (assoc ocr-meta :bind-expr `(let [~vr-ocr ~(subvec-inline t (with-tag t vr-ocr) min-size)])))]
                              (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))]
                           [(->> srows
                                 (map (fn [row]
