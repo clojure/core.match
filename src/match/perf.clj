@@ -1,6 +1,6 @@
 (ns match.perf
   (:refer-clojure :exclude [compile])
-  (:use match.core))
+  (:use [match.core :as m]))
 
 (comment
   ;; 2-3ms, literal match
@@ -52,9 +52,28 @@
       (time
        (dotimes [_ 1e7]
          (match [x]
-           [([_ _ 2] :vec)] :a0
-           [([1 1 3] :vec)] :a1
-           [([1 2 3] :vec)] :a2)))))
+           [([_ _ 2] ::m/vector)] :a0
+           [([1 1 3] ::m/vector)] :a1
+           [([1 2 3] ::m/vector)] :a2)))))
+
+  ;; 2.3s
+  (let [v [1 2 3 4]]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (match [v]
+           [([1 & r] ::m/vector)] :a0
+           :else :a1)))))
+
+  ;; 270ms
+  (let [v [1 2 3 4]]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e6]
+         (match [v]
+           [([1 1 3 & r] ::m/vector)] :a0
+           [([1 2 & r] ::m/vector)] :a1
+           :else :a3)))))
 
   ;; 90ms, destructure vector
   (let [x [1 2 3]]
@@ -62,6 +81,13 @@
       (time
        (dotimes [_ 1e7]
          (let [[a b c] x])))))
+
+  ;; 1.3s
+  (let [x [1 2 3 4]]
+    (dotimes [_ 10]
+      (time
+       (dotimes [_ 1e7]
+         (let [[a & r] x])))))
 
   ;; 200ms, map match
   (let [x {:a 1 :b 2 :c 3}]

@@ -323,3 +323,21 @@
                [([:black _ _ ([:red ([:red _ _ _] ::m/vector) _ _] ::m/vector)] ::m/vector)] :valid
                :else :invalid))
          :valid)))
+
+(deftest vector-pattern-rest-1
+  (is (= (let [v [1 2 3 4]]
+           (match [v]
+             [([1 1 3 & r] ::m/vector)] :a0
+             [([1 2 4 & r] ::m/vector)] :a1
+             [([1 2 3 & r] ::m/vector)] :a2
+             :else :a3))
+         :a2)))
+
+(deftest vector-pattern-rest-2
+  (is (= (let [v [1 2 3 4]]
+           (let [v [1 2 3 4]]
+             (match [v]
+               [([1 1 3 & r] ::m/vector)] :a0
+               [([1 2 & r] ::m/vector)] :a1
+               :else :a3)))
+         :a1)))
