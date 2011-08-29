@@ -772,11 +772,138 @@
 (declare useful-p?)
 (declare useful?)
 
+;; # Compilation Cases
+;;
+;; These are analogous to Maranget's Compilation Scheme on page 4, respectively
+;; case 1, 2, 2 (also), 3a and 3b.
+;;
+
+(defn- empty-rows-case 
+  "Case 1: If there are no pattern rows to match, then matching always fails"
+  []
+  (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
+      (trace-dag "No rows left, add fail-node")
+      (fail-node)))
+
+(defn- first-row-empty-case 
+  "Case 2: If the first row is empty then matching always succeeds 
+  and yields the first action."
+  [rows]
+  (let [^PatternRow f (first rows)
+        a (action f)
+        b (bindings f)
+        _ (trace-dag "Empty row, add leaf-node."
+                     "Action:" a
+                     "Bindings:" b)]
+    (leaf-node a b)))
+
+(defn- first-row-wildcards-case 
+  "Case 2: If the first row is constituted by wildcards then matching
+  matching always succeeds and yields the first action."
+  [rows ocrs]
+  (letfn [(row-bindings 
+            ;; Returns bindings usable by leaf-node"
+            [f ocrs]
+            (let [ps (.ps f)
+                  wc-syms (map #(.sym ^WildcardPattern %) ps)
+                  wc-bindings (map vector wc-syms
+                                   (map leaf-bind-expr ocrs))]
+              (concat (bindings f)
+                      wc-bindings)))]
+    (let [^PatternRow f (first rows)
+          a (action f)
+          b (row-bindings f ocrs)
+          _ (trace-dag "First row all wildcards, add leaf-node.")]
+      (leaf-node a b))))
+
+
+
+(defn- first-column-chosen-case 
+  "Case 3a: The first column is chosen. Compute and return a switch/bind node
+  with a default matrix case"
+  [this col ocrs]
+  (letfn [(pseudo-patterns [this i]
+            (->> (column this i)
+              (filter pseudo-pattern?)))
+          
+          (default-matrix 
+            ;; When the current set of constructors is not a signature, an additional
+            ;; call is performed on a default matrix, handling constructors not in the set."
+            [this]
+            (let [m (specialize this (wildcard-pattern))]
+              (if-not (empty-matrix? m)
+                (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
+                  (compile m))
+                (do (warn (str "Non-exhaustive pattern matrix, " 
+                               "consider adding :else clause"))
+                  (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
+                  (fail-node)))))
+          
+          (column-constructors 
+            ;; Returns a sorted-set of constructors in column i of matrix this
+            [this i]
+            (->> (column this i)
+              (filter (comp not wildcard-pattern?))
+              (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
+
+          (switch-clauses 
+            ;; Compile a decision trees for each constructor cs and returns a clause list
+            ;; usable by a switch node"
+            [this cs]
+            (into []
+                  (map (fn [c]
+                         (let [s (-> this 
+                                   (specialize c) 
+                                   compile)]
+                           [c s]))
+                       cs)))
+
+          (switch-or-bind-node [col ocrs clauses default]
+            (letfn [(expression? 
+                      ;; Returns true if occurance ocr is an expression
+                      [ocr] 
+                      (-> ocr meta :ocr-expr))
+                    (bind-variables 
+                      ;; Return bindings usable by bind-node
+                      [ocrs] 
+                      (mapcat (fn [ocr]
+                                (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
+                                  (if (not= bind-expr ::not-found)
+                                    [ocr bind-expr]
+                                    [ocr ocr])))
+                              ocrs))]
+              (if (some expression? ocrs)
+                (let [b (bind-variables ocrs)
+                      o (ocrs col)
+                      n (switch-node o clauses default)
+                      _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]
+                  (bind-node b n))
+                (let [o (ocrs col)
+                      _ (trace-dag "Add switch-node on occurance " o)]
+                  (switch-node o clauses default)))))]
+    (let [this (reduce specialize this (pseudo-patterns this col))
+          constrs (column-constructors this col)
+          clauses (switch-clauses this constrs)
+          default (default-matrix this)
+          _ (trace-dag "Column" col ":" constrs)]
+      (switch-or-bind-node col ocrs clauses default))))
+
+(defn- other-column-chosen-case 
+  "Case 3b: A column other than the first is chosen. Swap column col with the first column
+  and compile the result"
+  [this col]
+  (do (trace-dag "Swap column " col)
+      (compile (swap this col))))
+
+;; # Pattern Matrix definition
+
 (deftype PatternMatrix [rows ocrs _meta]
   clojure.lang.IObj
   (meta [_] _meta)
+
   (withMeta [_ new-meta]
     (PatternMatrix. rows ocrs new-meta))
+
   IPatternMatrix
   (width [_] (if (not (empty? rows))
                (count (rows 0))
@@ -792,15 +919,19 @@
   (column [_ i] (vec (map #(nth % i) rows)))
 
   (compile [this]
-    (letfn [(column-constructors [this i]
-              (->> (column this i)
-                   (filter (comp not wildcard-pattern?))
-                   (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
-            (pseudo-patterns [this i]
-              (->> (column this i)
-                   (filter pseudo-pattern?)))
+    (letfn [(choose-column 
+              ;; Return a column number of a column which contains at least
+              ;; one non-wildcard constructor"
+              [this]
+              (let [col (necessary-column this)
+                    _ (trace-dag "Pick column" col "as necessary column.")]
+                col))
+            
+            (first-column? [i]
+              (zero? i))
+            
             (empty-row? [row]
-              (let [ps (patterns row)] ;; TODO: cleanup
+              (let [ps (patterns row)]
                 (and (not (nil? ps))
                      (empty? ps))))
             (has-ocr-expr? [ocrs]
@@ -810,62 +941,16 @@
             (coerce? [matrix]
               (-> matrix meta :coerce-bind))]
       (cond
-       (empty? rows) (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
-                         (trace-dag "No rows left, add fail-node")
-                         (fail-node))
-       (empty-row? (first rows)) (let [f (first rows)
-                                       a (action f)
-                                       b (bindings f)
-                                       _ (trace-dag "Empty row, add leaf-node."
-                                                    "Action:" a
-                                                    "Bindings:" b)]
-                                   (leaf-node a b))
-       (all-wildcards? (first rows)) (let [^PatternRow f (first rows)
-                                           ps (.ps f)
-                                           wc-syms (map #(.sym ^WildcardPattern %) ps)
-                                           wc-bindings (map vector wc-syms
-                                                            (map leaf-bind-expr ocrs))
-                                           a (action f)
-                                           b (concat (bindings f)
-                                                     wc-bindings)
-                                           _ (trace-dag "First row all wildcards, add leaf-node.")]
-                                       (leaf-node a b))
-       :else (let [col (necessary-column this)
-                   _ (trace-dag "Pick column" col "as necessary column.")]
-               (if (= col 0)
-                 (let [this (reduce specialize this (pseudo-patterns this col))
-                       constrs (column-constructors this col)
-                       _ (trace-dag "Column" col ":" constrs)
-                       clauses (into [] (map (fn [c]
-                                               (let [s (-> this 
-                                                           (specialize c) 
-                                                           compile)]
-                                                 [c s]))
-                                             constrs))
-                       default (let [m (specialize this (wildcard-pattern))]
-                                 (if-not (empty-matrix? m)
-                                   (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
-                                       (compile m))
-                                   (do (warn (str "Non-exhaustive pattern matrix, " 
-                                                  "consider adding :else clause"))
-                                       (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
-                                       (fail-node))))]
-                   (if (some (fn [ocr] (-> ocr meta :ocr-expr)) ocrs)
-                     (let [b (mapcat (fn [ocr]
-                                       (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
-                                         (if (not= bind-expr ::not-found)
-                                           [ocr bind-expr]
-                                           [ocr ocr])))
-                                     ocrs)
-                           o (ocrs col)
-                           n (switch-node o clauses default)
-                           _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]
-                       (bind-node b n))
-                     (let [o (ocrs col)
-                           _ (trace-dag "Add switch-node on occurance " o)]
-                       (switch-node o clauses default))))
-                 (do (trace-dag "Swap column " col)
-                     (compile (swap this col))))))))
+        (empty? rows) (empty-rows-case)
+
+        (empty-row? (first rows)) (first-row-empty-case rows)
+
+        (all-wildcards? (first rows)) (first-row-wildcards-case rows ocrs)
+
+        :else (let [col (choose-column this)]
+                (if (first-column? col)
+                  (first-column-chosen-case this col ocrs)
+                  (other-column-chosen-case this col))))))
 
   (pattern-at [_ i j] ((rows j) i))
 
@@ -919,6 +1004,7 @@
   (drop-nth [_ i]
     (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs _meta))
 
+  ;; Swap column number idx with the first column
   (swap [_ idx]
     (PatternMatrix. (vec (map #(swap % idx) rows))
                     (swap ocrs idx)
