@@ -1444,10 +1444,6 @@
 ;; ============================================================================
 ;; Match macros
 
-(defmacro defmatch [name vars & clauses]
-  `(defn ~name ~vars 
-     ~(clj-form vars clauses)))
-
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value."
   (binding [*line* (-> &form meta :line)
