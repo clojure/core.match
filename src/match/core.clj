@@ -828,7 +828,7 @@
           
           (default-matrix 
             ;; When the current set of constructors is not a signature, an additional
-            ;; call is performed on a default matrix, handling constructors not in the set."
+            ;; call is performed on a default matrix, handling constructors not in the set.
             [this]
             (let [m (specialize this (wildcard-pattern))]
               (if-not (empty-matrix? m)
@@ -848,7 +848,7 @@
 
           (switch-clauses 
             ;; Compile a decision trees for each constructor cs and returns a clause list
-            ;; usable by a switch node"
+            ;; usable by a switch node
             [this cs]
             (into []
                   (map (fn [c]
@@ -921,7 +921,7 @@
   (compile [this]
     (letfn [(choose-column 
               ;; Return a column number of a column which contains at least
-              ;; one non-wildcard constructor"
+              ;; one non-wildcard constructor
               [this]
               (let [col (necessary-column this)
                     _ (trace-dag "Pick column" col "as necessary column.")]
