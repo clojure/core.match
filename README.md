@@ -238,6 +238,16 @@ By extending Java types to IMatchLookup, Java types can participate in map patte
 ;; => [:a1 10]
 ```
 
+The above is a bit tedious to write so <code>match.java</code> supplies a <code>bean-match</code> macro that can be used as follows:
+
+```clojrue
+(bean-match java.awt.Color)
+(match [java.awt.Color/RED]
+  [{:red red :green green :blue blue}] [red green blue]
+  :else :error)
+;; => [255 0 0]  
+```
+
 Note on Pattern Rows
 ----
 
