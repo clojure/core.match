@@ -1469,10 +1469,3 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
-
-(comment
-  (let [v [1 2 3]]
-    (match [v]
-      [([1 2 3] :seq)] :a0
-      :else :a1))
-  )
