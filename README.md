@@ -240,7 +240,7 @@ By extending Java types to IMatchLookup, Java types can participate in map patte
 
 The above is a bit tedious to write so <code>match.java</code> supplies a <code>bean-match</code> macro that can be used as follows:
 
-```clojrue
+```clojure
 (bean-match java.awt.Color)
 (match [java.awt.Color/RED]
   [{:red red :green green :blue blue}] [red green blue]
