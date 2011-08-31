@@ -788,11 +788,12 @@
 (defn- first-row-empty-case 
   "Case 2: If the first row is empty then matching always succeeds 
   and yields the first action."
-  [rows]
+  [rows ocr]
   (let [^PatternRow f (first rows)
         a (action f)
         b (bindings f)
         _ (trace-dag "Empty row, add leaf-node."
+                     "Could not find match for: " ocr
                      "Action:" a
                      "Bindings:" b)]
     (leaf-node a b)))
@@ -813,7 +814,7 @@
     (let [^PatternRow f (first rows)
           a (action f)
           b (row-bindings f ocrs)
-          _ (trace-dag "First row all wildcards, add leaf-node.")]
+          _ (trace-dag (str "First row all wildcards, add leaf-node." a b))]
       (leaf-node a b))))
 
 
@@ -943,7 +944,7 @@
       (cond
         (empty? rows) (empty-rows-case)
 
-        (empty-row? (first rows)) (first-row-empty-case rows)
+        (empty-row? (first rows)) (first-row-empty-case rows (first ocrs))
 
         (all-wildcards? (first rows)) (first-row-wildcards-case rows ocrs)
 
@@ -1469,3 +1470,44 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(comment
+  (let [node nil]
+    (match [node]
+      [([:black [:red [:red a x b] y c] z d] |
+        [:black [:red a x [:red b y c]] z d] |
+        [:black a x [:red [:red b y c] z d]] |
+        [:black a x [:red b y [:red c z d]]])] [:red [:black a x b] y [:black c z d]]))
+
+  (let [node nil]
+    (match [node]
+      [[:black [:red [:red a x b] y c] z d]] [:red [:black a x b] y [:black c z d]]
+      [[:black [:red a x [:red b y c]] z d]] [:red [:black a x b] y [:black c z d]]
+      [[:black a x [:red [:red b y c] z d]]] [:red [:black a x b] y [:black c z d]]
+      [[:black a x [:red b y [:red c z d]]]] [:red [:black a x b] y [:black c z d]]
+      :else nil))
+
+  (let [node nil]
+    (match [node]
+      [[:black [:red [:red a x b] y c] z d]] [:red [:black a x b] y [:black c z d]]
+      [[:black [:red a x [:red b y c]] z d]] [:red [:black a x b] y [:black c z d]]
+      [[:black a x [:red [:red b y c] z d]]] [:red [:black a x b] y [:black c z d]]
+      [[:black a x [:red b y [:red c z d]]]] [:red [:black a x b] y [:black c z d]]
+      :else nil))
+
+  (let [node nil]
+    (match [node]
+      [[[[a x b] y c] z d]] [[a x b] y [c z d]]
+      [[[a x [b y c]] z d]] [[a x b] y [c z d]]
+      [[a x [[b y c] z d]]] [[a x b] y [c z d]]
+      [[a x [b y [c z d]]]] [[a x b] y [c z d]]
+      :else nil))
+
+  (set-trace!)
+  ;; hmm need to think about what happens to named wildcards
+  (let [node nil]
+    (match [node]
+      [[[a]]] a
+      [a] a
+      :else nil))
+  )
