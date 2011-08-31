@@ -802,7 +802,7 @@
   matching always succeeds and yields the first action."
   [rows ocrs]
   (letfn [(row-bindings 
-            ;; Returns bindings usable by leaf-node"
+            ;; Returns bindings usable by leaf-node
             [f ocrs]
             (let [ps (.ps f)
                   wc-syms (map #(.sym ^WildcardPattern %) ps)
