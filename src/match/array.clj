@@ -154,12 +154,25 @@
     
     (defn balance-array [^objects node]
       (matchv ::objects [node]
-         [[:black [:red [:red a x b] y c] z d]] (R (B a x b) y (B c z d))
-         [[:black [:red a x [:red b y c]] z d]] (R (B a x b) y (B c z d))
-         [[:black a x [:red [:red b y c] z d]]] (R (B a x b) y (B c z d))))
+        [[:black [:red [:red a x b] y c] z d]] (R (B a x b) y (B c z d))
+        [[:black [:red a x [:red b y c]] z d]] (R (B a x b) y (B c z d))
+        [[:black a x [:red [:red b y c] z d]]] (R (B a x b) y (B c z d))
+        ))
 
-    ;; 11ms
+    ;; 14ms
+    ;; if we add the last case we get a 14X slow down, what gives?
+    ;; is this simply related to source code size
+    ;; last case we see 2528 LOC (poorly formatted) for 4 cases
+    ;; for 3 cases we see 1244 LOC for 3 cases
+
     (let [^objects node (B (R (R nil nil nil) nil nil) nil nil)]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+
+    ;; strange it looks like we actually see the inlining happen
+    (let [^objects node (B nil nil (R (R nil nil nil) nil nil))]
       (dotimes [_ 10]
         (time
          (dotimes [_ 1e5]
