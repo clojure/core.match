@@ -1259,9 +1259,17 @@
 ;; =============================================================================
 ;; Interface
 
-(defmulti to-source (fn [pattern ocr] (type pattern)))
+(defmulti to-source 
+  "Returns a Clojure form that, when executed, is truthy if the pattern matches
+  the occurance. Dispatches on the `type` of the pattern. For instance, a literal pattern 
+  might return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match."
+  (fn [pattern ocr] (type pattern)))
 
-(defmulti emit-pattern class)
+(defmulti emit-pattern 
+  "Returns the corresponding pattern for the given syntax. Dispatches
+  on the class of its argument. For example, `[(1 | 2) 2]` is dispatched
+  as clojure.lang.IPersistentVector"
+  class)
 
 ;; ============================================================================
 ;; emit-pattern Methods
@@ -1314,7 +1322,11 @@
           (literal-pattern (second pat))
           (emit-pattern-for-syntax pat)))
 
-(defmulti emit-pattern-for-syntax (fn [syn] (second syn)))
+(defmulti emit-pattern-for-syntax 
+  "Handles patterns wrapped in the special list syntax. Dispatches
+  on the second item in the list. For example, the pattern `(1 :as a)`
+  is dispatched by :as."
+  (fn [syn] (second syn)))
 
 (defmethod emit-pattern-for-syntax '|
   [pat] (or-pattern
@@ -1437,7 +1449,15 @@
 ;; Match macros
 
 (defmacro match-1 [vars & clauses]
-  "Pattern match a single value."
+  "Pattern match a single value. Clause question-answer syntax is like
+  `cond`.
+  
+  Example:
+  (let [x 1]
+    (match-1 x
+             1 :answer1
+             2 :answer2
+             :else :default-answer)))"
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
@@ -1449,7 +1469,18 @@
       `~(clj-form vars clauses))))
 
 (defmacro match [vars & clauses]
-  "Pattern match multiple values."
+  "Pattern match a row of occurances. Take a vector of occurances, vars.
+  Clause question-answer syntax is like `cond`. Questions must be
+  wrapped in a vector, with same arity as vars. Last question can be :else,
+  which expands to a row of wildcards.
+  
+  Example:
+  (let [x 1
+        y 2]
+      (match [x y 3]
+             [1 2 3] :answer1
+             :else :default-answer))
+  "
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
