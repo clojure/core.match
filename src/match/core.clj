@@ -80,6 +80,9 @@
 ;; Protocols
 
 (defprotocol IMatchLookup
+  "Allows arbitrary objects to act like a map-like object when pattern
+  matched. Avoid extending this directly for Java Bean-ish objects, see
+  `match.java/bean-match`."
   (val-at* [this k not-found]))
 
 ;; =============================================================================
@@ -203,7 +206,9 @@
 ;; # Patterns
 ;;
 
-(defmulti pattern-compare (fn [a b] [(type a) (type b)]))
+(defmulti pattern-compare 
+  "Like `clojure.core/compare` but for comparing patterns"
+  (fn [a b] [(type a) (type b)]))
 
 ;; -----------------------------------------------------------------------------
 ;; ## Wildcard Pattern
