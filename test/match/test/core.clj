@@ -343,3 +343,11 @@
                [([1 2 & r] ::m/vector)] :a1
                :else :a3)))
          :a1)))
+
+(deftest vector-bind-1
+  (is (= (let [node 1]
+           (match [node]
+             [[1]] :a0
+             [a] a
+             :else :a1))
+         1)))

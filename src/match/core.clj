@@ -791,12 +791,13 @@
   [rows ocr]
   (let [^PatternRow f (first rows)
         a (action f)
-        b (bindings f)
+        bs (bindings f)
         _ (trace-dag "Empty row, add leaf-node."
                      "Could not find match for: " ocr
                      "Action:" a
-                     "Bindings:" b)]
-    (leaf-node a b)))
+                     "Bindings:" bs)]
+    ;; FIXME: wtf f, the first row is an infinite list of nil - David
+    (leaf-node a bs)))
 
 (defn- first-row-wildcards-case 
   "Case 2: If the first row is constituted by wildcards then matching
@@ -805,19 +806,19 @@
   (letfn [(row-bindings 
             ;; Returns bindings usable by leaf-node
             [f ocrs]
-            (let [ps (.ps f)
+            (let [ps (.ps ^PatternRow f)
                   wc-syms (map #(.sym ^WildcardPattern %) ps)
                   wc-bindings (map vector wc-syms
                                    (map leaf-bind-expr ocrs))]
               (concat (bindings f)
                       wc-bindings)))]
-    (let [^PatternRow f (first rows)
+    (let [f (first rows)]
+)
+    (let [f (first rows)
           a (action f)
-          b (row-bindings f ocrs)
-          _ (trace-dag (str "First row all wildcards, add leaf-node." a b))]
-      (leaf-node a b))))
-
-
+          bs (row-bindings f ocrs)
+          _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
+      (leaf-node a bs))))
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -1187,7 +1188,7 @@
                                              ps (cond
                                                  (vector-pattern? p) (split p min-size)
                                                  :else [(wildcard-pattern) (wildcard-pattern)])]
-                                         (reduce prepend (drop-nth row 0) (reverse ps)))))
+                                         (reduce prepend (drop-nth-bind row 0 focr) (reverse ps)))))
                                 vec)
                            (let [vec-ocr focr
                                  t (.t this)
@@ -1206,7 +1207,7 @@
                                              ps (if (vector-pattern? p)
                                                   (reverse (.v ^VectorPattern p))
                                                   (repeatedly min-size wildcard-pattern))]
-                                         (reduce prepend (drop-nth row 0) ps))))
+                                         (reduce prepend (drop-nth-bind row 0 focr) ps))))
                                 vec)
                            (let [vec-ocr focr
                                  ocr-sym (fn [i]
@@ -1470,44 +1471,3 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
-
-(comment
-  (let [node nil]
-    (match [node]
-      [([:black [:red [:red a x b] y c] z d] |
-        [:black [:red a x [:red b y c]] z d] |
-        [:black a x [:red [:red b y c] z d]] |
-        [:black a x [:red b y [:red c z d]]])] [:red [:black a x b] y [:black c z d]]))
-
-  (let [node nil]
-    (match [node]
-      [[:black [:red [:red a x b] y c] z d]] [:red [:black a x b] y [:black c z d]]
-      [[:black [:red a x [:red b y c]] z d]] [:red [:black a x b] y [:black c z d]]
-      [[:black a x [:red [:red b y c] z d]]] [:red [:black a x b] y [:black c z d]]
-      [[:black a x [:red b y [:red c z d]]]] [:red [:black a x b] y [:black c z d]]
-      :else nil))
-
-  (let [node nil]
-    (match [node]
-      [[:black [:red [:red a x b] y c] z d]] [:red [:black a x b] y [:black c z d]]
-      [[:black [:red a x [:red b y c]] z d]] [:red [:black a x b] y [:black c z d]]
-      [[:black a x [:red [:red b y c] z d]]] [:red [:black a x b] y [:black c z d]]
-      [[:black a x [:red b y [:red c z d]]]] [:red [:black a x b] y [:black c z d]]
-      :else nil))
-
-  (let [node nil]
-    (match [node]
-      [[[[a x b] y c] z d]] [[a x b] y [c z d]]
-      [[[a x [b y c]] z d]] [[a x b] y [c z d]]
-      [[a x [[b y c] z d]]] [[a x b] y [c z d]]
-      [[a x [b y [c z d]]]] [[a x b] y [c z d]]
-      :else nil))
-
-  (set-trace!)
-  ;; hmm need to think about what happens to named wildcards
-  (let [node nil]
-    (match [node]
-      [[[a]]] a
-      [a] a
-      :else nil))
-  )
