@@ -164,7 +164,10 @@
 (defmethod nth-inline ::vector
   [_ ocr i] `(nth ~ocr ~i))
 (defmethod nth-offset-inline ::vector
-  [t ocr i offset] (nth-inline t ocr `(+ ~i ~offset)))
+  [t ocr i offset]
+  (if (zero? offset)
+    (nth-inline t ocr i)
+    (nth-inline t ocr `(+ ~i ~offset))))
 (defmethod subvec-inline ::vector
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
@@ -649,10 +652,10 @@
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
 (defmethod leaf-bind-expr :seq
-  [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
+  [ocr] (-> ocr meta :bind-expr))
 
 (defmethod leaf-bind-expr ::vector
-  [ocr] (doall (concat (-> ocr meta :bind-expr) `(~ocr))))
+  [ocr] (-> ocr meta :bind-expr))
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
@@ -719,7 +722,7 @@
           cond-expr (doall (concat `(cond ~@clauses)
                                    `(:else ~(n-to-clj default))))]
       (if bind-expr
-        (doall (concat bind-expr (list cond-expr)))
+        (doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
         cond-expr))))
 
 (defn ^SwitchNode switch-node
@@ -801,8 +804,6 @@
                                    (map leaf-bind-expr ocrs))]
               (concat (bindings f)
                       wc-bindings)))]
-    (let [f (first rows)]
-)
     (let [f (first rows)
           a (action f)
           bs (row-bindings f ocrs)
@@ -1076,10 +1077,10 @@
                                 :seq-sym seq-ocr}
                       hsym (gensym (str (name seq-sym) "_head__"))
                       hsym (with-meta hsym
-                             (assoc sym-meta :bind-expr `(let [~hsym (first ~seq-ocr)])))
+                             (assoc sym-meta :bind-expr `(first ~seq-ocr)))
                       tsym (gensym (str (name seq-sym) "_tail__"))
                       tsym (with-meta tsym
-                             (assoc sym-meta :bind-expr `(let [~tsym (rest ~seq-ocr)])))]
+                             (assoc sym-meta :bind-expr `(rest ~seq-ocr)))]
                   (into [hsym tsym] (drop-nth ocrs 0)))
           _ (trace-dag "SeqPattern specialization on ocr " focr
                        ", new num ocrs" 
@@ -1130,7 +1131,7 @@
                                     {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr `(let [~ocr (val-at ~map-ocr ~k)])})))]
+                                     :bind-expr `(val-at ~map-ocr ~k)})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))
           _ (trace-dag "MapPattern specialization")]
@@ -1185,10 +1186,10 @@
                                            :vec-sym vec-ocr}
                                  vl-ocr (gensym (str (name vec-ocr) "_left__"))
                                  vl-ocr (with-meta vl-ocr
-                                          (assoc ocr-meta :bind-expr `(let [~vl-ocr ~(subvec-inline t (with-tag t vec-ocr) 0 min-size )])))
+                                          (assoc ocr-meta :bind-expr (subvec-inline t (with-tag t vec-ocr) 0 min-size )))
                                  vr-ocr (gensym (str (name vec-ocr) "_right__"))
                                  vr-ocr (with-meta vr-ocr
-                                          (assoc ocr-meta :bind-expr `(let [~vr-ocr ~(subvec-inline t (with-tag t vec-ocr) min-size)])))]
+                                          (assoc ocr-meta :bind-expr (subvec-inline t (with-tag t vec-ocr) min-size)))]
                              (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))]
                           [(->> srows
                                 (map (fn [row]
@@ -1206,9 +1207,9 @@
                                                {:occurrence-type t
                                                 :vec-sym vec-ocr
                                                 :index i
-                                                :bind-expr `(let [~ocr ~(if-let [offset (.offset this)]
-                                                                          (nth-offset-inline t (with-tag t vec-ocr) i offset)
-                                                                          (nth-inline t (with-tag t vec-ocr) i))])})))]
+                                                :bind-expr (if-let [offset (.offset this)]
+                                                             (nth-offset-inline t (with-tag t vec-ocr) i offset)
+                                                             (nth-inline t (with-tag t vec-ocr) i))})))]
                              (into (into [] (map ocr-sym (range min-size)))
                                    (drop-nth ocrs 0)))])
           matrix (pattern-matrix nrows nocrs)]
