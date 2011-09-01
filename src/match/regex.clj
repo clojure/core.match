@@ -13,6 +13,7 @@
   `(re-matches ~(:regex pat) ~ocr))
 
 (defmethod pattern-compare [RegexPattern RegexPattern]
-  [a b] (if (= (.pattern (:regex a)) (.pattern (:regex b)))
+  [a b] (if (and (= (.pattern (:regex a)) (.pattern (:regex b)))
+                 (= (.flags (:regex a)) (.flags (:regex b))))
           0
           -1))
