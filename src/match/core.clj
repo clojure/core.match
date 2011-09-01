@@ -172,9 +172,6 @@
 ;; =============================================================================
 ;; Extensions and Protocols
 
-(defprotocol ITypedPattern
-  (cast-expr [this ocr]))
-
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
 (defprotocol INodeCompile
@@ -396,9 +393,6 @@
     (if (and (not rest?) size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
-  ITypedPattern
-  (cast-expr [_ ocr]
-    `(let [~(with-meta ocr (merge (meta ocr) {:tag (tag t)})) ~ocr]))
   Object
   (toString [_]
     (str v ":" t))
@@ -711,16 +705,11 @@
    test))
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (let [cast-expr (when (satisfies? ITypedPattern pattern)
-                    (cast-expr pattern occurrence))]
-    [(rt-branches
-      (if (extends? IPatternCompile (class pattern))
-        (to-source* pattern occurrence) 
-        (to-source pattern occurrence)))
-     (let [source (n-to-clj action)]
-       (if cast-expr
-         (doall (concat cast-expr (list source)))
-         source))]))
+  [(rt-branches
+    (if (extends? IPatternCompile (class pattern))
+      (to-source* pattern occurrence) 
+      (to-source pattern occurrence)))
+   (n-to-clj action)])
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
