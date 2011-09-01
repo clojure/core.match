@@ -87,14 +87,17 @@
   (do
     (set! *warn-on-reflection* true)
 
-    (defn balance-array [node]
+    (defn balance-array [^objects node]
       (matchv ::objects [node]
         [([:black [:red [:red a x b] y c] z d] |
           [:black [:red a x [:red b y c]] z d] |
           [:black a x [:red [:red b y c] z d]] |
-          [:black a x [:red b y [:red c z d]]])] :a0))
+          [:black a x [:red b y [:red c z d]]])]
+        (object-array [:red
+          (object-array [:black a x b]) y
+             (object-array [:black c z d])])))
 
-    ;; 230ms
+    ;; 360ms
     (let [^objects node (object-array [:black
                           (object-array [:red
                             (object-array [:red nil nil nil]) nil nil]) nil nil])]
@@ -103,10 +106,92 @@
          (dotimes [_ 1e5]
            (balance-array node)))))
 
-    ;; 230ms
+    ;; 360ms
     (let [^objects node (object-array [:black
                             nil nil (object-array [:red nil nil
                               (object-array [:red nil nil nil])])])]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+    )
+
+  ;; 90ms
+  (do
+    (defn balance-array [^objects node]
+      (matchv ::objects [node]
+         [[:black [:red [:red a x b] y c] z d]]
+              (object-array [:red
+                (object-array [:black a x b]) y
+                  (object-array [:black c z d])])))
+
+    ;; 360ms
+    (let [^objects node (object-array [:black
+                          (object-array [:red
+                            (object-array [:red nil nil nil]) nil nil]) nil nil])]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+    )
+
+  (do
+    (set! *warn-on-reflection* true)
+    
+    (defmacro asets [a vs]
+      `(do
+         ~@(map (fn [a b c] (concat a (list b c)))
+                (repeat `(aset ~a)) (range (count vs)) vs)
+         ~a))
+    
+    (defn B ^objects [l v r]
+      (let [^objects o (make-array Object 4)]
+        (asets o [:black l v r])))
+
+    (defn R ^objects [l v r]
+      (let [^objects o (make-array Object 4)]
+        (asets o [:red l v r])))
+    
+    (defn balance-array [^objects node]
+      (matchv ::objects [node]
+         [[:black [:red [:red a x b] y c] z d]] (R (B a x b) y (B c z d))
+         [[:black [:red a x [:red b y c]] z d]] (R (B a x b) y (B c z d))
+         [[:black a x [:red [:red b y c] z d]]] (R (B a x b) y (B c z d))))
+
+    ;; 11ms
+    (let [^objects node (B (R (R nil nil nil) nil nil) nil nil)]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+    )
+
+  (do
+    (set! *warn-on-reflection* true)
+    
+    (defmacro asets [a vs]
+      `(do
+         ~@(map (fn [a b c] (concat a (list b c)))
+                (repeat `(aset ~a)) (range (count vs)) vs)
+         ~a))
+    
+    (defn B ^objects [l v r]
+      (let [^objects o (make-array Object 4)]
+        (asets o [:black l v r])))
+
+    (defn R ^objects [l v r]
+      (let [^objects o (make-array Object 4)]
+        (asets o [:red l v r])))
+    
+    (defn balance-array [^objects node]
+      (matchv ::objects [node]
+         [([:black [:red [:red a x b] y c] z d] |
+           [:black [:red a x [:red b y c]] z d] |
+           [:black a x [:red [:red b y c] z d]] |
+           [:black a x [:red b y [:red c z d]]])] (R (B a x b) y (B c z d))))
+
+    ;; 200ms
+    (let [^objects node (B (R (R nil nil nil) nil nil) nil nil)]
       (dotimes [_ 10]
         (time
          (dotimes [_ 1e5]
@@ -117,4 +202,12 @@
                         nil nil (object-array [:red nil nil
                           (object-array [:red nil nil nil])])])]
     (balance-array node))
+
+  ;; 90ms
+  (dotimes [_ 10]
+    (time
+     (dotimes [_ 1e5]
+         (object-array [:black
+           (object-array [:red
+             (object-array [:red nil nil nil]) nil nil]) nil nil]))))
  )
