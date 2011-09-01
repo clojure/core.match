@@ -70,17 +70,7 @@
            [([1 1 3] ::ints :offset o)] :a1
            [([1 2 3] ::ints :offset o)] :a2)))))
 
-  ;; 220ms
-  (let [^objects t (object-array [:black (object-array [:red (object-array [:red 1 2 3]) 3 4]) 5 6])]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e7]
-        (match [t]
-          [(([:black ([:red ([:red _ _ _] ::objects) _ _] ::objects) _ _] ::objects) |
-            ([:black ([:red _ _ ([:red _ _ _] ::objects)] ::objects) _ _] ::objects) |
-            ([:black _ _ ([:red ([:red _ _ _] ::objects) _ _] ::objects)] ::objects))] :valid
-            :else :invalid)))))
-
+  ;; 200ms
   (let [^objects t (object-array [:black
                      (object-array [:red
                        (object-array [:red nil nil nil]) nil nil]) nil nil])]
@@ -92,4 +82,39 @@
                   [:black [:red _ _ [:red _ _ _]] _ _] |
                   [:black _ _ [:red [:red _ _ _] _ _]])] :valid
             :else :invalid)))))
+
+  ;; this more complicated because we actually need to look at the values
+  (do
+    (set! *warn-on-reflection* true)
+
+    (defn balance-array [node]
+      (matchv ::objects [node]
+        [([:black [:red [:red a x b] y c] z d] |
+          [:black [:red a x [:red b y c]] z d] |
+          [:black a x [:red [:red b y c] z d]] |
+          [:black a x [:red b y [:red c z d]]])] :a0))
+
+    ;; 230ms
+    (let [^objects node (object-array [:black
+                          (object-array [:red
+                            (object-array [:red nil nil nil]) nil nil]) nil nil])]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+
+    ;; 230ms
+    (let [^objects node (object-array [:black
+                            nil nil (object-array [:red nil nil
+                              (object-array [:red nil nil nil])])])]
+      (dotimes [_ 10]
+        (time
+         (dotimes [_ 1e5]
+           (balance-array node)))))
+    )
+
+  (let [^objects node (object-array [:black
+                        nil nil (object-array [:red nil nil
+                          (object-array [:red nil nil nil])])])]
+    (balance-array node))
  )

@@ -172,9 +172,6 @@
 ;; =============================================================================
 ;; Extensions and Protocols
 
-(defprotocol ITypedPattern
-  (cast-expr [this ocr]))
-
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
 (defprotocol INodeCompile
@@ -396,9 +393,6 @@
     (if (and (not rest?) size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
-  ITypedPattern
-  (cast-expr [_ ocr]
-    `(let [~(with-meta ocr (merge (meta ocr) {:tag (tag t)})) ~ocr]))
   Object
   (toString [_]
     (str v ":" t))
@@ -711,16 +705,11 @@
    test))
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (let [cast-expr (when (satisfies? ITypedPattern pattern)
-                    (cast-expr pattern occurrence))]
-    [(rt-branches
-      (if (extends? IPatternCompile (class pattern))
-        (to-source* pattern occurrence) 
-        (to-source pattern occurrence)))
-     (let [source (n-to-clj action)]
-       (if cast-expr
-         (doall (concat cast-expr (list source)))
-         source))]))
+  [(rt-branches
+    (if (extends? IPatternCompile (class pattern))
+      (to-source* pattern occurrence) 
+      (to-source pattern occurrence)))
+   (n-to-clj action)])
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
@@ -788,35 +777,37 @@
 (defn- first-row-empty-case 
   "Case 2: If the first row is empty then matching always succeeds 
   and yields the first action."
-  [rows]
+  [rows ocr]
   (let [^PatternRow f (first rows)
         a (action f)
-        b (bindings f)
+        bs (bindings f)
         _ (trace-dag "Empty row, add leaf-node."
+                     "Could not find match for: " ocr
                      "Action:" a
-                     "Bindings:" b)]
-    (leaf-node a b)))
+                     "Bindings:" bs)]
+    ;; FIXME: wtf f, the first row is an infinite list of nil - David
+    (leaf-node a bs)))
 
 (defn- first-row-wildcards-case 
   "Case 2: If the first row is constituted by wildcards then matching
   matching always succeeds and yields the first action."
   [rows ocrs]
   (letfn [(row-bindings 
-            ;; Returns bindings usable by leaf-node"
+            ;; Returns bindings usable by leaf-node
             [f ocrs]
-            (let [ps (.ps f)
+            (let [ps (.ps ^PatternRow f)
                   wc-syms (map #(.sym ^WildcardPattern %) ps)
                   wc-bindings (map vector wc-syms
                                    (map leaf-bind-expr ocrs))]
               (concat (bindings f)
                       wc-bindings)))]
-    (let [^PatternRow f (first rows)
+    (let [f (first rows)]
+)
+    (let [f (first rows)
           a (action f)
-          b (row-bindings f ocrs)
-          _ (trace-dag "First row all wildcards, add leaf-node.")]
-      (leaf-node a b))))
-
-
+          bs (row-bindings f ocrs)
+          _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
+      (leaf-node a bs))))
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -943,7 +934,7 @@
       (cond
         (empty? rows) (empty-rows-case)
 
-        (empty-row? (first rows)) (first-row-empty-case rows)
+        (empty-row? (first rows)) (first-row-empty-case rows (first ocrs))
 
         (all-wildcards? (first rows)) (first-row-wildcards-case rows ocrs)
 
@@ -1186,7 +1177,7 @@
                                              ps (cond
                                                  (vector-pattern? p) (split p min-size)
                                                  :else [(wildcard-pattern) (wildcard-pattern)])]
-                                         (reduce prepend (drop-nth row 0) (reverse ps)))))
+                                         (reduce prepend (drop-nth-bind row 0 focr) (reverse ps)))))
                                 vec)
                            (let [vec-ocr focr
                                  t (.t this)
@@ -1205,7 +1196,7 @@
                                              ps (if (vector-pattern? p)
                                                   (reverse (.v ^VectorPattern p))
                                                   (repeatedly min-size wildcard-pattern))]
-                                         (reduce prepend (drop-nth row 0) ps))))
+                                         (reduce prepend (drop-nth-bind row 0 focr) ps))))
                                 vec)
                            (let [vec-ocr focr
                                  ocr-sym (fn [i]
