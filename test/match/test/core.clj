@@ -3,7 +3,6 @@
   (:use match.core
         match.core.debug
         match.regex)
-  (require [match.core :as m])
   (:use [clojure.test]))
 
 (deftest pattern-match-1
@@ -289,12 +288,15 @@
 (deftest test-false-expr-works-1
   (is (= (match [true false]
            [true false] 1
-           [false true] 2)
+           [false true] 2
+           :else (throw (Exception. "Shouldn't be here")))
          1)))
 
 (deftest test-lazy-source-case-1
   (is (= (let [x [1 2]]
-           (match [x] [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0))
+           (match [x] 
+              [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0
+              :else (throw (Exception. "Shouldn't be here"))))
          :a0)))
 
 (deftest test-wildcard-local-1
@@ -311,27 +313,27 @@
 (deftest vector-pattern-match-1
   (is (= (let [x [1 2 3]]
            (match [x]
-             [([_ _ 2] ::m/vector)] :a0
-             [([1 1 3] ::m/vector)] :a1
-             [([1 2 3] ::m/vector)] :a2
+             [([_ _ 2] ::match.core/vector)] :a0
+             [([1 1 3] ::match.core/vector)] :a1
+             [([1 2 3] ::match.core/vector)] :a2
              :else :a3))
          :a2)))
 
 (deftest red-black-tree-pattern-1
   (is (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
              (match [n]
-               [([:black ([:red ([:red _ _ _] ::m/vector) _ _] ::m/vector) _ _] ::m/vector)] :valid
-               [([:black ([:red _ _ ([:red _ _ _] ::m/vector)] ::m/vector) _ _] ::m/vector)] :valid
-               [([:black _ _ ([:red ([:red _ _ _] ::m/vector) _ _] ::m/vector)] ::m/vector)] :valid
+               [([:black ([:red ([:red _ _ _] ::match.core/vector) _ _] ::match.core/vector) _ _] ::match.core/vector)] :valid
+               [([:black ([:red _ _ ([:red _ _ _] ::match.core/vector)] ::match.core/vector) _ _] ::match.core/vector)] :valid
+               [([:black _ _ ([:red ([:red _ _ _] ::match.core/vector) _ _] ::match.core/vector)] ::match.core/vector)] :valid
                :else :invalid))
          :valid)))
 
 (deftest vector-pattern-rest-1
   (is (= (let [v [1 2 3 4]]
            (match [v]
-             [([1 1 3 & r] ::m/vector)] :a0
-             [([1 2 4 & r] ::m/vector)] :a1
-             [([1 2 3 & r] ::m/vector)] :a2
+             [([1 1 3 & r] ::match.core/vector)] :a0
+             [([1 2 4 & r] ::match.core/vector)] :a1
+             [([1 2 3 & r] ::match.core/vector)] :a2
              :else :a3))
          :a2)))
 
@@ -339,8 +341,8 @@
   (is (= (let [v [1 2 3 4]]
            (let [v [1 2 3 4]]
              (match [v]
-               [([1 1 3 & r] ::m/vector)] :a0
-               [([1 2 & r] ::m/vector)] :a1
+               [([1 1 3 & r] ::match.core/vector)] :a0
+               [([1 2 & r] ::match.core/vector)] :a1
                :else :a3)))
          :a1)))
 

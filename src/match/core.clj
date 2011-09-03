@@ -45,17 +45,31 @@
 
 (set! *warn-on-reflection* true)
 
-(def ^{:dynamic true} *syntax-check* true)
+;; TODO allow these to be set dynamically, at macro-expand time.
+;; Maybe match macros could take extra metadata? - Ambrose
+(def ^{:dynamic true
+       :doc "Enable syntax check of match macros"} 
+  *syntax-check* (atom true))
+
+(def ^{:dynamic true
+       :doc "Enable breadcrumb diagnostics with fail nodes"} 
+  *breadcrumbs* (atom true))
+
+(def ^{:dynamic true
+       :doc "Enable pattern compile time tracing"} 
+  *trace* (atom false))
+
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *vector-type* ::vector)
-(def ^{:dynamic true} *trace* (atom false))
+(def ^{:dynamic true} *match-breadcrumbs* [])
 
-(defn set-trace! []
-  (reset! *trace* true))
-(defn no-trace! []
-  (reset! *trace* nil))
+(defn set-trace! [b]
+  (reset! *trace* b))
+
+(defn set-breadcrumbs! [b]
+  (reset! *breadcrumbs* b))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -81,7 +95,7 @@
 
 (defprotocol IMatchLookup
   "Allows arbitrary objects to act like a map-like object when pattern
-  matched. Avoid extending this directly for Java Bean-ish objects, see
+  matched. Avoid extending this directly for Java Beans, see
   `match.java/bean-match`."
   (val-at* [this k not-found]))
 
@@ -675,10 +689,10 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    (if @*trace*
+    (if @*breadcrumbs*
       `(throw (Exception. (str "No match found. " 
-                               "Followed " @*rt-branches* " branches."
-                               " Breadcrumbs: " @*rt-breadcrumbs*)))
+                               "Followed " ~(count *match-breadcrumbs*)  " branches."
+                               " Breadcrumbs: " '~*match-breadcrumbs*)))
       `(throw (Exception. (str "No match found."))))))
 
 (defn ^FailNode fail-node []
@@ -699,25 +713,17 @@
 ;; -----------------------------------------------------------------------------
 ;; Switch Node
 
-(def ^{:dynamic true} *rt-branches*)
-(def ^{:dynamic true} *rt-breadcrumbs*)
 (declare to-source)
 
-(defn rt-branches [test]
-  (if @*trace*
-   `(if ~test
-      (do (swap! *rt-branches* clojure.core/inc)
-          (swap! *rt-breadcrumbs* #(conj % '~test))
-          true)
-      false)
-   test))
-
 (defn dag-clause-to-clj [occurrence pattern action]
-  [(rt-branches
-    (if (extends? IPatternCompile (class pattern))
-      (to-source* pattern occurrence) 
-      (to-source pattern occurrence)))
-   (n-to-clj action)])
+  (let [test (if (extends? IPatternCompile (class pattern))
+               (to-source* pattern occurrence) 
+               (to-source pattern occurrence))]
+    (if @*breadcrumbs*
+      (binding [*match-breadcrumbs* (conj *match-breadcrumbs* test)]
+        [test (n-to-clj action)])
+      [test (n-to-clj action)])))
+
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
@@ -769,6 +775,7 @@
 (declare useful-p?)
 (declare useful?)
 
+
 ;; # Compilation Cases
 ;;
 ;; These are analogous to Maranget's Compilation Scheme on page 4, respectively
@@ -778,9 +785,9 @@
 (defn- empty-rows-case 
   "Case 1: If there are no pattern rows to match, then matching always fails"
   []
-  (do (warn "Non-exhaustive pattern matrix, consider adding :else clause")
-      (trace-dag "No rows left, add fail-node")
-      (fail-node)))
+  (let [_ (warn "Non-exhaustive pattern matrix, consider adding :else clause")
+        _ (trace-dag "No rows left, add fail-node")]
+    (fail-node)))
 
 (defn- first-row-empty-case 
   "Case 2: If the first row is empty then matching always succeeds 
@@ -889,8 +896,8 @@
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
   and compile the result"
   [this col]
-  (do (trace-dag "Swap column " col)
-      (compile (swap this col))))
+  (let [_ (trace-dag "Swap column " col)]
+    (compile (swap this col))))
 
 ;; # Pattern Matrix definition
 
@@ -1417,7 +1424,7 @@
 
 
 (defn emit-matrix [vars clauses]
-  (when *syntax-check* (check-matrix-args vars clauses))
+  (when @*syntax-check* (check-matrix-args vars clauses))
   (let [cs (partition 2 clauses)
         cs (let [[p a] (last cs)]
              (if (= :else p)
@@ -1434,16 +1441,8 @@
                      vars))]
     (pattern-matrix clause-sources vars)))
 
-(defn add-prefix [form]
-  (if @*trace*
-   `(binding [*rt-branches* (atom 0)
-              *rt-breadcrumbs* (atom [])]
-      ~form)
-   form))
-
 (defn executable-form [node]
-  (-> (n-to-clj node)
-      add-prefix))
+  (n-to-clj node))
 
 (defn clj-form [vars clauses]
   (-> (emit-matrix vars clauses)

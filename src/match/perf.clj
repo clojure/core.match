@@ -52,9 +52,9 @@
       (time
        (dotimes [_ 1e7]
          (match [x]
-           [([_ _ 2] ::m/vector)] :a0
-           [([1 1 3] ::m/vector)] :a1
-           [([1 2 3] ::m/vector)] :a2)))))
+           [([_ _ 2] ::match.core/vector)] :a0
+           [([1 1 3] ::match.core/vector)] :a1
+           [([1 2 3] ::match.core/vector)] :a2)))))
 
   ;; 2.3s
   (let [v [1 2 3 4]]
@@ -62,7 +62,7 @@
       (time
        (dotimes [_ 1e7]
          (match [v]
-           [([1 & r] ::m/vector)] :a0
+           [([1 & r] ::match.core/vector)] :a0
            :else :a1)))))
 
   ;; 270ms
@@ -71,8 +71,8 @@
       (time
        (dotimes [_ 1e6]
          (match [v]
-           [([1 1 3 & r] ::m/vector)] :a0
-           [([1 2 & r] ::m/vector)] :a1
+           [([1 1 3 & r] ::match.core/vector)] :a0
+           [([1 2 & r] ::match.core/vector)] :a1
            :else :a3)))))
 
   ;; 90ms, destructure vector

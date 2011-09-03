@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [compile])
   (:use [match.core :as m]))
 
-(derive ::bits ::m/vector)
+(derive ::bits ::match.core/vector)
 
 (defmethod check-size? ::bits
   [_] false)

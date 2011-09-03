@@ -5,7 +5,7 @@
 ;; =============================================================================
 ;; Shared
 
-(derive ::array ::m/vector)
+(derive ::array ::match.core/vector)
 (defmethod nth-inline ::array
   [t ocr i]
   `(aget ~ocr ~i))
