@@ -1457,7 +1457,7 @@
 ;; ============================================================================
 ;; # Match macros
 
-(defmacro match-1 [vars & clauses]
+(defmacro match-1 
   "Pattern match a single value. Clause question-answer syntax is like
   `cond`.
   
@@ -1467,6 +1467,7 @@
              1 :answer1
              2 :answer2
              :else :default-answer)))"
+  [vars & clauses]
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
@@ -1477,7 +1478,7 @@
                                          (partition 2 clauses))]]
       `~(clj-form vars clauses))))
 
-(defmacro match [vars & clauses]
+(defmacro match 
   "Pattern match a row of occurances. Take a vector of occurances, vars.
   Clause question-answer syntax is like `cond`. Questions must be
   wrapped in a vector, with same arity as vars. Last question can be :else,
@@ -1488,8 +1489,8 @@
         y 2]
       (match [x y 3]
              [1 2 3] :answer1
-             :else :default-answer))
-  "
+             :else :default-answer))"
+  [vars & clauses]
   (binding [*line* (-> &form meta :line)
             *locals* (dissoc &env '_)
             *warned* (atom false)]
