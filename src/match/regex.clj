@@ -1,6 +1,7 @@
 (ns match.regex
   (:use [match.core :only [emit-pattern to-source pattern-equals
-                           pattern-compare]]))
+                           pattern-compare]])
+  (:import java.util.regex.Pattern))
 
 (defrecord RegexPattern [regex])
 
@@ -13,7 +14,7 @@
   `(re-matches ~(:regex pat) ~ocr))
 
 (defmethod pattern-compare [RegexPattern RegexPattern]
-  [a b] (if (and (= (.pattern (:regex a)) (.pattern (:regex b)))
-                 (= (.flags (:regex a)) (.flags (:regex b))))
+  [a b] (if (and (= (.pattern ^Pattern (:regex a)) (.pattern ^Pattern (:regex b)))
+                 (= (.flags ^Pattern (:regex a)) (.flags ^Pattern (:regex b))))
           0
           -1))

@@ -10,31 +10,30 @@
 ;;
 ;; There are three main steps to this implementation:
 ;;
-;; 1. Converting Clojure syntax to a Pattern Matrix
-;;  
+;; 1. *Converting Clojure syntax to a Pattern Matrix*:
 ;;    The function `emit-matrix` does this work.
-;;
 ;;    A Pattern Matrix is represented by PatternMatrix.
 ;;
-;; 2. Compiling the Pattern Matrix to a Directed Acyclic Graph 
-;;    
+;; 2. *Compiling the Pattern Matrix to a Directed Acyclic Graph*:
 ;;    The function `compile` does this work. This step
 ;;    is where Maranget's algorithm is implemented.
 ;;
-;; 3. Converting the DAG to Clojure code.
-;;    
+;; 3. *Converting the DAG to Clojure code*:
 ;;    This is mostly a 1-1 conversion. See function `executable-form`.
 ;;
+
 ;; # Nomenclature
-;;
-;; (match [x y]
-;;        [1 2] :a0 
-;;        [3 4] :a1)
 ;;
 ;; * x and y are called _occurances_
 ;; * 1, 2, 3 and 4 are _patterns_
 ;; * [1 2] and [3 4] are _pattern rows_
 ;; * :a0 and :a1 are _actions_
+;; 
+
+(comment
+ (match [x y]
+        [1 2] :a0 
+        [3 4] :a1))
 
 
 ;; ============================================
@@ -91,7 +90,7 @@
     (flush)))
 
 ;; =============================================================================
-;; Protocols
+;; # Protocols
 
 (defprotocol IMatchLookup
   "Allows arbitrary objects to act like a map-like object when pattern
@@ -100,7 +99,7 @@
   (val-at* [this k not-found]))
 
 ;; =============================================================================
-;; Map Pattern Interop
+;; # Map Pattern Interop
 
 (extend-type clojure.lang.ILookup
   IMatchLookup
@@ -112,7 +111,7 @@
   ([m k not-found] (val-at* m k not-found)))
 
 ;; =============================================================================
-;; Vector Pattern Interop
+;; # Vector Pattern Interop
 
 ;; NOTE: we might need coercing / wrapper types when we get to
 ;; open dispatch - David
@@ -190,7 +189,7 @@
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
 
 ;; =============================================================================
-;; Extensions and Protocols
+;; # Extensions and Protocols
 
 ;; TODO: consider converting to multimethods to avoid this nonsense - David
 
@@ -529,9 +528,10 @@
   (not (wildcard-pattern? p)))
 
 ;; =============================================================================
-;; Pattern Comparison
-;;   - used to determine the set of constructors presents in a column and the
-;;     order which they should be considered
+;; # Pattern Comparison
+;;
+;; Used to determine the set of constructors presents in a column and the
+;; order which they should be considered
 
 (defn pattern-equals [a b]
   (zero? (pattern-compare a b)))
@@ -573,7 +573,7 @@
   [a b] (if (= (class a) (class b)) 0 -1))
 
 ;; =============================================================================
-;; Pattern Rows
+;; # Pattern Rows
 
 (defprotocol IPatternRow
   (action [this])
@@ -649,10 +649,10 @@
    (PatternRow. ps action bindings)))
 
 ;; =============================================================================
-;; Compilation Nodes
+;; # Compilation Nodes
 
 ;; -----------------------------------------------------------------------------
-;; Leaf Node
+;; ## Leaf Node
 
 (defrecord LeafNode [value bindings]
   INodeCompile
@@ -684,7 +684,7 @@
   [ocr] ocr)
 
 ;; -----------------------------------------------------------------------------
-;; Fail Node
+;; ## Fail Node
 
 (defrecord FailNode []
   INodeCompile
@@ -699,7 +699,7 @@
   (FailNode.))
 
 ;; -----------------------------------------------------------------------------
-;; Bind Node
+;; ## Bind Node
 
 (defrecord BindNode [bindings node]
   INodeCompile
@@ -711,7 +711,7 @@
   (BindNode. bindings node))
 
 ;; -----------------------------------------------------------------------------
-;; Switch Node
+;; ## Switch Node
 
 (declare to-source)
 
@@ -742,7 +742,7 @@
    (SwitchNode. occurrence cases default)))
 
 ;; =============================================================================
-;; Pattern Matrix
+;; # Pattern Matrix
 
 (defn seq-occurrence? [ocr]
   (= (-> ocr meta :occurrence-type) :seq))
@@ -1038,7 +1038,12 @@
         (range (count (row pm j)))))
 
 ;; =============================================================================
-;; Default Matrix Specialization
+;; # Matrix Specializations
+;; 
+;; TODO overview of specialization
+
+;; =============================================================================
+;; ## Default Matrix Specialization
 
 (extend-type Object
   ISpecializeMatrix
@@ -1057,7 +1062,7 @@
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
-;; Seq Pattern Matrix Specialization
+;; ## Seq Pattern Matrix Specialization
 
 ;; NOTE: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
 
@@ -1100,7 +1105,7 @@
       (pattern-matrix nrows nocrs))))
 
 ;; =============================================================================
-;; Map Pattern Matrix Specialization
+;; ## Map Pattern Matrix Specialization
 
 (extend-type MapPattern
   ISpecializeMatrix
@@ -1166,7 +1171,7 @@
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
 ;; =============================================================================
-;; Vector Pattern Specialization
+;; ## Vector Pattern Specialization
 
 (extend-type VectorPattern
   ISpecializeMatrix
@@ -1231,7 +1236,7 @@
         matrix))))
 
 ;; ==============================================================================
-;; Or Pattern Specialization
+;; ## Or Pattern Specialization
 
 (extend-type OrPattern
   ISpecializeMatrix
@@ -1251,7 +1256,7 @@
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
-;; Guard Pattern Specialization
+;; ## Guard Pattern Specialization
 
 (extend-type GuardPattern
   ISpecializeMatrix
@@ -1269,7 +1274,7 @@
       (pattern-matrix nrows (occurrences matrix)))))
 
 ;; =============================================================================
-;; Interface
+;; # Interface
 
 (defmulti to-source 
   "Returns a Clojure form that, when executed, is truthy if the pattern matches
@@ -1284,7 +1289,7 @@
   class)
 
 ;; ============================================================================
-;; emit-pattern Methods
+;; # emit-pattern Methods
 
 (defn emit-patterns
   ([ps] (emit-patterns ps []))
@@ -1450,7 +1455,7 @@
       executable-form))
 
 ;; ============================================================================
-;; Match macros
+;; # Match macros
 
 (defmacro match-1 [vars & clauses]
   "Pattern match a single value. Clause question-answer syntax is like
