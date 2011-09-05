@@ -1,11 +1,11 @@
-(ns match.array
+(ns clojure.core.match.array
   (:refer-clojure :exclude [compile])
-  (:use [match.core :as m]))
+  (:use [clojure.core.match.core :as m]))
 
 ;; =============================================================================
 ;; Shared
 
-(derive ::array ::match.core/vector)
+(derive ::array ::clojure.core.match.core/vector)
 (defmethod nth-inline ::array
   [t ocr i]
   `(aget ~ocr ~i))

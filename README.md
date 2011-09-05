@@ -264,7 +264,7 @@ For example, this syntax is illegal:
 Matching single variables
 ---
 
-`match.core/match-1` is sugar over `match` that allows pattern matching over a single variable, without
+`clojure.core.match.core/match-1` is sugar over `match` that allows pattern matching over a single variable, without
 an "extra" pair of `[]` around the occurances and each pattern row.
 
 ```clojure

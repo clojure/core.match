@@ -1,5 +1,5 @@
-(ns match.date
-  (:use [match.java :only [bean-match]]))
+(ns clojure.core.match.date
+  (:use [clojure.core.match.java :only [bean-match]]))
 
 ;; # Date Extension
 ;;

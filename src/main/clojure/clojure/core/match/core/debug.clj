@@ -1,7 +1,8 @@
-(ns match.core.debug
+(ns clojure.core.match.core.debug
   (:refer-clojure :exclude [compile])
-  (:use [match.core :only [emit-matrix compile occurrences
-                           rows patterns action-for-row n-to-clj clj-form]])
+  (:use [clojure.core.match.core 
+         :only [emit-matrix compile occurrences
+                rows patterns action-for-row n-to-clj clj-form]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]
@@ -17,17 +18,17 @@
      pprint-matrix))
 
 (defmacro m-to-dag [vars & clauses]
-  (binding [match.core/*line* (-> &form meta :line)
-            match.core/*locals* &env
-            match.core/*warned* (atom false)]
+  (binding [clojure.core.match.core/*line* (-> &form meta :line)
+            clojure.core.match.core/*locals* &env
+            clojure.core.match.core/*warned* (atom false)]
     `~(-> (emit-matrix vars clauses)
         compile
         pp/pprint)))
 
 (defmacro m-to-clj [vars & clauses]
-  (binding [match.core/*line* (-> &form meta :line)
-            match.core/*locals* &env
-            match.core/*warned* (atom false)]
+  (binding [clojure.core.match.core/*line* (-> &form meta :line)
+            clojure.core.match.core/*locals* &env
+            clojure.core.match.core/*warned* (atom false)]
     (try 
       (-> (clj-form vars clauses)
         source-pprint)

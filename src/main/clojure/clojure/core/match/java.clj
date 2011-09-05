@@ -1,5 +1,5 @@
-(ns match.java
-  (:use [match.core :only [IMatchLookup val-at* match]]
+(ns clojure.core.match.java
+  (:use [clojure.core.match.core :only [IMatchLookup val-at* match]]
         [clojure.string :only [lower-case]]))
 
 (def ^:private method-name-pattern #"^(is|get)([A-Z].*)$")

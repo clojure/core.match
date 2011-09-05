@@ -1,8 +1,8 @@
-(ns match.test.core
+(ns clojure.core.match.test.core
   (:refer-clojure :exclude [compile])
-  (:use match.core
-        match.core.debug
-        match.regex)
+  (:use clojure.core.match.core
+        clojure.core.match.core.debug
+        clojure.core.match.regex)
   (:use [clojure.test]))
 
 (deftest pattern-match-1
@@ -313,27 +313,27 @@
 (deftest vector-pattern-match-1
   (is (= (let [x [1 2 3]]
            (match [x]
-             [([_ _ 2] ::match.core/vector)] :a0
-             [([1 1 3] ::match.core/vector)] :a1
-             [([1 2 3] ::match.core/vector)] :a2
+             [([_ _ 2] ::clojure.core.match.core/vector)] :a0
+             [([1 1 3] ::clojure.core.match.core/vector)] :a1
+             [([1 2 3] ::clojure.core.match.core/vector)] :a2
              :else :a3))
          :a2)))
 
 (deftest red-black-tree-pattern-1
   (is (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
              (match [n]
-               [([:black ([:red ([:red _ _ _] ::match.core/vector) _ _] ::match.core/vector) _ _] ::match.core/vector)] :valid
-               [([:black ([:red _ _ ([:red _ _ _] ::match.core/vector)] ::match.core/vector) _ _] ::match.core/vector)] :valid
-               [([:black _ _ ([:red ([:red _ _ _] ::match.core/vector) _ _] ::match.core/vector)] ::match.core/vector)] :valid
+               [([:black ([:red ([:red _ _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] :valid
+               [([:black ([:red _ _ ([:red _ _ _] ::clojure.core.match.core/vector)] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] :valid
+               [([:black _ _ ([:red ([:red _ _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] ::clojure.core.match.core/vector)] :valid
                :else :invalid))
          :valid)))
 
 (deftest vector-pattern-rest-1
   (is (= (let [v [1 2 3 4]]
            (match [v]
-             [([1 1 3 & r] ::match.core/vector)] :a0
-             [([1 2 4 & r] ::match.core/vector)] :a1
-             [([1 2 3 & r] ::match.core/vector)] :a2
+             [([1 1 3 & r] ::clojure.core.match.core/vector)] :a0
+             [([1 2 4 & r] ::clojure.core.match.core/vector)] :a1
+             [([1 2 3 & r] ::clojure.core.match.core/vector)] :a2
              :else :a3))
          :a2)))
 
@@ -341,8 +341,8 @@
   (is (= (let [v [1 2 3 4]]
            (let [v [1 2 3 4]]
              (match [v]
-               [([1 1 3 & r] ::match.core/vector)] :a0
-               [([1 2 & r] ::match.core/vector)] :a1
+               [([1 1 3 & r] ::clojure.core.match.core/vector)] :a0
+               [([1 2 & r] ::clojure.core.match.core/vector)] :a1
                :else :a3)))
          :a1)))
 

@@ -1,6 +1,6 @@
-(ns match.regex
-  (:use [match.core :only [emit-pattern to-source pattern-equals
-                           pattern-compare]])
+(ns clojure.core.match.regex
+  (:use [clojure.core.match.core 
+         :only [emit-pattern to-source pattern-equals pattern-compare]])
   (:import java.util.regex.Pattern))
 
 ;; # Regular Expression Extension

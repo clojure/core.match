@@ -1,8 +1,8 @@
-(ns match.bits
+(ns clojure.core.match.bits
   (:refer-clojure :exclude [compile])
-  (:use [match.core :as m]))
+  (:use [clojure.core.match.core :as m]))
 
-(derive ::bits ::match.core/vector)
+(derive ::bits ::clojure.core.match.core/vector)
 
 (defmethod check-size? ::bits
   [_] false)

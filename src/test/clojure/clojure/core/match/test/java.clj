@@ -1,7 +1,7 @@
-(ns match.test.java
+(ns clojure.core.match.test.java
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [match.core]
-        [match.java]
+  (:use [clojure.core.match.core]
+        [clojure.core.match.java]
         [clojure.test]))
 
 (bean-match java.util.Date)

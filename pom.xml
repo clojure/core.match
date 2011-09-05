@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>core.match</artifactId>
+  <version>0.2.0-SNAPSHOT</version>
+  <name>${artifactId}</name>
+  <description>Optimized pattern matching and predicate dispatch for Clojure</description>
+
+  <licenses>
+    <license>
+      <name>Eclipse Public License 1.0</name>
+      <url>http://opensource.org/licenses/eclipse-1.0.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <parent>
+    <groupId>org.clojure</groupId>
+    <artifactId>pom.contrib</artifactId>
+    <version>0.0.23</version>
+  </parent>
+
+  <issueManagement>
+    <system>jira</system>
+    <url>http://dev.clojure.org/jira/browse/MATCH</url>
+  </issueManagement>
+
+  <developers>
+    <developer>
+      <id>swannodette</id>
+      <name>David Nolen</name>
+      <url>http://dosync.posterous.com</url>
+      <roles>
+        <role>Project Lead</role>
+      </roles>
+    </developer>
+    <developer>
+      <id>frenchy64</id>
+      <name>Ambrose Bonnaire-Sergeant</name>
+      <url>http://twitter.com/ambrosebs</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/clojure/core.match.git</connection>
+    <developerConnection>scm:git:git://github.com/clojure/core.match.git</developerConnection>
+    <url>http://github.com/clojure/core.match</url>
+  </scm>
+</project>

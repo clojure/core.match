@@ -1,4 +1,4 @@
-(ns match.core
+(ns clojure.core.match.core
   (:refer-clojure :exclude [compile])
   (:require [clojure.set :as set])
   (:import [java.io Writer]))

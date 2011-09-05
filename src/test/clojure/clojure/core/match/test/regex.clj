@@ -1,5 +1,5 @@
-(ns match.test.regex
-  (:use [match regex [core :only [match]]] )
+(ns clojure.core.match.test.regex
+  (:use [clojure.core.match regex [core :only [match]]] )
   (:use clojure.test))
 
 (deftest basic-regex
