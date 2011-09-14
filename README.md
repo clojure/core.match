@@ -30,7 +30,7 @@ For example the following pattern:
      [_ _ true] 4))
 ```
 
-expands into
+expands into something similar to the following:
 
 ```clojure
 (cond
