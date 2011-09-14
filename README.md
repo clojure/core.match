@@ -176,13 +176,13 @@ Or patterns are supported anywhere you would use a pattern:
 
 ```clojure
 (let [x '(1 2 3)]
-  (match [x y z ]
+  (match [x]
     [[1 (3 | 4) 3]] :a0
     [[1 (2 | 3) 3]] :a1))
 ;; => :a1
     
 (let [x {:a 3}]
-  (match [x y z ]
+  (match [x]
     [{:a (1 | 2)}] :a0
     [{:a (3 | 4)}] :a1))
 ;; => :a1
