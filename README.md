@@ -12,6 +12,12 @@ The fastest way to use this library is with Leiningen or Cake. Add the following
 [match "0.2.0-SNAPSHOT"]
 ```
 
+In your namespace, add:
+
+```clojure
+(:use [match.core :only [match]])
+```
+
 About
 ----
 
