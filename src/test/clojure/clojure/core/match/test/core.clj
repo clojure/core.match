@@ -353,3 +353,10 @@
              [a] a
              :else :a1))
          1)))
+
+(deftest empty-vector-1
+  (is (= (let [v []]
+           (match [v]
+             [[]] 1
+             :else 2))
+         1)))

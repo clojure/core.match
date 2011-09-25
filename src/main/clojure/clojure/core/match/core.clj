@@ -1253,7 +1253,7 @@
 (defn emit-patterns
   ([ps] (emit-patterns ps []))
   ([ps v]
-     (if (nil? ps)
+     (if (empty? ps)
        v
        (let [p (first ps)]
          (cond
@@ -1320,9 +1320,10 @@
 
 (defmethod emit-pattern-for-syntax :seq
   [pat]
-  (if (empty? pat)
-    (literal-pattern ())
-    (seq-pattern (emit-patterns (first pat)))))
+  (let [p (first pat)]
+    (if (empty? p)
+      (literal-pattern ())
+      (seq-pattern (emit-patterns p)))))
 
 (defmethod emit-pattern-for-syntax ::vector
   [[p t offset-key offset]] (let [ps (emit-patterns p)]
