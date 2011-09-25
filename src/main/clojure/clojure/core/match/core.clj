@@ -113,41 +113,7 @@
 ;; =============================================================================
 ;; # Vector Pattern Interop
 
-;; NOTE: we might need coercing / wrapper types when we get to
-;; open dispatch - David
-
-(definterface IMatchVector
-  (^int vcount [])
-  (vnth [^int i])
-  (vsubvec [^int start ^int end])
-  (unwrap []))
-
-(deftype MatchVector [v]
-  IMatchVector
-  (vcount [this] (count this))
-  (vnth [this i] (nth v i))
-  (vsubvec [this start end] (subvec this start end))
-  (unwrap [_] v))
-
-(defprotocol IMatchVectorType
-  (mvector? [this])
-  (mvector-coerce* [this]))
-
-(extend-type clojure.lang.IPersistentVector
-  IMatchVectorType
-  (mvector? [_] true)
-  (mvector-coerce* [this] (MatchVector. this)))
-
-(defn ^IMatchVector mvector-coerce [x]
-  (mvector-coerce* x))
-
-(extend-type Object
-  IMatchVectorType
-  (mvector? [_] false))
-
 (defmulti check-size? identity)
-(defmulti coerce? identity)
-(defmulti coerce-element (fn [t & r] t))
 (defmulti tag (fn [t] t))
 (defmulti test-inline (fn [t & r] t))
 (defmulti test-with-size-inline (fn [t & r] t))
@@ -158,8 +124,6 @@
 
 (defmethod check-size? :default
   [_] true)
-(defmethod coerce? :default
-  [_] false)
 (defmethod tag :default
   [t] (throw (Exception. (str "No tag specified for vector specialization " t))))
 
@@ -941,9 +905,7 @@
             (has-ocr-expr? [ocrs]
               (some (fn [ocr]
                       (-> ocr meta :ocr-expr))
-                    ocrs))
-            (coerce? [matrix]
-              (-> matrix meta :coerce-bind))]
+                    ocrs))]
       (cond
         (empty? rows) (empty-rows-case)
 
@@ -1230,10 +1192,7 @@
                              (into (into [] (map ocr-sym (range min-size)))
                                    (drop-nth ocrs 0)))])
           matrix (pattern-matrix nrows nocrs)]
-      (if (coerce? (.t this))
-        (with-meta matrix
-          {:coerce-bind [focr `(mvector-coerce ~focr)]})
-        matrix))))
+      matrix)))
 
 ;; ==============================================================================
 ;; ## Or Pattern Specialization
