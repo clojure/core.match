@@ -594,7 +594,7 @@
       (let [nps (rest ps)]
         (PatternRow. nps action bindings))))
   (seq [this]
-    this)
+    (seq ps))
   (count [_]
     (count ps))
   clojure.lang.IFn
