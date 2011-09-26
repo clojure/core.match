@@ -380,3 +380,18 @@
              [[([1 a] :as b)]] [:a1 a b]
              :else :a2))
          [:a1 2 [1 2]])))
+
+(deftest seq-infer-rest-1
+  (is (= (let [l '(1 2 3)]
+        (match [l]
+          [([a & [b & [c]]] :seq)] :a0
+          :else :a1))
+      :a0)))
+
+(comment
+  ;; TODO: should not match - David
+  (let [l '(1 2 3)]
+    (match [l]
+      [([a & [b & [c d]]] :seq)] :a0
+      :else :a1))
+  )
