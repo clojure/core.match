@@ -253,6 +253,8 @@
              :else :a2))
          :a0)))
 
+;; TODO: this needs to wait for backtracking. GuardPatterns need to be grouped w/
+;; whatever pattern they actually contain - David
 (comment
   (deftest match-single-3
     (is (= (match-1 [1 2] 
