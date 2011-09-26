@@ -1019,7 +1019,7 @@
                      size (if rest? (dec rvc) rvc)]
                 (VectorPattern. rv t size n rest? _meta)))]
       [pl pr]))
-    ISpecializeMatrix
+  ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
@@ -1230,13 +1230,19 @@
       (pattern-compare p b) 1)))
 
 (defmethod pattern-compare [OrPattern OrPattern]
-  [^OrPattern a ^OrPattern b] (let [as (.ps a)
-                                    bs (.ps b)]
-                                (if (and (= (count as) (count bs))
-                                         (every? identity (map pattern-equals as bs)))
-                                  0 1)))
+  [^OrPattern a ^OrPattern b]
+  (let [as (.ps a)
+        bs (.ps b)]
+    (if (and (= (count as) (count bs))
+             (every? identity (map pattern-equals as bs)))
+      0 1)))
 
-;; TODO: vector pattern compare - David
+(defmethod pattern-compare [VectorPattern VectorPattern]
+  [^VectorPattern a ^VectorPattern b]
+  (if (or (= (.size a) (.size b))
+          (and (.rest? a) (<= (.size a) (.size b)))
+          (and (.rest? b) (<= (.size b) (.size a))))
+    0 1))
 
 ;; =============================================================================
 ;; # Interface

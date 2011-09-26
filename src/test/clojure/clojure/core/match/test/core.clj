@@ -365,4 +365,10 @@
              :else 2))
          1)))
 
-(apply sorted-set-by (fn [a b] (pattern-compare a b)) [(literal-pattern 2) (wildcard-pattern 'a)])
+(deftest empty-vector-2
+  (is (= (let [v [1 2]]
+           (match [v]
+             [[]] :a0
+             [[x & r]] :a1
+             :else :a3))
+         :a1)))
