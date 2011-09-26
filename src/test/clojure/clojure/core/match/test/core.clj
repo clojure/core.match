@@ -253,12 +253,14 @@
              :else :a2))
          :a0)))
 
-(deftest match-single-3
-  (is (= (match-1 [1 2] 
-                  [2 1] :a0 
-                  (_ :when #(= (count %) 2)) :a1
-                  :else :a2)
-         :a1)))
+(comment
+  (deftest match-single-3
+    (is (= (match-1 [1 2] 
+             [2 1] :a0 
+             (_ :when #(= (count %) 2)) :a1
+             :else :a2)
+           :a1)))
+  )
 
 (deftest match-local-1
   (is (= (let [x 2
@@ -360,3 +362,5 @@
              [[]] 1
              :else 2))
          1)))
+
+(apply sorted-set-by (fn [a b] (pattern-compare a b)) [(literal-pattern 2) (wildcard-pattern 'a)])

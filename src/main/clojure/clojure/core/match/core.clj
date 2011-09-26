@@ -206,7 +206,7 @@
   (zero? (pattern-compare a b)))
 
 (defmethod pattern-compare :default
-  [a b] (if (= (class a) (class b)) 0 -1))
+  [a b] (if (= (class a) (class b)) 0 1))
 
 ;; =============================================================================
 ;; # Pattern Rows
@@ -1205,7 +1205,7 @@
   [a b] 0)
 
 (defmethod pattern-compare [LiteralPattern Object]
-  [a b] -1)
+  [a b] 1)
 
 (prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
@@ -1218,19 +1218,23 @@
         lb (.l b)]
     (cond
      (= la lb) 0
-     (symbol? la) 1
-     (symbol? lb) -1
-     :else (compare la lb))))
+     :else 1)))
 
 (defmethod pattern-compare [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
+  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
+
+(defmethod pattern-compare [GuardPattern WildcardPattern]
+  [^GuardPattern a ^WildcardPattern b]
+  (let [p (.p a)]
+    (if (wildcard-pattern? p)
+      (pattern-compare p b) 1)))
 
 (defmethod pattern-compare [OrPattern OrPattern]
   [^OrPattern a ^OrPattern b] (let [as (.ps a)
                                     bs (.ps b)]
                                 (if (and (= (count as) (count bs))
                                          (every? identity (map pattern-equals as bs)))
-                                  0 -1)))
+                                  0 1)))
 
 ;; TODO: vector pattern compare - David
 
