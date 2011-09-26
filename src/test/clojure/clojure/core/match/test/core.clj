@@ -365,4 +365,33 @@
              :else 2))
          1)))
 
-(apply sorted-set-by (fn [a b] (pattern-compare a b)) [(literal-pattern 2) (wildcard-pattern 'a)])
+(deftest empty-vector-2
+  (is (= (let [v [1 2]]
+           (match [v]
+             [[]] :a0
+             [[x & r]] :a1
+             :else :a2))
+         :a1)))
+
+(deftest vector-pattern-length-1
+  (is (= (let [v [[1 2]]]
+           (match [v]
+             [[3 1]] :a0
+             [[([1 a] :as b)]] [:a1 a b]
+             :else :a2))
+         [:a1 2 [1 2]])))
+
+(deftest seq-infer-rest-1
+  (is (= (let [l '(1 2 3)]
+        (match [l]
+          [([a & [b & [c]]] :seq)] :a0
+          :else :a1))
+      :a0)))
+
+(comment
+  ;; TODO: should not match - David
+  (let [l '(1 2 3)]
+    (match [l]
+      [([a & [b & [c d]]] :seq)] :a0
+      :else :a1))
+  )

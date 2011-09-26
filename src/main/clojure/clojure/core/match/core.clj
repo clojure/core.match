@@ -963,7 +963,7 @@
   IPatternCompile
   (to-source* [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
-      `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
+      `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only})))
   Object
   (toString [_]
     "CRASH")
@@ -1019,7 +1019,7 @@
                      size (if rest? (dec rvc) rvc)]
                 (VectorPattern. rv t size n rest? _meta)))]
       [pl pr]))
-    ISpecializeMatrix
+  ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
@@ -1230,13 +1230,19 @@
       (pattern-compare p b) 1)))
 
 (defmethod pattern-compare [OrPattern OrPattern]
-  [^OrPattern a ^OrPattern b] (let [as (.ps a)
-                                    bs (.ps b)]
-                                (if (and (= (count as) (count bs))
-                                         (every? identity (map pattern-equals as bs)))
-                                  0 1)))
+  [^OrPattern a ^OrPattern b]
+  (let [as (.ps a)
+        bs (.ps b)]
+    (if (and (= (count as) (count bs))
+             (every? identity (map pattern-equals as bs)))
+      0 1)))
 
-;; TODO: vector pattern compare - David
+(defmethod pattern-compare [VectorPattern VectorPattern]
+  [^VectorPattern a ^VectorPattern b]
+  (if (or (= (.size a) (.size b))
+          (and (.rest? a) (<= (.size a) (.size b)))
+          (and (.rest? b) (<= (.size b) (.size a))))
+    0 1))
 
 ;; =============================================================================
 ;; # Interface
@@ -1257,19 +1263,22 @@
 ;; # emit-pattern Methods
 
 (defn emit-patterns
-  ([ps] (emit-patterns ps []))
-  ([ps v]
+  ([ps t] (emit-patterns ps t []))
+  ([ps t v]
      (if (empty? ps)
        v
        (let [p (first ps)]
          (cond
-          (= p '&) (let [p (second ps)]
-                     (recur (nnext ps) (conj v (rest-pattern (emit-pattern p)))))
-          :else (recur (next ps) (conj v (emit-pattern (first ps)))))))))
+          (= p '&) (let [p (second ps)
+                         rp (if (and (vector? p) (= t :seq))
+                              (seq-pattern (emit-patterns p t))
+                              (emit-pattern p))]
+                     (recur (nnext ps) t (conj v (rest-pattern rp)))) 
+          :else (recur (next ps) t (conj v (emit-pattern (first ps)))))))))
 
 (defmethod emit-pattern clojure.lang.IPersistentVector
   [pat]
-  (let [ps (emit-patterns pat)]
+  (let [ps (emit-patterns pat :vector)]
     (vector-pattern ps *vector-type* 0 (some rest-pattern? ps))))
 
 (defmethod emit-pattern clojure.lang.IPersistentMap
@@ -1329,10 +1338,10 @@
   (let [p (first pat)]
     (if (empty? p)
       (literal-pattern ())
-      (seq-pattern (emit-patterns p)))))
+      (seq-pattern (emit-patterns p :seq)))))
 
 (defmethod emit-pattern-for-syntax ::vector
-  [[p t offset-key offset]] (let [ps (emit-patterns p)]
+  [[p t offset-key offset]] (let [ps (emit-patterns p :vector)]
                               (vector-pattern ps t offset (some rest-pattern? ps))))
 
 (defmethod emit-pattern-for-syntax :only
