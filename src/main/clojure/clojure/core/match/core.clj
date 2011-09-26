@@ -370,8 +370,8 @@
           cond-expr (doall (concat `(cond ~@clauses)
                                    `(:else ~(n-to-clj default))))]
       (if bind-expr
-        (doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
-        cond-expr))))
+        `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr))))
+        `(try ~cond-expr)))))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
