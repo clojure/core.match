@@ -963,7 +963,7 @@
   IPatternCompile
   (to-source* [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
-      `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
+      `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only})))
   Object
   (toString [_]
     "CRASH")
