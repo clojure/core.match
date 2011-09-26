@@ -725,7 +725,8 @@
    {:pre [(symbol? sym)]}
    (WildcardPattern. sym nil)))
 
-(def wildcard-pattern? (partial instance? WildcardPattern))
+(defn wildcard-pattern? [x]
+  (instance? WildcardPattern x))
 
 ;; Local bindings in pattern matching are emulated by using named wildcards.
 ;; See clojure.lang.Symbol dispatch for `emit-pattern` 
@@ -765,7 +766,8 @@
 (defn ^LiteralPattern literal-pattern [l] 
   (LiteralPattern. l nil))
 
-(def literal-pattern? (partial instance? LiteralPattern))
+(defn literal-pattern? [x]
+  (instance? LiteralPattern x))
 
 (defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
   (.write writer (str "<LiteralPattern: " p ">")))
@@ -835,7 +837,8 @@
          (not (empty? s))]}
   (SeqPattern. s nil))
 
-(def seq-pattern? (partial instance? SeqPattern))
+(defn seq-pattern? [x]
+  (instance? SeqPattern x))
 
 (defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
   (.write writer (str "<SeqPattern: " p ">")))
@@ -861,7 +864,8 @@
 (defn ^RestPattern rest-pattern [p]
   (RestPattern. p nil))
 
-(def rest-pattern? (partial instance? RestPattern))
+(defn rest-pattern? [x]
+  (instance? RestPattern x))
 
 (defmethod print-method RestPattern [^RestPattern p ^Writer writer]
   (.write writer (str "<RestPattern: " (.p p) ">")))
@@ -936,7 +940,8 @@
   ([m] {:pre [(map? m)]}
      (MapPattern. m nil)))
 
-(def map-pattern? (partial instance? MapPattern))
+(defn map-pattern? [x]
+  (instance? MapPattern x))
 
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
@@ -1085,7 +1090,8 @@
            size (if rest? (dec c) c)]
       (VectorPattern. v t size offset rest? nil))))
 
-(def vector-pattern? (partial instance? VectorPattern))
+(defn vector-pattern? [x]
+  (instance? VectorPattern x))
 
 (defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
   (.write writer (str "<VectorPattern: " p ">")))
@@ -1121,7 +1127,8 @@
   {:pre [(vector? p)]}
   (OrPattern. p nil))
 
-(def or-pattern? (partial instance? OrPattern))
+(defn or-pattern? [x]
+  (instance? OrPattern x))
 
 (defmethod print-method OrPattern [^OrPattern p ^Writer writer]
   (.write writer (str "<OrPattern: " (.ps p) ">")))
@@ -1177,7 +1184,8 @@
   {:pre [(set? gs)]}
   (GuardPattern. p gs nil))
 
-(def guard-pattern? (partial instance? GuardPattern))
+(defn guard-pattern? [x]
+  (instance? GuardPattern x))
 
 (defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
   (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
