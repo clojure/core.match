@@ -35,7 +35,6 @@
         [1 2] :a0 
         [3 4] :a1))
 
-
 ;; ============================================
 ;; # Debugging tools
 ;;
@@ -91,6 +90,12 @@
 
 ;; =============================================================================
 ;; # Protocols
+
+(defprotocol ISpecializeMatrix
+  (specialize-matrix [this matrix]))
+
+(defprotocol IPatternContainer
+  (pattern [this]))
 
 (defprotocol IMatchLookup
   "Allows arbitrary objects to act like a map-like object when pattern
@@ -179,314 +184,10 @@
     (let [x (nth this n)]
       (prepend (drop-nth this n) x))))
 
-;; =============================================================================
-;; # Patterns
-;;
-
-(defmulti pattern-compare 
-  "Like `clojure.core/compare` but for comparing patterns"
-  (fn [a b] [(type a) (type b)]))
-
-;; -----------------------------------------------------------------------------
-;; ## Wildcard Pattern
-;; 
-;; A wildcard pattern accepts any value.
-;;
-;; In practice, the DAG compilation eliminates any wildcard patterns.
-
-(deftype WildcardPattern [sym _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (WildcardPattern. sym new-meta))
-  Object
-  (toString [_]
-    (str sym)))
-
-(defn ^WildcardPattern wildcard-pattern
-  ([] (WildcardPattern. '_ nil))
-  ([sym] 
-   {:pre [(symbol? sym)]}
-   (WildcardPattern. sym nil)))
-
-(def wildcard-pattern? (partial instance? WildcardPattern))
-
-;; Local bindings in pattern matching are emulated by using named wildcards.
-;; See clojure.lang.Symbol dispatch for `emit-pattern` 
-
-(defn named-wildcard-pattern? [x]
-  (when (instance? WildcardPattern x)
-    (not= (.sym ^WildcardPattern x) '_)))
-
-(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
-
-;; -----------------------------------------------------------------------------
-;; ## Literal Pattern
-;;
-;; A literal pattern is not further split into further patterns in the DAG
-;; compilation phase.
-;;
-;; It "literally" matches a given occurance.
-
-(deftype LiteralPattern [l _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (LiteralPattern. l new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    (cond
-     (= l ()) `(empty? ~ocr)
-     (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
-     :else `(= ~ocr ~l)))
-  Object
-  (toString [_]
-    (if (nil? l)
-      "nil"
-      (str l))))
-
-(defn ^LiteralPattern literal-pattern [l] 
-  (LiteralPattern. l nil))
-
-(def literal-pattern? (partial instance? LiteralPattern))
-
-(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
-  (.write writer (str "<LiteralPattern: " p ">")))
-
-;; -----------------------------------------------------------------------------
-;; ## Seq Pattern
-;;
-;; A Seq Pattern is intended for matching `seq`s. 
-;;
-;; They are split into multiple patterns, testing each element of the seq in order.
-;;
-
-(deftype SeqPattern [s _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (SeqPattern. s new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    `(or (seq? ~ocr) (sequential? ~ocr)))
-  Object
-  (toString [_]
-    (str s)))
-
-(defn ^SeqPattern seq-pattern [s]
-  {:pre [(sequential? s)
-         (not (empty? s))]}
-  (SeqPattern. s nil))
-
-(def seq-pattern? (partial instance? SeqPattern))
-
-(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
-  (.write writer (str "<SeqPattern: " p ">")))
-
-;; -----------------------------------------------------------------------------
-;; ### Rest Pattern
-;; 
-;; A rest pattern represents the case of matching [2 3] in [1 & [2 3]]
-;;
-;; It is an implementation detail of other patterns, like SeqPattern.
-
-(deftype RestPattern [p _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (RestPattern. p new-meta))
-  Object
-  (toString [_]
-    p))
-
-(defn ^RestPattern rest-pattern [p]
-  (RestPattern. p nil))
-
-(def rest-pattern? (partial instance? RestPattern))
-
-(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
-  (.write writer (str "<RestPattern: " (.p p) ">")))
-
-;; -----------------------------------------------------------------------------
-;; # Map Pattern
-;; 
-;; Map patterns match maps, or any object that satisfies IMatchLookup.
-
-(deftype MapPattern [m _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (MapPattern. m new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
-  Object
-  (toString [_]
-    (str m " :only " (or (:only _meta) []))))
-
-(defn ^MapPattern map-pattern
-  ([] (MapPattern. {} nil))
-  ([m] {:pre [(map? m)]}
-     (MapPattern. m nil)))
-
-(def map-pattern? (partial instance? MapPattern))
-
-(defmethod print-method MapPattern [^MapPattern p ^Writer writer]
-  (.write writer (str "<MapPattern: " p ">")))
-
-;; ### MapCrashPattern
-;;
-;; MapCrashPatterns are an implementation detail of MapPatterns.
-;;
-;; They ensure a map has only the keys [:key1 :key2] in 
-;; the pattern:
-;;   ({:key1 1, :key2 2} :only [:key1 :key2])
-;;
-
-(deftype MapCrashPattern [only _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (MapCrashPattern. only new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    (let [map-sym (-> ocr meta :map-sym)]
-      `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
-  Object
-  (toString [_]
-    "CRASH"))
-
-(defn ^MapCrashPattern map-crash-pattern [only]
-  (MapCrashPattern. only nil))
-
-(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
-  (.write writer (str "<MapCrashPattern>")))
-
-;; -----------------------------------------------------------------------------
-
-(defprotocol IVectorPattern
-  (split [this n]))
-
-(deftype VectorPattern [v t size offset rest? _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (VectorPattern. v t size offset rest? new-meta))
-  IPatternCompile
-  (to-source* [_ ocr]
-    (if (and (not rest?) size (check-size? t))
-      (test-with-size-inline t ocr size)
-      (test-inline t ocr)))
-  Object
-  (toString [_]
-    (str v ":" t))
-  IVectorPattern
-  (split [this n]
-    (let [lv (subvec v 0 n)
-          rv (subvec v n)
-          pl (VectorPattern. lv t n offset false _meta)
-          pr (if (rest-pattern? (first rv))
-               (let [^RestPattern p (first rv)] (.p p))
-               (let [rest? (some rest-pattern? rv)
-                     rvc (count rv)
-                     size (if rest? (dec rvc) rvc)]
-                (VectorPattern. rv t size n rest? _meta)))]
-      [pl pr])))
-
-(defn ^VectorPattern vector-pattern
-  ([] (vector-pattern [] ::vector nil nil))
-  ([v]
-     (vector-pattern v ::vector nil nil))
-  ([v t]
-     (vector-pattern v t nil nil nil))
-  ([v t offset]
-     (vector-pattern v t offset nil))
-  ([v t offset rest?] {:pre [(vector? v)]}
-     (let [c (count v)
-           size (if rest? (dec c) c)]
-      (VectorPattern. v t size offset rest? nil))))
-
-(def vector-pattern? (partial instance? VectorPattern))
-
-(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
-  (.write writer (str "<VectorPattern: " p ">")))
-
-;; -----------------------------------------------------------------------------
-;; Or Patterns
-
-(deftype OrPattern [ps _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (OrPattern. ps new-meta))
-  Object
-  (toString [this]
-    (str ps)))
-
-(defn ^OrPattern or-pattern [p]
-  {:pre [(vector? p)]}
-  (OrPattern. p nil))
-
-(def or-pattern? (partial instance? OrPattern))
-
-(defmethod print-method OrPattern [^OrPattern p ^Writer writer]
-  (.write writer (str "<OrPattern: " (.ps p) ">")))
-
-;; -----------------------------------------------------------------------------
-;; Pseudo-patterns
-
-(defmulti pseudo-pattern? type)
-
-(defmethod pseudo-pattern? OrPattern
-  [x] true)
-
-(defmethod pseudo-pattern? :default
-  [x] false)
-
-;; -----------------------------------------------------------------------------
-;; ## Guard Patterns
-;;
-;; Guard patterns are used to represent guards on patterns, for example
-;;   `(1 :when even?)`
-;;
-
-(deftype GuardPattern [p gs _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (GuardPattern. p gs new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    `(and ~@(map (fn [expr ocr]
-                   (list expr ocr))
-                 gs (repeat ocr))))
-  Object
-  (toString [this]
-    (str p " :when " gs)))
-
-(defn ^GuardPattern guard-pattern [p gs]
-  {:pre [(set? gs)]}
-  (GuardPattern. p gs nil))
-
-(def guard-pattern? (partial instance? GuardPattern))
-
-(defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
-  (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
-
-;; -----------------------------------------------------------------------------
-;; Crash Patterns
-
-(defmulti crash-pattern? type)
-
-(defmethod crash-pattern? MapCrashPattern
-  [x] true)
-
-(defmethod crash-pattern? :default
-  [x] false)
-
 ;; -----------------------------------------------------------------------------
 ;; constructor?
+
+(declare wildcard-pattern?)
 
 (defn constructor? [p]
   (not (wildcard-pattern? p)))
@@ -497,41 +198,12 @@
 ;; Used to determine the set of constructors presents in a column and the
 ;; order which they should be considered
 
+(defmulti pattern-compare 
+  "Like `clojure.core/compare` but for comparing patterns"
+  (fn [a b] [(type a) (type b)]))
+
 (defn pattern-equals [a b]
   (zero? (pattern-compare a b)))
-
-(defmethod pattern-compare [Object WildcardPattern]
-  [a b] 0)
-
-(defmethod pattern-compare [LiteralPattern Object]
-  [a b] -1)
-
-(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
-
-(defmethod pattern-compare [Object LiteralPattern]
-  [a b] 1)
-
-(defmethod pattern-compare [LiteralPattern LiteralPattern]
-  [^LiteralPattern a ^LiteralPattern b]
-  (let [la (.l a)
-        lb (.l b)]
-    (cond
-     (= la lb) 0
-     (symbol? la) 1
-     (symbol? lb) -1
-     :else (compare la lb))))
-
-(defmethod pattern-compare [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
-
-(defmethod pattern-compare [OrPattern OrPattern]
-  [^OrPattern a ^OrPattern b] (let [as (.ps a)
-                                    bs (.ps b)]
-                                (if (and (= (count as) (count bs))
-                                         (every? identity (map pattern-equals as bs)))
-                                  0 -1)))
-
-;; TODO: vector pattern compare - David
 
 (defmethod pattern-compare :default
   [a b] (if (= (class a) (class b)) 0 -1))
@@ -548,6 +220,8 @@
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
 
 (declare leaf-bind-expr)
+(declare named-wildcard-pattern?)
+(declare sym)
 
 (deftype PatternRow [ps action bindings]
   IPatternRow
@@ -566,7 +240,7 @@
                      (conj bindings [sym bind-expr])
                      bindings)
           bindings (if (named-wildcard-pattern? p)
-                       (conj bindings [(.sym ^WildcardPattern p) bind-expr])
+                       (conj bindings [(sym p) bind-expr])
                        bindings)]
       (PatternRow. (drop-nth ps n) action
                    bindings)))
@@ -688,7 +362,6 @@
         [test (n-to-clj action)])
       [test (n-to-clj action)])))
 
-
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (n-to-clj [this]
@@ -732,13 +405,9 @@
   (occurrences [this])
   (action-for-row [this j]))
 
-(defprotocol ISpecializeMatrix
-  (specialize-matrix [this matrix]))
-
 (declare empty-matrix?)
 (declare useful-p?)
 (declare useful?)
-
 
 ;; # Compilation Cases
 ;;
@@ -775,7 +444,7 @@
             ;; Returns bindings usable by leaf-node
             [f ocrs]
             (let [ps (.ps ^PatternRow f)
-                  wc-syms (map #(.sym ^WildcardPattern %) ps)
+                  wc-syms (map #(sym %) ps)
                   wc-bindings (map vector wc-syms
                                    (map leaf-bind-expr ocrs))]
               (concat (bindings f)
@@ -785,6 +454,10 @@
           bs (row-bindings f ocrs)
           _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
       (leaf-node a bs))))
+
+(declare pseudo-pattern?)
+(declare wildcard-pattern)
+(declare crash-pattern?)
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -865,6 +538,8 @@
 
 ;; # Pattern Matrix definition
 
+(declare default-specialize-matrix)
+
 (deftype PatternMatrix [rows ocrs _meta]
   clojure.lang.IObj
   (meta [_] _meta)
@@ -882,7 +557,9 @@
   (dim [this] [(width this) (height this)])
 
   (specialize [this p]
-    (specialize-matrix p this))
+    (if (satisfies? ISpecializeMatrix p)
+     (specialize-matrix p this)
+     (default-specialize-matrix p this)))
 
   (column [_ i] (vec (map #(nth % i) rows)))
 
@@ -999,36 +676,123 @@
   (some #(useful-p? pm % j)
         (range (count (row pm j)))))
 
-;; =============================================================================
-;; # Matrix Specializations
-;; 
-;; TODO overview of specialization
 
 ;; =============================================================================
 ;; ## Default Matrix Specialization
 
-(extend-type Object
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth-bind % 0 focr))
-                     vec)
-          nocrs (drop-nth ocrs 0)
-          _ (trace-dag "Perform default matrix specialization on ocr" focr
-                       ", new num ocrs: " 
-                       (count ocrs) "->" (count nocrs))]
-      (pattern-matrix nrows nocrs))))
+(defn default-specialize-matrix [this matrix]
+  (let [rows (rows matrix)
+        ocrs (occurrences matrix)
+        focr (first ocrs)
+        nrows (->> rows
+                   (filter #(pattern-equals this (first %)))
+                   (map #(drop-nth-bind % 0 focr))
+                   vec)
+        nocrs (drop-nth ocrs 0)
+        _ (trace-dag "Perform default matrix specialization on ocr" focr
+                     ", new num ocrs: " 
+                     (count ocrs) "->" (count nocrs))]
+    (pattern-matrix nrows nocrs)))
 
 ;; =============================================================================
-;; ## Seq Pattern Matrix Specialization
+;; # Patterns
+;;
 
-;; NOTE: we can handle degenerate (& rest) pattern in the emit-pattern logic - David
+;; -----------------------------------------------------------------------------
+;; ## Wildcard Pattern
+;; 
+;; A wildcard pattern accepts any value.
+;;
+;; In practice, the DAG compilation eliminates any wildcard patterns.
 
-(extend-type SeqPattern
+(defprotocol IWildcardPattern
+  (sym [this]))
+
+(deftype WildcardPattern [sym _meta]
+  IWildcardPattern
+  (sym [_] sym)
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (WildcardPattern. sym new-meta))
+  Object
+  (toString [_]
+    (str sym)))
+
+(defn ^WildcardPattern wildcard-pattern
+  ([] (WildcardPattern. '_ nil))
+  ([sym] 
+   {:pre [(symbol? sym)]}
+   (WildcardPattern. sym nil)))
+
+(def wildcard-pattern? (partial instance? WildcardPattern))
+
+;; Local bindings in pattern matching are emulated by using named wildcards.
+;; See clojure.lang.Symbol dispatch for `emit-pattern` 
+
+(defn named-wildcard-pattern? [x]
+  (when (instance? WildcardPattern x)
+    (not= (.sym ^WildcardPattern x) '_)))
+
+(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
+  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; ## Literal Pattern
+;;
+;; A literal pattern is not further split into further patterns in the DAG
+;; compilation phase.
+;;
+;; It "literally" matches a given occurance.
+
+(deftype LiteralPattern [l _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (LiteralPattern. l new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    (cond
+     (= l ()) `(empty? ~ocr)
+     (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
+     :else `(= ~ocr ~l)))
+  Object
+  (toString [_]
+    (if (nil? l)
+      "nil"
+      (str l))))
+
+(defn ^LiteralPattern literal-pattern [l] 
+  (LiteralPattern. l nil))
+
+(def literal-pattern? (partial instance? LiteralPattern))
+
+(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
+  (.write writer (str "<LiteralPattern: " p ">")))
+
+;; -----------------------------------------------------------------------------
+;; ## Seq Pattern
+;;
+;; A Seq Pattern is intended for matching `seq`s. 
+;;
+;; They are split into multiple patterns, testing each element of the seq in order.
+;;
+
+(declare seq-pattern?)
+(declare rest-pattern?)
+(declare seq-pattern)
+
+(deftype SeqPattern [s _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (SeqPattern. s new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    `(or (seq? ~ocr) (sequential? ~ocr)))
+  Object
+  (toString [_]
+    (str s))
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
@@ -1043,7 +807,7 @@
                                                 [h & t] (.s p)
                                                 t (cond
                                                    (empty? t) (literal-pattern ())
-                                                   (rest-pattern? (first t)) (.p ^RestPattern (first t))
+                                                   (rest-pattern? (first t)) (pattern (first t))
                                                    :else (seq-pattern t))]
                                             [h t])
                                           [(wildcard-pattern) (wildcard-pattern)])]
@@ -1066,10 +830,61 @@
                        (count ocrs) "->" (count nocrs))]
       (pattern-matrix nrows nocrs))))
 
-;; =============================================================================
-;; ## Map Pattern Matrix Specialization
+(defn ^SeqPattern seq-pattern [s]
+  {:pre [(sequential? s)
+         (not (empty? s))]}
+  (SeqPattern. s nil))
 
-(extend-type MapPattern
+(def seq-pattern? (partial instance? SeqPattern))
+
+(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
+  (.write writer (str "<SeqPattern: " p ">")))
+
+;; -----------------------------------------------------------------------------
+;; ### Rest Pattern
+;; 
+;; A rest pattern represents the case of matching [2 3] in [1 & [2 3]]
+;;
+;; It is an implementation detail of other patterns, like SeqPattern.
+
+(deftype RestPattern [p _meta]
+  IPatternContainer
+  (pattern [_] p)
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (RestPattern. p new-meta))
+  Object
+  (toString [_]
+    p))
+
+(defn ^RestPattern rest-pattern [p]
+  (RestPattern. p nil))
+
+(def rest-pattern? (partial instance? RestPattern))
+
+(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
+  (.write writer (str "<RestPattern: " (.p p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; # Map Pattern
+;; 
+;; Map patterns match maps, or any object that satisfies IMatchLookup.
+
+(declare map-pattern?)
+(declare map-crash-pattern)
+
+(deftype MapPattern [m _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (MapPattern. m new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
+  Object
+  (toString [_]
+    (str m " :only " (or (:only _meta) [])))
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
@@ -1116,8 +931,37 @@
           _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
+(defn ^MapPattern map-pattern
+  ([] (MapPattern. {} nil))
+  ([m] {:pre [(map? m)]}
+     (MapPattern. m nil)))
 
-(extend-type MapCrashPattern
+(def map-pattern? (partial instance? MapPattern))
+
+(defmethod print-method MapPattern [^MapPattern p ^Writer writer]
+  (.write writer (str "<MapPattern: " p ">")))
+
+;; ### MapCrashPattern
+;;
+;; MapCrashPatterns are an implementation detail of MapPatterns.
+;;
+;; They ensure a map has only the keys [:key1 :key2] in 
+;; the pattern:
+;;   ({:key1 1, :key2 2} :only [:key1 :key2])
+;;
+
+(deftype MapCrashPattern [only _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (MapCrashPattern. only new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    (let [map-sym (-> ocr meta :map-sym)]
+      `(= (.keySet ~(with-meta map-sym {:tag java.util.Map})) #{~@only})))
+  Object
+  (toString [_]
+    "CRASH")
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
@@ -1132,11 +976,45 @@
         (let [row (first nrows)]
          (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
 
-;; =============================================================================
-;; ## Vector Pattern Specialization
+(defn ^MapCrashPattern map-crash-pattern [only]
+  (MapCrashPattern. only nil))
 
-(extend-type VectorPattern
-  ISpecializeMatrix
+(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
+  (.write writer (str "<MapCrashPattern>")))
+
+;; -----------------------------------------------------------------------------
+
+(defprotocol IVectorPattern
+  (split [this n]))
+
+(declare vector-pattern?)
+
+(deftype VectorPattern [v t size offset rest? _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (VectorPattern. v t size offset rest? new-meta))
+  IPatternCompile
+  (to-source* [_ ocr]
+    (if (and (not rest?) size (check-size? t))
+      (test-with-size-inline t ocr size)
+      (test-inline t ocr)))
+  Object
+  (toString [_]
+    (str v ":" t))
+  IVectorPattern
+  (split [this n]
+    (let [lv (subvec v 0 n)
+          rv (subvec v n)
+          pl (VectorPattern. lv t n offset false _meta)
+          pr (if (rest-pattern? (first rv))
+               (let [^RestPattern p (first rv)] (.p p))
+               (let [rest? (some rest-pattern? rv)
+                     rvc (count rv)
+                     size (if rest? (dec rvc) rvc)]
+                (VectorPattern. rv t size n rest? _meta)))]
+      [pl pr]))
+    ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
           ocrs (occurrences matrix)
@@ -1194,10 +1072,35 @@
           matrix (pattern-matrix nrows nocrs)]
       matrix)))
 
-;; ==============================================================================
-;; ## Or Pattern Specialization
+(defn ^VectorPattern vector-pattern
+  ([] (vector-pattern [] ::vector nil nil))
+  ([v]
+     (vector-pattern v ::vector nil nil))
+  ([v t]
+     (vector-pattern v t nil nil nil))
+  ([v t offset]
+     (vector-pattern v t offset nil))
+  ([v t offset rest?] {:pre [(vector? v)]}
+     (let [c (count v)
+           size (if rest? (dec c) c)]
+      (VectorPattern. v t size offset rest? nil))))
 
-(extend-type OrPattern
+(def vector-pattern? (partial instance? VectorPattern))
+
+(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
+  (.write writer (str "<VectorPattern: " p ">")))
+
+;; -----------------------------------------------------------------------------
+;; Or Patterns
+
+(deftype OrPattern [ps _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (OrPattern. ps new-meta))
+  Object
+  (toString [this]
+    (str ps))
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [ps (.ps this)
@@ -1214,10 +1117,48 @@
           _ (trace-dag "OrPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
 
-;; =============================================================================
-;; ## Guard Pattern Specialization
+(defn ^OrPattern or-pattern [p]
+  {:pre [(vector? p)]}
+  (OrPattern. p nil))
 
-(extend-type GuardPattern
+(def or-pattern? (partial instance? OrPattern))
+
+(defmethod print-method OrPattern [^OrPattern p ^Writer writer]
+  (.write writer (str "<OrPattern: " (.ps p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; Pseudo-patterns
+
+(defmulti pseudo-pattern? type)
+
+(defmethod pseudo-pattern? OrPattern
+  [x] true)
+
+(defmethod pseudo-pattern? :default
+  [x] false)
+
+;; -----------------------------------------------------------------------------
+;; ## Guard Patterns
+;;
+;; Guard patterns are used to represent guards on patterns, for example
+;;   `(1 :when even?)`
+;;
+
+(declare guard-pattern?)
+
+(deftype GuardPattern [p gs _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (GuardPattern. p gs new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    `(and ~@(map (fn [expr ocr]
+                   (list expr ocr))
+                 gs (repeat ocr))))
+  Object
+  (toString [this]
+    (str p " :when " gs))
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [nrows (->> (rows matrix)
@@ -1231,6 +1172,59 @@
                      vec)
           _ (trace-dag "GuardPattern specialization")]
       (pattern-matrix nrows (occurrences matrix)))))
+
+(defn ^GuardPattern guard-pattern [p gs]
+  {:pre [(set? gs)]}
+  (GuardPattern. p gs nil))
+
+(def guard-pattern? (partial instance? GuardPattern))
+
+(defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
+  (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; Crash Patterns
+
+(defmulti crash-pattern? type)
+
+(defmethod crash-pattern? MapCrashPattern
+  [x] true)
+
+(defmethod crash-pattern? :default
+  [x] false)
+
+(defmethod pattern-compare [Object WildcardPattern]
+  [a b] 0)
+
+(defmethod pattern-compare [LiteralPattern Object]
+  [a b] -1)
+
+(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
+
+(defmethod pattern-compare [Object LiteralPattern]
+  [a b] 1)
+
+(defmethod pattern-compare [LiteralPattern LiteralPattern]
+  [^LiteralPattern a ^LiteralPattern b]
+  (let [la (.l a)
+        lb (.l b)]
+    (cond
+     (= la lb) 0
+     (symbol? la) 1
+     (symbol? lb) -1
+     :else (compare la lb))))
+
+(defmethod pattern-compare [GuardPattern GuardPattern]
+  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 -1))
+
+(defmethod pattern-compare [OrPattern OrPattern]
+  [^OrPattern a ^OrPattern b] (let [as (.ps a)
+                                    bs (.ps b)]
+                                (if (and (= (count as) (count bs))
+                                         (every? identity (map pattern-equals as bs)))
+                                  0 -1)))
+
+;; TODO: vector pattern compare - David
 
 ;; =============================================================================
 ;; # Interface
