@@ -1006,7 +1006,7 @@
       (test-inline t ocr)))
   Object
   (toString [_]
-    (str v ":" t))
+    (str v " " t))
   IVectorPattern
   (split [this n]
     (let [lv (subvec v 0 n)
