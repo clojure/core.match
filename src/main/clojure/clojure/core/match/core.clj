@@ -57,6 +57,10 @@
        :doc "Enable pattern compile time tracing"} 
   *trace* (atom false))
 
+(def ^{:dynamic true
+       :doc "Enable backtracking diagnostics"}
+  *backtrack-with-errors* (atom false))
+
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned*)
@@ -68,6 +72,8 @@
 
 (defn set-breadcrumbs! [b]
   (reset! *breadcrumbs* b))
+
+(def backtrack (Exception. "Could not find match."))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -367,11 +373,18 @@
   (n-to-clj [this]
     (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
           bind-expr (-> occurrence meta :bind-expr)
+          backtrack-expr (if @*backtrack-with-errors*
+                           `(throw (Exception. (str "Could not match" ~occurrence)))
+                           `(throw clojure.core.match.core/backtrack))
           cond-expr (doall (concat `(cond ~@clauses)
-                                   `(:else ~(n-to-clj default))))]
+                                   `(:else ~backtrack-expr)))]
       (if bind-expr
-        `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr))))
-        `(try ~cond-expr)))))
+        `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+           (catch Exception e#
+             ~(n-to-clj default)))
+        `(try ~cond-expr
+           (catch Exception e#
+             ~(n-to-clj default)))))))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
