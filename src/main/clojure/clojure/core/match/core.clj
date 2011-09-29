@@ -331,11 +331,7 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    (if @*breadcrumbs*
-      `(throw (Exception. (str "No match found. " 
-                               "Followed " ~(count *match-breadcrumbs*)  " branches."
-                               " Breadcrumbs: " '~*match-breadcrumbs*)))
-      `(throw (Exception. (str "No match found."))))))
+    `(throw backtrack)))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -1212,13 +1208,11 @@
 (defmethod crash-pattern? :default
   [x] false)
 
-(defmethod pattern-compare [Object WildcardPattern]
+(defmethod pattern-compare [WildcardPattern WildcardPattern]
   [a b] 0)
 
 (defmethod pattern-compare [LiteralPattern Object]
   [a b] 1)
-
-(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
 (defmethod pattern-compare [Object LiteralPattern]
   [a b] 1)
