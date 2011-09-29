@@ -66,6 +66,7 @@
 (def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *vector-type* ::vector)
 (def ^{:dynamic true} *match-breadcrumbs* [])
+(def ^{:dynamic true} *recur-present* false)
 
 (defn set-trace! [b]
   (reset! *trace* b))
@@ -1405,9 +1406,17 @@
     (throw (AssertionError. (str "Uneven number of Pattern Rows. The last form `"
                                  (last clauses) "` seems out of place.")))))
 
+;; TODO: more sophisticated analysis that actually checks that recur is
+;; not being used as a local binding when it occurs - David
+
+(defn analyze-actions [actions]
+  (letfn [(analyze-action [action]
+            (if (and (sequential? action)
+                     (some '#{recur} (flatten action)))
+              {:recur-present true} {}))]
+    (map analyze-action actions)))
 
 (defn emit-matrix [vars clauses]
-  (when @*syntax-check* (check-matrix-args vars clauses))
   (let [cs (partition 2 clauses)
         cs (let [[p a] (last cs)]
              (if (= :else p)
@@ -1428,9 +1437,14 @@
   (n-to-clj node))
 
 (defn clj-form [vars clauses]
-  (-> (emit-matrix vars clauses)
-      compile
-      executable-form))
+  (when @*syntax-check* (check-matrix-args vars clauses))
+  (let [actions (map second (partition 2 clauses))
+        recur-present (some :recur-present
+                            (analyze-actions actions))]
+    (binding [*recur-present* recur-present]
+      (-> (emit-matrix vars clauses)
+          compile
+          executable-form))))
 
 ;; ============================================================================
 ;; # Match macros
