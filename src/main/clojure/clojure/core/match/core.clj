@@ -425,8 +425,7 @@
 (defn- empty-rows-case 
   "Case 1: If there are no pattern rows to match, then matching always fails"
   []
-  (let [_ (warn "Non-exhaustive pattern matrix, consider adding :else clause")
-        _ (trace-dag "No rows left, add fail-node")]
+  (let [_ (trace-dag "No rows left, add fail-node")]
     (fail-node)))
 
 (defn- first-row-empty-case 
@@ -482,8 +481,7 @@
               (if-not (empty-matrix? m)
                 (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
                   (compile m))
-                (do (warn (str "Non-exhaustive pattern matrix, " 
-                               "consider adding :else clause"))
+                (do 
                   (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                   (fail-node)))))
           
