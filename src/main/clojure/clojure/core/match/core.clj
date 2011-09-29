@@ -331,7 +331,7 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw backtrack)))
+    `(throw clojure.core.match.core/backtrack)))
 
 (defn ^FailNode fail-node []
   (FailNode.))
