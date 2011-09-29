@@ -388,6 +388,13 @@
           :else :a1))
       :a0)))
 
+(deftest vector-offset-1
+  (is (= (match [[:pow :x 2]]
+           [[:pow arg pow]] 0
+           [[:mult & args]] 1
+           :else 2)
+         0)))
+
 (comment
   ;; TODO: should not match - David
   (let [l '(1 2 3)]
