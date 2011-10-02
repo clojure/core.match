@@ -508,7 +508,7 @@
             (letfn [(expression? 
                       ;; Returns true if occurance ocr is an expression
                       [ocr] 
-                      (-> ocr meta :ocr-expr))
+                      (contains? (meta ocr) :ocr-expr))
                     (bind-variables 
                       ;; Return bindings usable by bind-node
                       [ocrs] 
@@ -585,8 +585,7 @@
                 (and (not (nil? ps))
                      (empty? ps))))
             (has-ocr-expr? [ocrs]
-              (some (fn [ocr]
-                      (-> ocr meta :ocr-expr))
+              (some #(contains? (meta %) :ocr-expr)
                     ocrs))]
       (cond
         (empty? rows) (empty-rows-case)

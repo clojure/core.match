@@ -395,6 +395,11 @@
            :else 2)
          0)))
 
+(deftest match-expr-2
+  (is (= (match [false]
+           [false] true)
+         true)))
+
 (comment
   ;; TODO: should not match - David
   (let [l '(1 2 3)]
