@@ -113,7 +113,7 @@ Vector patterns also support the familiar rest syntax from destructuring.
 It's simple to extend match to support primitive arrays so you can write the following:
 
 ```clojure
-(defn balance-array [^objects node]
+(defn balance [^objects node]
   (matchv ::objects [node]
     [([:black [:red [:red a x b] y c] z d] |
       [:black [:red a x [:red b y c]] z d] |
