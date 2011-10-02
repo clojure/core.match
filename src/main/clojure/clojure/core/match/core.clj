@@ -1510,10 +1510,3 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
-
-(comment
-  (match [[:plus 1 2 3]]
-    [[:pow arg pow]] 0
-    [[:plus & args]] 1
-    :else 2)
-  )
