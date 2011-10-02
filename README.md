@@ -9,7 +9,7 @@ Usage
 The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
 
 ```clojure
-[org.clojure/core.match "0.2.0-alpha1"]
+[org.clojure/core.match "0.2.0-alpha2"]
 ```
 
 Use via:
@@ -24,7 +24,8 @@ ClojureScript
 You can use match with ClojureScript by putting the match jar in $CLOJURESCRIPT_HOME/lib/. Then in your source file your namespace declaraction should look something like this:
 
 ```clojure
-(:use-macros [clojure.core.match.js :only [match]])
+(ns foo.bar
+  (:use-macros [clojure.core.match.js :only [match]]))
 ```
 
 About
