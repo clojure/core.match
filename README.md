@@ -9,7 +9,7 @@ Usage
 The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
 
 ```clojure
-[match "0.2.0-SNAPSHOT"]
+[org.clojure/core.match "0.2.0-alpha1"]
 ```
 
 Use via:
