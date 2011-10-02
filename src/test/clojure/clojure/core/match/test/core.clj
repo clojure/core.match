@@ -400,6 +400,13 @@
            [false] true)
          true)))
 
+(deftest vector-rest-pattern-1
+  (is (= (match [[:plus 1 2 3]]
+           [[:pow arg pow]] 0
+           [[:plus & args]] 1
+           :else 2))
+      1))
+
 (comment
   ;; TODO: should not match - David
   (let [l '(1 2 3)]

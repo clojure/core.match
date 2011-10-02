@@ -103,6 +103,9 @@
 (defprotocol IPatternContainer
   (pattern [this]))
 
+(defprotocol IContainsRestPattern
+  (contains-rest-pattern? [this]))
+
 (defprotocol IMatchLookup
   "Allows arbitrary objects to act like a map-like object when pattern
   matched. Avoid extending this directly for Java Beans, see
@@ -464,6 +467,7 @@
 (declare pseudo-pattern?)
 (declare wildcard-pattern)
 (declare crash-pattern?)
+(declare vector-pattern?)
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -484,13 +488,27 @@
                 (do 
                   (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                   (fail-node)))))
-          
+
+          ;; analyze vector patterns, if a vector-pattern containing a rest pattern
+          ;; occurs, drop all previous vector patterns that it subsumes. note this
+          ;; is a bit hard coding that should be removed when get a better sense
+          ;; how to abstract a protocol for this.
+          (group-vector-patterns [ps]
+            (-> (reduce (fn [ps p]
+                          (if (and (vector-pattern? p)
+                                   (contains-rest-pattern? p))
+                            (conj (drop-while #(pattern-equals p %) ps) p)
+                            (conj ps p)))
+                        () ps)
+                reverse))
+
           (column-constructors 
             ;; Returns a sorted-set of constructors in column i of matrix this
             [this i]
-            (->> (column this i)
-              (filter (comp not wildcard-pattern?))
-              (apply sorted-set-by (fn [a b] (pattern-compare a b)))))
+            (let [ps (group-vector-patterns (column this i))]
+             (->> ps
+                  (filter (comp not wildcard-pattern?))
+                  (apply sorted-set-by (fn [a b] (pattern-compare a b))))))
 
           (switch-clauses 
             ;; Compile a decision trees for each constructor cs and returns a clause list
@@ -1008,6 +1026,8 @@
   Object
   (toString [_]
     (str v " " t))
+  IContainsRestPattern
+  (contains-rest-pattern? [_] rest?)
   IVectorPattern
   (split [this n]
     (let [lv (subvec v 0 n)
@@ -1476,3 +1496,10 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(comment
+  (match [[:plus 1 2 3]]
+    [[:pow arg pow]] 0
+    [[:plus & args]] 1
+    :else 2)
+  )
