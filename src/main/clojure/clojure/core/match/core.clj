@@ -583,10 +583,7 @@
             (empty-row? [row]
               (let [ps (patterns row)]
                 (and (not (nil? ps))
-                     (empty? ps))))
-            (has-ocr-expr? [ocrs]
-              (some #(contains? (meta %) :ocr-expr)
-                    ocrs))]
+                     (empty? ps))))]
       (cond
         (empty? rows) (empty-rows-case)
 
