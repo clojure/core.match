@@ -15,7 +15,7 @@ The fastest way to use this library is with Leiningen or Cake. Add the following
 Use via:
 
 ```clojure
-(use '[match.core :only [match]])
+(use '[clojure.core.match.core :only [match]])
 ```
 
 About
