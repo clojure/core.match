@@ -17,6 +17,18 @@
              :else 5))
          4)))
 
+(deftest pattern-match-recur-1
+  (is (= ((fn [x y z done]
+            (if (not done)
+              (match [x y z]
+                [_ false true] (recur x y z 1)
+                [false true _ ] (recur x y z 2)
+                [_ _ false] (recur x y z 3)
+                [_ _ true] (recur x y z 4)
+                :else 5)
+              done)) true true true false)
+         4)))
+
 (deftest pattern-match-bind-1
   (is (= (let [x 1 y 2 z 4]
            (match [x y z]

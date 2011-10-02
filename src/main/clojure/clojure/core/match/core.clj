@@ -335,7 +335,13 @@
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
-    `(throw clojure.core.match.core/backtrack)))
+    (if *recur-present*
+      (if @*breadcrumbs*
+        `(throw (Exception. (str "No match found. " 
+                                 "Followed " ~(count *match-breadcrumbs*)  " branches."
+                                 " Breadcrumbs: " '~*match-breadcrumbs*)))
+        `(throw (Exception. (str "No match found."))))
+    `(throw clojure.core.match.core/backtrack))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -371,18 +377,24 @@
   (n-to-clj [this]
     (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
           bind-expr (-> occurrence meta :bind-expr)
-          backtrack-expr (if @*backtrack-with-errors*
-                           `(throw (Exception. (str "Could not match" ~occurrence)))
-                           `(throw clojure.core.match.core/backtrack))
-          cond-expr (doall (concat `(cond ~@clauses)
-                                   `(:else ~backtrack-expr)))]
-      (if bind-expr
-        `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
-           (catch Exception e#
-             ~(n-to-clj default)))
-        `(try ~cond-expr
-           (catch Exception e#
-             ~(n-to-clj default)))))))
+          cond-expr (if *recur-present*
+                      (doall (concat `(cond ~@clauses)
+                                     `(:else ~(n-to-clj default))))
+                      (doall (concat `(cond ~@clauses)
+                                     `(:else ~(if @*backtrack-with-errors*
+                                                `(throw (Exception. (str "Could not match" ~occurrence)))
+                                                `(throw clojure.core.match.core/backtrack))))))]
+      (if *recur-present*
+        (if bind-expr
+          `~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+          `~cond-expr)
+        (if bind-expr
+          `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+                (catch Exception e#
+                  ~(n-to-clj default)))
+          `(try ~cond-expr
+                (catch Exception e#
+                  ~(n-to-clj default))))))))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
@@ -1225,6 +1237,11 @@
 
 (defmethod pattern-compare [WildcardPattern WildcardPattern]
   [a b] 0)
+
+(defmethod pattern-compare [Object WildcardPattern]
+  [a b] (if *recur-present* 0 1))
+
+(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
 (defmethod pattern-compare [LiteralPattern Object]
   [a b] 1)
