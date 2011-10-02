@@ -133,6 +133,11 @@
   ([m k] (val-at* m k nil))
   ([m k not-found] (val-at* m k not-found)))
 
+(defn val-at-expr [& args]
+  (if *clojurescript*
+    `(get ~@args)
+    `(val-at ~@args)))
+
 ;; =============================================================================
 ;; # Vector Pattern Interop
 
@@ -332,7 +337,7 @@
 
 (defmethod leaf-bind-expr :map
   [ocr] (let [m (meta ocr)]
-            `(val-at ~(:map-sym m) ~(:key m))))
+          (val-at-expr (:map-sym m) (:key m))))
 
 (defmethod leaf-bind-expr :default
   [ocr] ocr)
@@ -935,7 +940,9 @@
     (MapPattern. m new-meta))
   IPatternCompile
   (to-source* [this ocr]
-    `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr)))
+    (if *clojurescript*
+      `(or (satisfies? cljs.core.ILookup ~ocr))
+      `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))))
   Object
   (toString [_]
     (str m " :only " (or (:only _meta) [])))
@@ -979,7 +986,7 @@
                                     {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr `(val-at ~map-ocr ~k)})))]
+                                     :bind-expr (val-at-expr map-ocr k)})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))
           _ (trace-dag "MapPattern specialization")]
@@ -1013,7 +1020,9 @@
   IPatternCompile
   (to-source* [this ocr]
     (let [map-sym (-> ocr meta :map-sym)]
-      `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only})))
+      (if *clojurescript*
+        `(= (set (keys ~map-sym)) #{~@only})
+        `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only}))))
   Object
   (toString [_]
     "CRASH")
