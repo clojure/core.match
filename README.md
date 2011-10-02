@@ -1,7 +1,7 @@
 match
 ====
 
-An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later. There is very little in the way of getting match working with ClojureScript, but at the moment it requires tweaking the ClojureScript compiler.
+An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later as well as ClojureScript.
 
 Usage
 ----
@@ -16,6 +16,15 @@ Use via:
 
 ```clojure
 (use '[clojure.core.match.core :only [match]])
+```
+
+ClojureScript
+----
+
+You can use match with ClojureScript by putting the match jar in $CLOJURESCRIPT_HOME/lib/. Then in your source file your namespace declaraction should look something like this:
+
+```clojure
+(:use-macros [clojure.core.match.js :only [match]])
 ```
 
 About

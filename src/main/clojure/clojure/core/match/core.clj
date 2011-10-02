@@ -61,6 +61,9 @@
        :doc "Enable backtracking diagnostics"}
   *backtrack-with-errors* (atom false))
 
+(def ^{:dynamic true}
+  *clojurescript* false)
+
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals*)
 (def ^{:dynamic true} *warned*)
@@ -75,6 +78,11 @@
   (reset! *breadcrumbs* b))
 
 (def backtrack (Exception. "Could not find match."))
+
+(defn backtrack-expr []
+  (if *clojurescript*
+    `(throw 0)
+    `(throw clojure.core.match.core/backtrack)))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -151,7 +159,7 @@
                   the-tag)]
     (with-meta ocr (assoc (ocr meta) :tag the-tag))))
 (defmethod test-inline ::vector
-  [t ocr] `(instance? ~(tag t) ~ocr))
+  [t ocr] `(vector? ~ocr))
 (defmethod test-with-size-inline ::vector
   [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t (with-tag t ocr)) ~size)))
 (defmethod count-inline ::vector
@@ -332,16 +340,21 @@
 ;; -----------------------------------------------------------------------------
 ;; ## Fail Node
 
+(defmacro error [& body]
+  (if *clojurescript*
+    `(js/Error. ~@body)
+    `(Exception. ~@body)))
+
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
     (if *recur-present*
       (if @*breadcrumbs*
-        `(throw (Exception. (str "No match found. " 
-                                 "Followed " ~(count *match-breadcrumbs*)  " branches."
-                                 " Breadcrumbs: " '~*match-breadcrumbs*)))
-        `(throw (Exception. (str "No match found."))))
-    `(throw clojure.core.match.core/backtrack))))
+        `(throw (error (str "No match found. " 
+                            "Followed " ~(count *match-breadcrumbs*)  " branches."
+                            " Breadcrumbs: " '~*match-breadcrumbs*)))
+        `(throw (error (str "No match found."))))
+      (backtrack-expr))))
 
 (defn ^FailNode fail-node []
   (FailNode.))
@@ -372,6 +385,13 @@
         [test (n-to-clj action)])
       [test (n-to-clj action)])))
 
+(defn catch-error [& body]
+  (if *clojurescript*
+    `(catch e#
+       ~@body)
+    `(catch Exception e#
+       ~@body)))
+
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (n-to-clj [this]
@@ -383,18 +403,16 @@
                       (doall (concat `(cond ~@clauses)
                                      `(:else ~(if @*backtrack-with-errors*
                                                 `(throw (Exception. (str "Could not match" ~occurrence)))
-                                                `(throw clojure.core.match.core/backtrack))))))]
+                                                (backtrack-expr))))))]
       (if *recur-present*
         (if bind-expr
           `~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
           `~cond-expr)
         (if bind-expr
           `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
-                (catch Exception e#
-                  ~(n-to-clj default)))
+                ~(catch-error (n-to-clj default)))
           `(try ~cond-expr
-                (catch Exception e#
-                  ~(n-to-clj default))))))))
+                ~(catch-error (n-to-clj default))))))))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
