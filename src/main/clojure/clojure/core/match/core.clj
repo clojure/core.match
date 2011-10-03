@@ -41,8 +41,6 @@
 ;; These debugging aids are most useful in steps 2 and 3 of compilation.
 ;;
 
-(set! *warn-on-reflection* true)
-
 ;; TODO allow these to be set dynamically, at macro-expand time.
 ;; Maybe match macros could take extra metadata? - Ambrose
 (def ^{:dynamic true
