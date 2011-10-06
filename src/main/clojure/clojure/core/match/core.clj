@@ -500,7 +500,6 @@
 
 (declare pseudo-pattern?)
 (declare wildcard-pattern)
-(declare crash-pattern?)
 (declare vector-pattern?)
 
 (defn- first-column-chosen-case 
@@ -654,20 +653,18 @@
 
   (necessary-column [this]
     (letfn [(score-column [i col]
-              (cond
-               (some #{::crash} col) [i -1]
-               :else [i (reduce (fn [score useful]
-                                  (if useful
-                                    (clojure.core/inc score)
-                                    score))
-                                0 col)]))]
+              [i (reduce (fn [score useful]
+                           (if useful
+                             (clojure.core/inc score)
+                             score))
+                         0 col)])]
       (first
        (->> (apply map vector (useful-matrix this))
             (map-indexed score-column)
             (reduce (fn [[col score :as curr]
                          [ocol oscore :as cand]]
                       (if (> oscore score) cand curr))
-                    [0 -2]))))) ;; NOTE: -2 because -1 is for crash columns - David
+                    [0 0])))))
 
   (useful-matrix [this]
     (vec (->> (for [j (range (height this))
@@ -717,7 +714,6 @@
 (defn useful-p? [pm i j]
   (let [p (pattern-at pm i j)]
    (cond
-    (crash-pattern? p) ::crash
     (constructor? p) (every? #(not (wildcard-pattern? %))
                              (take j (column pm i)))
     ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
@@ -929,7 +925,6 @@
 ;; Map patterns match maps, or any object that satisfies IMatchLookup.
 
 (declare map-pattern?)
-(declare map-crash-pattern)
 
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
@@ -967,12 +962,12 @@
                                   ocr-map (if (map-pattern? p)
                                             (let [^MapPattern p p
                                                   m (.m p)
-                                                  [crash-map wc-map] (if-let [only (-> p meta :only)]
-                                                                       [(zipmap all-keys
-                                                                                (repeat (map-crash-pattern only)))
-                                                                        (zipmap only wcs)]
-                                                                       [{} wc-map])]
-                                              (merge crash-map wc-map m))
+                                                  [not-found-map wc-map] (if-let [only (-> p meta :only)]
+                                                                           [(zipmap all-keys
+                                                                                    (repeat (literal-pattern ::not-found)))
+                                                                            (zipmap only wcs)]
+                                                                           [{} wc-map])]
+                                              (merge not-found-map wc-map m))
                                             wc-map)]
                               (reduce prepend (drop-nth-bind row 0 focr)
                                       (reverse (map second (sort ocr-map)))))))
@@ -984,7 +979,7 @@
                                     {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr (val-at-expr map-ocr k)})))]
+                                     :bind-expr (val-at-expr map-ocr k ::not-found)})))]
                   (into (into [] (map ocr-sym all-keys))
                         (drop-nth ocrs 0)))
           _ (trace-dag "MapPattern specialization")]
@@ -1001,48 +996,11 @@
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
 
-;; ### MapCrashPattern
-;;
-;; MapCrashPatterns are an implementation detail of MapPatterns.
-;;
-;; They ensure a map has only the keys [:key1 :key2] in 
-;; the pattern:
-;;   ({:key1 1, :key2 2} :only [:key1 :key2])
-;;
-
-(deftype MapCrashPattern [only _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (MapCrashPattern. only new-meta))
-  IPatternCompile
-  (to-source* [this ocr]
-    (let [map-sym (-> ocr meta :map-sym)]
-      (if *clojurescript*
-        `(= (set (keys ~map-sym)) #{~@only})
-        `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only}))))
-  Object
-  (toString [_]
-    "CRASH")
-  ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
-                     (map #(drop-nth % 0))
-                     vec)
-          _ (trace-dag "MapCrashPattern specialization")]
-      (if (empty? nrows)
-        (pattern-matrix [] [])
-        (let [row (first nrows)]
-         (pattern-matrix [(pattern-row [] (action row) (bindings row))] []))))))
-
-(defn ^MapCrashPattern map-crash-pattern [only]
-  (MapCrashPattern. only nil))
-
-(defmethod print-method MapCrashPattern [^MapCrashPattern p ^Writer writer]
-  (.write writer (str "<MapCrashPattern>")))
+(comment
+  (if *clojurescript*
+    `(= (set (keys ~map-sym)) #{~@only})
+    `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only}))
+  )
 
 ;; -----------------------------------------------------------------------------
 
@@ -1250,15 +1208,7 @@
   (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
 
 ;; -----------------------------------------------------------------------------
-;; Crash Patterns
-
-(defmulti crash-pattern? type)
-
-(defmethod crash-pattern? MapCrashPattern
-  [x] true)
-
-(defmethod crash-pattern? :default
-  [x] false)
+;; Pattern Comparisons
 
 (defmethod pattern-compare [WildcardPattern WildcardPattern]
   [a b] 0)
