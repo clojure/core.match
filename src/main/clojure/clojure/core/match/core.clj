@@ -996,12 +996,6 @@
 (defmethod print-method MapPattern [^MapPattern p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
 
-(comment
-  (if *clojurescript*
-    `(= (set (keys ~map-sym)) #{~@only})
-    `(= (.keySet ~(with-meta map-sym {:tag 'java.util.Map})) #{~@only}))
-  )
-
 ;; -----------------------------------------------------------------------------
 
 (defprotocol IVectorPattern
