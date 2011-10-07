@@ -1521,7 +1521,3 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
-
-(comment
-  (match-1 :a :a (throw (Exception.)) :else :c)
-  )
