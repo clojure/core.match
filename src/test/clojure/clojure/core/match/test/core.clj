@@ -441,6 +441,13 @@
                   :else :a1))
               :a1))))
 
+(deftest exception-1
+  (is (= (try
+           (match-1 :a :a (throw (Exception.)) :else :c)
+           (catch Exception e
+             :d))
+         :d)))
+
 (comment
   ;; MATCH-26
   ;; WRONG: :a2 should be  

@@ -391,9 +391,15 @@
 (defn catch-error [& body]
   (if *clojurescript*
     `(catch e#
-       ~@body)
+       (if (identical? e# 0)
+         (do
+           ~@body)
+         (throw e#)))
     `(catch Exception e#
-       ~@body)))
+       (if (identical? e# clojure.core.match.core/backtrack)
+         (do
+           ~@body)
+         (throw e#)))))
 
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
@@ -1515,3 +1521,7 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(comment
+  (match-1 :a :a (throw (Exception.)) :else :c)
+  )
