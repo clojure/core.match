@@ -925,6 +925,7 @@
 ;; Map patterns match maps, or any object that satisfies IMatchLookup.
 
 (declare map-pattern?)
+(declare guard-pattern)
 
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
@@ -945,12 +946,16 @@
           ocrs (occurrences matrix)
           focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
+          only? (atom false)
           all-keys (->> srows
                         (remove (comp wildcard-pattern? first))
                         (map (fn [row]
-                               (let [^MapPattern p (first row)]
+                               (let [^MapPattern p (first row)
+                                     only (-> p meta :only)]
+                                 (when (and (not @only?) (seq only))
+                                   (reset! only? true))
                                  [(set (keys (.m p)))
-                                  (set (-> p meta :only))])))
+                                  (set only)])))
                         (reduce concat)
                         (reduce set/union #{})
                         sort) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
@@ -959,18 +964,28 @@
           nrows (->> srows
                      (map (fn [row]
                             (let [p (first row)
+                                  only (seq (-> p meta :only))
                                   ocr-map (if (map-pattern? p)
                                             (let [^MapPattern p p
                                                   m (.m p)
-                                                  [not-found-map wc-map] (if-let [only (-> p meta :only)]
+                                                  [not-found-map wc-map] (if only
                                                                            [(zipmap all-keys
                                                                                     (repeat (literal-pattern ::not-found)))
                                                                             (zipmap only wcs)]
                                                                            [{} wc-map])]
                                               (merge not-found-map wc-map m))
-                                            wc-map)]
+                                            wc-map)
+                                  ps (map second (sort ocr-map))
+                                  ps (if @only?
+                                       (if only
+                                         (let [a (with-meta (gensym) {:tag 'java.util.Map})]
+                                           (cons (guard-pattern (wildcard-pattern)
+                                                                (set [`(fn [~a] (= (.keySet ~a) #{~@only}))]))
+                                                 ps))
+                                         (cons (wildcard-pattern) ps))
+                                       ps)]
                               (reduce prepend (drop-nth-bind row 0 focr)
-                                      (reverse (map second (sort ocr-map)))))))
+                                      (reverse ps)))))
                      vec)
           nocrs (let [map-ocr focr
                       ocr-sym (fn ocr-sym [k]
@@ -979,8 +994,12 @@
                                     {:occurrence-type :map
                                      :key k
                                      :map-sym map-ocr
-                                     :bind-expr (val-at-expr map-ocr k ::not-found)})))]
-                  (into (into [] (map ocr-sym all-keys))
+                                     :bind-expr (val-at-expr map-ocr k ::not-found)})))
+                      mocrs (map ocr-sym all-keys)
+                      mocrs (if @only?
+                              (cons map-ocr mocrs)
+                              mocrs)]
+                  (into (into [] mocrs)
                         (drop-nth ocrs 0)))
           _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))

@@ -429,6 +429,30 @@
              :else []))
          :a-1)))
 
+(deftest map-pattern-match-only-3
+  (is (and (= (let [m {:a 1}]
+                (match [m]
+                  [({:a 1} :only [:a])] :a0
+                  :else :a1))
+              :a0)
+           (= (let [m {:a 1 :b 2}]
+                (match [m]
+                  [({:a 1} :only [:a])] :a0
+                  :else :a1))
+              :a1))))
+
+(comment
+  ;; MATCH-26
+  ;; WRONG: :a2 should be  
+  (let [x '(1 2) y 1]
+    (match [x y]
+      [([1] :seq) _] :a0
+      [_ 1] :a1
+      [([1 2] :seq) _] :a2
+      [_ 2] :a3
+      :else :a4))
+  )
+
 (comment
   ;; TODO: should not match - David
   (let [l '(1 2 3)]
