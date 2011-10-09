@@ -741,7 +741,7 @@
 ;; =============================================================================
 ;; ## Default Matrix Specialization
 
-;; NOTE: not sure if this is correct since we're getting all the rows - David
+;; NOTE: not sure why we need pattern-equals here for this to work - David
 
 (defn default-specialize-matrix [p rows ocrs]
   (let [focr (first ocrs)
