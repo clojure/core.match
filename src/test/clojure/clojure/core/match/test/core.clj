@@ -458,17 +458,35 @@
              :else :a4))
          :a1)))
 
-(comment
-  ;; TODO: should be :a2
- (deftest match-order-2
-   (is (= (let [x '(1 2) y 3]
-            (match [x y]
-              [([1] :seq) _] :a0
-              [_ 1] :a1
-              [([1 2] :seq) _] :a2
-              [_ 2] :a3
-              :else :a4))
-          :a2))))
+(deftest match-order-2
+  (is (= (let [x '(1 2) y 3]
+           (match [x y]
+             [([1] :seq) _] :a0
+             [_ 1] :a1
+             [([1 2] :seq) _] :a2
+             [_ 2] :a3
+             :else :a4))
+         :a2)))
+
+(deftest match-order-3
+  (is (= (let [x '(1) y 3]
+           (match [x y]
+             [([1] :seq) _] :a0
+             [_ 1] :a1
+             [([1 2] :seq) _] :a2
+             [_ 2] :a3
+             :else :a4))
+         :a0)))
+
+(deftest match-order-4
+  (is (= (let [x '(1 2 3) y 2]
+           (match [x y]
+             [([1] :seq) _] :a0
+             [_ 1] :a1
+             [([1 2] :seq) _] :a2
+             [_ 2] :a3
+             :else :a4))
+         :a3)))
 
 (comment
   ;; TODO: should not match - David

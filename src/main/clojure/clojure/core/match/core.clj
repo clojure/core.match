@@ -507,6 +507,7 @@
 (declare pseudo-pattern?)
 (declare wildcard-pattern)
 (declare vector-pattern?)
+(declare pattern-matrix)
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -517,10 +518,10 @@
               (filter pseudo-pattern?)))
           
           (default-matrix 
-            ;; When the current set of constructors is not a signature, an additional
-            ;; call is performed on a default matrix, handling constructors not in the set.
             [this]
-            (let [m (specialize this (wildcard-pattern) (rows this) (occurrences this))]
+            (let [m (pattern-matrix (into [] (drop-while #(not (wildcard-pattern? (first %)))
+                                                         (rows this)))
+                                    (occurrences this))]
               (if-not (empty-matrix? m)
                 (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
                   (compile m))
@@ -546,7 +547,7 @@
             [this i]
             (let [ps (group-vector-patterns (column this i))]
              (->> ps
-                  (filter (comp not wildcard-pattern?))
+                  (take-while (comp not wildcard-pattern?))
                   (apply sorted-set-by (fn [a b] (pattern-compare a b))))))
 
           (switch-clauses 
@@ -1230,7 +1231,7 @@
   [a b] 0)
 
 (defmethod pattern-compare [Object WildcardPattern]
-  [a b] (if *recur-present* 0 1))
+  [a b] 0)
 
 (prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
@@ -1518,3 +1519,12 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(comment
+  (match [x y]
+    [1 _] :a0
+    [_ 2] :a1
+    [2 _] :a2
+    [_ 1] :a3
+    :else :a4)
+  )
