@@ -105,7 +105,7 @@
 ;; # Protocols
 
 (defprotocol ISpecializeMatrix
-  (specialize-matrix [this matrix]))
+  (specialize-matrix [this rows ocrs]))
 
 (defprotocol IPatternContainer
   (pattern [this]))
@@ -441,7 +441,7 @@
   (width [this])
   (height [this])
   (dim [this])
-  (specialize [this c])
+  (specialize [this c rows ocrs])
   (compile [this])
   (pattern-at [this i j])
   (column [this i])
@@ -520,7 +520,7 @@
             ;; When the current set of constructors is not a signature, an additional
             ;; call is performed on a default matrix, handling constructors not in the set.
             [this]
-            (let [m (specialize this (wildcard-pattern))]
+            (let [m (specialize this (wildcard-pattern) (rows this) (occurrences this))]
               (if-not (empty-matrix? m)
                 (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
                   (compile m))
@@ -556,7 +556,7 @@
             (into []
                   (map (fn [c]
                          (let [s (-> this 
-                                   (specialize c) 
+                                   (specialize c (rows this) (occurrences this)) 
                                    compile)]
                            [c s]))
                        cs)))
@@ -584,7 +584,9 @@
                 (let [o (ocrs col)
                       _ (trace-dag "Add switch-node on occurance " o)]
                   (switch-node o clauses default)))))]
-    (let [this (reduce specialize this (pseudo-patterns this col))
+    (let [this (reduce (fn [matrix p]
+                         (specialize matrix p (rows matrix) (occurrences matrix)))
+                       this (pseudo-patterns this col))
           constrs (column-constructors this col)
           clauses (switch-clauses this constrs)
           default (default-matrix this)
@@ -618,10 +620,10 @@
 
   (dim [this] [(width this) (height this)])
 
-  (specialize [this p]
+  (specialize [this p rows* ocrs*]
     (if (satisfies? ISpecializeMatrix p)
-     (specialize-matrix p this)
-     (default-specialize-matrix p this)))
+     (specialize-matrix p rows* ocrs*)
+     (default-specialize-matrix p rows* ocrs*)))
 
   (column [_ i] (vec (map #(nth % i) rows)))
 
@@ -735,10 +737,8 @@
 ;; =============================================================================
 ;; ## Default Matrix Specialization
 
-(defn default-specialize-matrix [this matrix]
-  (let [rows (rows matrix)
-        ocrs (occurrences matrix)
-        focr (first ocrs)
+(defn default-specialize-matrix [this rows ocrs]
+  (let [focr (first ocrs)
         nrows (->> rows
                    (filter #(pattern-equals this (first %)))
                    (map #(drop-nth-bind % 0 focr))
@@ -851,10 +851,8 @@
   (toString [_]
     (str s))
   ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
+  (specialize-matrix [this rows ocrs]
+    (let [focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           nrows (->> srows
                      (map (fn [row]
@@ -947,10 +945,8 @@
   (toString [_]
     (str m " :only " (or (:only _meta) [])))
   ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
+  (specialize-matrix [this rows ocrs]
+    (let [focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           only? (atom false)
           all-keys (->> srows
@@ -1056,10 +1052,8 @@
                 (VectorPattern. rv t size n rest? _meta)))]
       [pl pr]))
   ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [rows (rows matrix)
-          ocrs (occurrences matrix)
-          focr (first ocrs)
+  (specialize-matrix [this rows ocrs]
+    (let [focr (first ocrs)
           srows (filter #(pattern-equals this (first %)) rows)
           ^VectorPattern fp (ffirst srows)
           [rest? min-size] (->> srows
@@ -1144,9 +1138,9 @@
   (toString [this]
     (str ps))
   ISpecializeMatrix
-  (specialize-matrix [this matrix]
+  (specialize-matrix [this rows ocrs]
     (let [ps (.ps this)
-          nrows (->> (rows matrix)
+          nrows (->> rows
                      (map (fn [row]
                             (let [p (first row)]
                               (if (and (pattern-equals this p)
@@ -1157,7 +1151,7 @@
                      (apply concat)
                      vec)
           _ (trace-dag "OrPattern specialization")]
-      (pattern-matrix nrows (occurrences matrix)))))
+      (pattern-matrix nrows ocrs))))
 
 (defn ^OrPattern or-pattern [p]
   {:pre [(vector? p)]}
@@ -1203,8 +1197,8 @@
   (toString [this]
     (str p " :when " gs))
   ISpecializeMatrix
-  (specialize-matrix [this matrix]
-    (let [nrows (->> (rows matrix)
+  (specialize-matrix [this rows ocrs]
+    (let [nrows (->> rows
                      (filter #(pattern-equals this (first %)))
                      (map (fn [row]
                             (let [p (first row)]
@@ -1214,7 +1208,7 @@
                                 row))))
                      vec)
           _ (trace-dag "GuardPattern specialization")]
-      (pattern-matrix nrows (occurrences matrix)))))
+      (pattern-matrix nrows ocrs))))
 
 (defn ^GuardPattern guard-pattern [p gs]
   {:pre [(set? gs)]}
