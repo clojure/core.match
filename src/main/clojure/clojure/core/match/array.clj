@@ -116,7 +116,6 @@
            (balance-array node)))))
     )
 
-  ;; 90ms
   (do
     (defn balance-array [^objects node]
       (matchv ::objects [node]
@@ -125,7 +124,7 @@
                 (object-array [:black a x b]) y
                   (object-array [:black c z d])])))
 
-    ;; 360ms
+    ;; 90ms
     (let [^objects node (object-array [:black
                           (object-array [:red
                             (object-array [:red nil nil nil]) nil nil]) nil nil])]
@@ -201,7 +200,8 @@
          [([:black [:red [:red a x b] y c] z d] |
            [:black [:red a x [:red b y c]] z d] |
            [:black a x [:red [:red b y c] z d]] |
-           [:black a x [:red b y [:red c z d]]])] (R (B a x b) y (B c z d))))
+           [:black a x [:red b y [:red c z d]]])] (R (B a x b) y (B c z d))
+         :else node))
 
     ;; 200ms
     (let [^objects node (B (R (R nil nil nil) nil nil) nil nil)]

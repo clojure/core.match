@@ -150,28 +150,38 @@
 
 (defmethod check-size? :default
   [_] true)
+
 (defmethod tag :default
   [t] (throw (Exception. (str "No tag specified for vector specialization " t))))
 
 (defmethod tag ::vector
   [_] clojure.lang.IPersistentVector)
+
 (defn with-tag [t ocr]
   (let [the-tag (tag t)
         the-tag (if (.isArray ^Class the-tag)
                   (.getName ^Class the-tag)
                   the-tag)]
     (with-meta ocr (assoc (ocr meta) :tag the-tag))))
+
 (defmethod test-inline ::vector
-  [t ocr] `(vector? ~ocr))
+  [t ocr] (if (= t ::vector)
+           `(vector? ~ocr)
+           `(instance? ~(tag t) ~ocr)))
+
 (defmethod test-with-size-inline ::vector
   [t ocr size] `(and ~(test-inline t ocr) (= ~(count-inline t (with-tag t ocr)) ~size)))
+
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
+
 (defmethod nth-inline ::vector
   [_ ocr i] `(nth ~ocr ~i))
+
 (defmethod nth-offset-inline ::vector
   [t ocr i offset]
   (nth-inline t ocr i))
+
 (defmethod subvec-inline ::vector
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
