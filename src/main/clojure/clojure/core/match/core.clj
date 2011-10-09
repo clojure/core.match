@@ -554,12 +554,16 @@
             ;; usable by a switch node
             [this cs]
             (into []
-                  (map (fn [c]
+                  (map (fn [c rows]
                          (let [s (-> this 
-                                   (specialize c (rows this) (occurrences this)) 
+                                   (specialize c rows (occurrences this)) 
                                    compile)]
                            [c s]))
-                       cs)))
+                       cs (loop [[c :as cs] (seq cs) grouped [] rows (rows this)]
+                            (if (nil? cs)
+                              grouped
+                              (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
+                                (recur (next cs) (conj grouped l) r)))))))
 
           (switch-or-bind-node [col ocrs clauses default]
             (letfn [(expression? 
@@ -737,10 +741,12 @@
 ;; =============================================================================
 ;; ## Default Matrix Specialization
 
-(defn default-specialize-matrix [this rows ocrs]
+;; NOTE: not sure if this is correct since we're getting all the rows - David
+
+(defn default-specialize-matrix [p rows ocrs]
   (let [focr (first ocrs)
         nrows (->> rows
-                   (filter #(pattern-equals this (first %)))
+                   (filter #(pattern-equals p (first %)))
                    (map #(drop-nth-bind % 0 focr))
                    vec)
         nocrs (drop-nth ocrs 0)
@@ -853,8 +859,7 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
-          srows (filter #(pattern-equals this (first %)) rows)
-          nrows (->> srows
+          nrows (->> rows
                      (map (fn [row]
                             (let [p (first row)
                                   [h t] (if (seq-pattern? p)
@@ -947,9 +952,8 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
-          srows (filter #(pattern-equals this (first %)) rows)
           only? (atom false)
-          all-keys (->> srows
+          all-keys (->> rows
                         (remove (comp wildcard-pattern? first))
                         (map (fn [row]
                                (let [^MapPattern p (first row)
@@ -963,7 +967,7 @@
                         sort) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
-          nrows (->> srows
+          nrows (->> rows
                      (map (fn [row]
                             (let [p (first row)
                                   only (seq (-> p meta :only))
@@ -1054,9 +1058,8 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
-          srows (filter #(pattern-equals this (first %)) rows)
-          ^VectorPattern fp (ffirst srows)
-          [rest? min-size] (->> srows
+          ^VectorPattern fp (ffirst rows)
+          [rest? min-size] (->> rows
                                 (reduce (fn [[rest? min-size] [p & ps]]
                                           (if (vector-pattern? p)
                                             [(or rest? (.rest? ^VectorPattern p))
@@ -1064,7 +1067,7 @@
                                             [rest? min-size]))
                                         [false (.size ^VectorPattern fp)]))
           [nrows nocrs] (if rest?
-                          [(->> srows
+                          [(->> rows
                                 (map (fn [row]
                                        (let [p (first row)
                                              ps (cond
@@ -1083,7 +1086,7 @@
                                  vr-ocr (with-meta vr-ocr
                                           (assoc ocr-meta :bind-expr (subvec-inline t (with-tag t vec-ocr) min-size)))]
                              (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))]
-                          [(->> srows
+                          [(->> rows
                                 (map (fn [row]
                                        (let [p (first row)
                                              ps (if (vector-pattern? p)
@@ -1143,6 +1146,7 @@
           nrows (->> rows
                      (map (fn [row]
                             (let [p (first row)]
+                              ;; NOTE: hmm why can't we remove this - David
                               (if (and (pattern-equals this p)
                                        (not (wildcard-pattern? p)))
                                 (map (fn [p]
@@ -1199,7 +1203,6 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (->> rows
-                     (filter #(pattern-equals this (first %)))
                      (map (fn [row]
                             (let [p (first row)]
                               (if (guard-pattern? p)

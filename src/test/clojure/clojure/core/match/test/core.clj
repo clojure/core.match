@@ -448,17 +448,27 @@
              :d))
          :d)))
 
+(deftest match-order-1
+  (is (= (let [x '(1 2) y 1]
+           (match [x y]
+             [([1] :seq) _] :a0
+             [_ 1] :a1
+             [([1 2] :seq) _] :a2
+             [_ 2] :a3
+             :else :a4))
+         :a1)))
+
 (comment
-  ;; MATCH-26
-  ;; WRONG: :a2 should be  
-  (let [x '(1 2) y 1]
-    (match [x y]
-      [([1] :seq) _] :a0
-      [_ 1] :a1
-      [([1 2] :seq) _] :a2
-      [_ 2] :a3
-      :else :a4))
-  )
+  ;; TODO: should be :a2
+ (deftest match-order-2
+   (is (= (let [x '(1 2) y 3]
+            (match [x y]
+              [([1] :seq) _] :a0
+              [_ 1] :a1
+              [([1 2] :seq) _] :a2
+              [_ 2] :a3
+              :else :a4))
+          :a2))))
 
 (comment
   ;; TODO: should not match - David
