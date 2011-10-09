@@ -1230,6 +1230,10 @@
 (defmethod pattern-compare [WildcardPattern WildcardPattern]
   [a b] 0)
 
+;; NOTE: if recur is present we want all objects to equal wildcards, this is
+;; because we push the wildcard matches along as well in the matrix specialization
+;; since we don't have backtracking in this case - David
+
 (defmethod pattern-compare [Object WildcardPattern]
   [a b] (if *recur-present* 0 1))
 

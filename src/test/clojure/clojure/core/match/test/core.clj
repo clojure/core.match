@@ -337,12 +337,13 @@
 
 (deftest red-black-tree-pattern-1
   (is (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
-             (match [n]
-               [([:black ([:red ([:red _ _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] :valid
-               [([:black ([:red _ _ ([:red _ _ _] ::clojure.core.match.core/vector)] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] :valid
-               [([:black _ _ ([:red ([:red _ _ _] ::clojure.core.match.core/vector) _ _] ::clojure.core.match.core/vector)] ::clojure.core.match.core/vector)] :valid
-               :else :invalid))
-         :valid)))
+           (match [n]
+             [([:black [:red [:red a x b] y c] z d] |
+               [:black [:red a x [:red b y c]] z d] |
+               [:black a x [:red [:red b y c] z d]] |
+               [:black a x [:red b y [:red c z d]]])] :balance
+             :else :valid))
+         :balance)))
 
 (deftest vector-pattern-rest-1
   (is (= (let [v [1 2 3 4]]
