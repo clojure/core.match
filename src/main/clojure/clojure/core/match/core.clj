@@ -1231,7 +1231,7 @@
   [a b] 0)
 
 (defmethod pattern-compare [Object WildcardPattern]
-  [a b] 0)
+  [a b] (if *recur-present* 0 1))
 
 (prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
