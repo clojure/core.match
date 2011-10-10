@@ -24,7 +24,7 @@
 
 ;; # Nomenclature
 ;;
-;; * x and y are called _occurances_
+;; * x and y are called _occurrences_
 ;; * 1, 2, 3 and 4 are _patterns_
 ;; * [1 2] and [3 4] are _pattern rows_
 ;; * :a0 and :a1 are _actions_
@@ -578,7 +578,7 @@
 
           (switch-or-bind-node [col ocrs clauses default]
             (letfn [(expression? 
-                      ;; Returns true if occurance ocr is an expression
+                      ;; Returns true if occurrence ocr is an expression
                       [ocr] 
                       (contains? (meta ocr) :ocr-expr))
                     (bind-variables 
@@ -594,10 +594,10 @@
                 (let [b (bind-variables ocrs)
                       o (ocrs col)
                       n (switch-node o clauses default)
-                      _ (trace-dag "Add bind-node on occurance " o ", bindings" b)]
+                      _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
                   (bind-node b n))
                 (let [o (ocrs col)
-                      _ (trace-dag "Add switch-node on occurance " o)]
+                      _ (trace-dag "Add switch-node on occurrence " o)]
                   (switch-node o clauses default)))))]
     (let [this (reduce (fn [matrix p]
                          (specialize matrix p (rows matrix) (occurrences matrix)))
@@ -816,7 +816,7 @@
 ;; A literal pattern is not further split into further patterns in the DAG
 ;; compilation phase.
 ;;
-;; It "literally" matches a given occurance.
+;; It "literally" matches a given occurrence.
 
 (deftype LiteralPattern [l _meta]
   clojure.lang.IObj
@@ -1292,7 +1292,7 @@
 
 (defmulti to-source 
   "Returns a Clojure form that, when executed, is truthy if the pattern matches
-  the occurance. Dispatches on the `type` of the pattern. For instance, a literal pattern 
+  the occurrence. Dispatches on the `type` of the pattern. For instance, a literal pattern 
   might return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match."
   (fn [pattern ocr] (type pattern)))
 
@@ -1407,10 +1407,10 @@
 (defn- check-matrix-args [vars clauses]
   (cond
    (symbol? vars) (throw (AssertionError.
-                          (str "Occurances must be in a vector."
+                          (str "Occurrences must be in a vector."
                                " Try changing " vars " to [" vars "]")))
    (not (vector? vars)) (throw (AssertionError.
-                                (str "Occurances must be in a vector. "
+                                (str "Occurrences must be in a vector. "
                                      vars " is not a vector"))))
 
   (letfn [(check-pattern [pat nvars rownum]
@@ -1427,7 +1427,7 @@
                      (str "Pattern row " rownum
                           ": Pattern row has differing number of patterns. "
                           pat " has " (count pat) " pattern/s, expecting "
-                          nvars " for occurances " vars)))))]
+                          nvars " for occurrences " vars)))))]
 
     (let [nvars (count vars)
           cls (partition 2 clauses)]
@@ -1510,7 +1510,7 @@
       `~(clj-form vars clauses))))
 
 (defmacro match 
-  "Pattern match a row of occurances. Take a vector of occurances, vars.
+  "Pattern match a row of occurrences. Take a vector of occurrences, vars.
   Clause question-answer syntax is like `cond`. Questions must be
   wrapped in a vector, with same arity as vars. Last question can be :else,
   which expands to a row of wildcards.

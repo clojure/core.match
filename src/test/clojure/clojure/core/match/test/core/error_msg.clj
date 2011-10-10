@@ -4,17 +4,17 @@
         [clojure.core.match.core.debug])
   (:use [clojure.test]))
 
-(deftest match-errors-occurances-symbol
+(deftest match-errors-occurrences-symbol
   (is (thrown-with-msg?
         AssertionError
-        #"Occurances must be in a vector. Try changing x to \[x\]"
+        #"Occurrences must be in a vector. Try changing x to \[x\]"
         (m-to-clj x
                   [1] :a1))))
 
-(deftest match-errors-occurances-list
+(deftest match-errors-occurrences-list
   (is (thrown-with-msg?
         AssertionError
-        #"Occurances must be in a vector. \(x\) is not a vector"
+        #"Occurrences must be in a vector. \(x\) is not a vector"
         (m-to-clj (x)
                   [1] :a1))))
 
@@ -74,7 +74,7 @@
 (deftest match-differing-patterns
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurances \[x\]"
+        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurrences \[x\]"
         (m-to-clj [x]
                   [1 2] 1
                   :else 1))))
@@ -82,7 +82,7 @@
 (deftest match-differing-patterns
   (is (thrown-with-msg?
         AssertionError
-        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurances \[x\]"
+        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurrences \[x\]"
         (m-to-clj [x]
                   [1 2] 1
                   :else 1))))
