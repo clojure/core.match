@@ -282,7 +282,7 @@ Matching single variables
 ---
 
 `clojure.core.match.core/match-1` is sugar over `match` that allows pattern matching over a single variable, without
-an "extra" pair of `[]` around the occurances and each pattern row.
+an "extra" pair of `[]` around the occurrences and each pattern row.
 
 ```clojure
 (let [x 3]
