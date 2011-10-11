@@ -1461,7 +1461,7 @@
              (if (= :else p)
                (do (trace-matrix "Convert :else clause to row of wildcards")
                    (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
-               cs))
+               (conj (vec cs) [(->> vars (map (fn [_] '_)) vec) nil])))
         clause-sources (into [] (map emit-clause cs))
         vars (vec (map (fn [var]
                          (if (not (symbol? var))
