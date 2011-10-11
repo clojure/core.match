@@ -1,7 +1,7 @@
 (ns clojure.core.match.test.core.error-msg
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [clojure.core.match.core]
-        [clojure.core.match.core.debug])
+  (:use [clojure.core.match]
+        [clojure.core.match.debug])
   (:use [clojure.test]))
 
 (deftest match-errors-occurrences-symbol

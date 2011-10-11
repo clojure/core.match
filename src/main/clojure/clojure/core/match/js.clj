@@ -1,6 +1,6 @@
 (ns clojure.core.match.js
   (:refer-clojure :exclude [compile])
-  (:use [clojure.core.match.core :exclude [match]]))
+  (:use [clojure.core.match :exclude [match]]))
 
 (defmacro match 
   [vars & clauses]

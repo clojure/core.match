@@ -1,5 +1,5 @@
 (ns clojure.core.match.regex
-  (:use [clojure.core.match.core 
+  (:use [clojure.core.match
          :only [emit-pattern to-source pattern-equals pattern-compare]])
   (:import java.util.regex.Pattern))
 

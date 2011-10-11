@@ -15,7 +15,7 @@ The fastest way to use this library is with Leiningen or Cake. Add the following
 Use via:
 
 ```clojure
-(use '[clojure.core.match.core :only [match]])
+(use '[clojure.core.match :only [match]])
 ```
 
 ClojureScript
@@ -281,7 +281,7 @@ For example, this syntax is illegal:
 Matching single variables
 ---
 
-`clojure.core.match.core/match-1` is sugar over `match` that allows pattern matching over a single variable, without
+`clojure.core.match/match-1` is sugar over `match` that allows pattern matching over a single variable, without
 an "extra" pair of `[]` around the occurrences and each pattern row.
 
 ```clojure

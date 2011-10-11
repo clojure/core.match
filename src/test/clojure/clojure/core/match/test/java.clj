@@ -1,6 +1,6 @@
 (ns clojure.core.match.test.java
   (:refer-clojure :exclude [reify == inc compile])
-  (:use [clojure.core.match.core]
+  (:use [clojure.core.match]
         [clojure.core.match.java]
         [clojure.test]))
 
