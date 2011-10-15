@@ -1533,3 +1533,9 @@
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(defmacro match-let [bindings & body]
+  (let [bindvars# (take-nth 2 bindings)]
+    `(let ~bindings
+       (match [~@bindvars#]
+         ~@body))))
