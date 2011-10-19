@@ -1402,6 +1402,31 @@
   (let [p (into [] (map emit-pattern pat))]
     (pattern-row p action)))
 
+(defn- wildcards-and-duplicates
+  "Returns a vector of two elements: the set of all wildcards and the set of duplicate wildcards.  The underbar _ is excluded from both."
+  [patterns]
+  (loop [remaining patterns seen #{} dups #{}]
+    (if-let [patterns (seq remaining)]
+      (let [pat (first patterns)
+            pats (rest patterns)]
+        (cond (or (= pat '_) (= pat '&)) (recur pats seen dups)
+              (symbol? pat) (if (contains? seen pat)
+                              (recur pats seen (conj dups pat))
+                              (recur pats (conj seen pat) dups))
+              (vector? pat) (recur (concat pats pat) seen dups)
+              (map? pat) (recur (concat pats (vals pat)) seen dups)
+              (seq? pat) (case (second pat)
+                           :as (recur (concat pats (take-nth 2 pat)) seen dups)
+                           | (let [wds (map wildcards-and-duplicates (map list (take-nth 2 pat)))
+                                   mseen (apply set/union (map first wds))]
+                               (recur pats (set/union seen mseen) (apply set/union dups (set/intersection seen mseen) (map second wds))))
+                           (recur (conj pats (first pat)) seen dups))
+              :else (recur pats seen dups)))
+      [seen dups])))
+
+(defn- find-duplicate-wildcards [pattern]
+  (second (wildcards-and-duplicates pattern)))
+
 ;; This could be scattered around in other functions to be more efficient
 ;; Turn off *syntax-check* to disable
 (defn- check-matrix-args [vars clauses]
@@ -1427,7 +1452,13 @@
                      (str "Pattern row " rownum
                           ": Pattern row has differing number of patterns. "
                           pat " has " (count pat) " pattern/s, expecting "
-                          nvars " for occurrences " vars)))))]
+                          nvars " for occurrences " vars))))
+            (when-let [duplicates (seq (find-duplicate-wildcards pat))]
+              (throw (AssertionError.
+                     (str "Pattern row " rownum
+                          ": Pattern row reuses wildcards in " pat
+                          ".  The following wildcards are ambiguous: " (apply str (interpose ", " duplicates))
+                          ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely.")))))]
 
     (let [nvars (count vars)
           cls (partition 2 clauses)]

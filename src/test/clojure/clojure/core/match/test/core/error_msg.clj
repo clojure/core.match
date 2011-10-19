@@ -86,3 +86,23 @@
         (m-to-clj [x]
                   [1 2] 1
                   :else 1))))
+
+(deftest match-duplicate-wildcards
+  (is (thrown-with-msg?
+        AssertionError
+        #"Pattern row 1: Pattern row reuses wildcards in \[a a\].  The following wildcards are ambiguous: a.  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."
+        (m-to-clj [x y]
+                  [a a] a
+                  :else 1))))
+
+(deftest match-duplicate-wildcards2
+  (is (thrown-with-msg?
+        AssertionError
+        #"Pattern row 1: Pattern row reuses wildcards in \[.*\].  The following wildcards are ambiguous: aa, x.  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."
+        (m-to-clj [xx yy]
+                  [x ([:black [:red [:red a x b] y c] z d] |
+                      [:black [:red a x [:red b y c]] z d] |
+                      [:black a x [:red [:red b y c] z d]] |
+                      [:black aa x [:red [:black aa y c] z d]] |
+                      [:black a x [:red b y [:red c z d]]]) ]     a
+                  :else 1))))
