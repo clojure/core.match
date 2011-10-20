@@ -169,6 +169,33 @@
              :else []))
          :a1)))
 
+;; like guard-pattern-match-1 but uses 'flattened' syntax for guard
+(deftest guard-pattern-match-2
+  (is (= (let [y '(2 3 4 5)]
+           (match [y]
+             [([_ a :when even? _ _] :seq)] :a0
+             [([_ b :when [odd? div3?] _ _] :seq)] :a1
+             :else []))
+         :a1)))
+
+;; uses 'flattened' syntax for guard
+(deftest guard-pattern-match-3
+  (is (= (let [x 2 y 3 z [4 5]]
+           (match [x y z]
+             [a :when even? _ [b c] :as d] (+ (first d) c)
+             [_ b :when [odd? div3?] _] :a1
+             :else []))
+         9)))
+
+;; use ':when pattern to match literal :when (as opposed to guard syntax)
+(deftest literal-when-match-1
+  (is (= (let [x :as y :when z 1]
+           (match [x y z]
+             [a ':when 1] :success
+             [:as _ 2] :fail
+             :else :fail))
+         :success)))
+
 (extend-type java.util.Date
   IMatchLookup
   (val-at* [this k not-found]

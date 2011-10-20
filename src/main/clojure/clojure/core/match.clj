@@ -1352,7 +1352,8 @@
 (defmethod emit-pattern clojure.lang.ISeq
   [pat] (if (and (= (count pat) 2)
                  (= (first pat) 'quote)
-                 (symbol? (second pat)))
+                 (or (symbol? (second pat))
+                     (keyword? (second pat))))
           (literal-pattern (second pat))
           (emit-pattern-for-syntax pat)))
 
@@ -1398,8 +1399,43 @@
                (vec (remove #(= % :default)
                             (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
 
+
+(defn- pattern-keyword? [kw]
+  (#{:when :as} kw))
+
+(defn- interpose1
+  "Like regular interpose, but guarantees that at least one interposing sep is used.  For example, (interpose1 'x '(1)) => (1 x)"
+  [sep coll]
+  (let [result (interpose sep coll)]
+    (cond (seq (rest result)) result
+          (not (seq result)) (list sep)
+          :else (list (first result) sep))))
+
+(let [void (gensym)]
+  ;; void is a unique placeholder for nothing -- we can't use nil because that's a legal symbol in a pattern row
+  (defn- regroup-keywords [pattern]
+    (cond (vector? pattern)
+          (first (reduce (fn [[result p q] r]
+                           (cond (= void p) [result q r]
+                                 (and (not= void r) (pattern-keyword? q)) [(conj result (list (regroup-keywords p) q r)) void void]
+                                 :else [(conj result (regroup-keywords p)) q r]))
+                         [[] void void]
+                         (conj pattern void void)))
+          (seq? pattern) (if (= (second pattern) '|)
+                           (interpose1 '| (map regroup-keywords (take-nth 2 pattern)))
+                           (cons (regroup-keywords (first pattern)) (rest pattern)))
+          :else pattern)))
+
+ (defn- group-keywords 
+  "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  The original pattern
+may use the 'flattened' syntax.  For example, a 'flattened' pattern row like [a b :when even?]
+is grouped as [a (b :when even?)]."
+  [pattern]
+  (if (vector? pattern) (regroup-keywords pattern) pattern))
+
+
 (defn emit-clause [[pat action]]
-  (let [p (into [] (map emit-pattern pat))]
+  (let [p (into [] (map emit-pattern (group-keywords pat)))]
     (pattern-row p action)))
 
 (defn- wildcards-and-duplicates
@@ -1439,6 +1475,7 @@
                                      vars " is not a vector"))))
 
   (letfn [(check-pattern [pat nvars rownum]
+           (let [pat (group-keywords pat)]
             (cond 
              (not (vector? pat)) (throw (AssertionError. 
                                          (str "Pattern row " rownum
@@ -1458,8 +1495,7 @@
                      (str "Pattern row " rownum
                           ": Pattern row reuses wildcards in " pat
                           ".  The following wildcards are ambiguous: " (apply str (interpose ", " duplicates))
-                          ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely.")))))]
-
+                          ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."))))))]
     (let [nvars (count vars)
           cls (partition 2 clauses)]
       (doseq [[[pat _] rownum] (map vector (butlast cls) (rest (range)))]
@@ -1570,3 +1606,4 @@
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
+
