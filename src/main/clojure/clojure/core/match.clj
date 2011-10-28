@@ -227,6 +227,9 @@
 ;; Used to determine the set of constructors presents in a column and the
 ;; order which they should be considered
 
+;; FIXME: we use 1 instead of -1, this means we probably have a reverse
+;; somehwere - David
+
 (defmulti pattern-compare 
   "Like `clojure.core/compare` but for comparing patterns"
   (fn [a b] [(type a) (type b)]))
