@@ -515,11 +515,3 @@
              [_ 2] :a3
              :else :a4))
          :a3)))
-
-(comment
-  ;; TODO: should not match - David
-  (let [l '(1 2 3)]
-    (match [l]
-      [([a & [b & [c d]]] :seq)] :a0
-      :else :a1))
-  )
