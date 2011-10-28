@@ -3,6 +3,7 @@ From 0.2.0-alpha5 to 0.2.0-alpha6
 
 Fixes
 ----
+* MATCH-34: no more infix or pattern syntax
 * MATCH-10: support maps with keys of heterogenous types
 * MATCH-30: throw if same binding name used in row
 * MATCH-33: fix readme typo
