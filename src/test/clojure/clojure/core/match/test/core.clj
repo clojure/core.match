@@ -278,7 +278,7 @@
 
 (deftest match-single-1
   (is (= (let [x 3]
-           (match-1 x
+           (match x
              1 :a0
              2 :a1
              :else :a2))
@@ -286,7 +286,7 @@
 
 (deftest match-single-2
   (is (= (let [x 3]
-           (match-1 (mod x 2)
+           (match (mod x 2)
              1 :a0
              2 :a1
              :else :a2))
@@ -296,7 +296,7 @@
 ;; whatever pattern they actually contain - David
 (comment
   (deftest match-single-3
-    (is (= (match-1 [1 2] 
+    (is (= (match [1 2] 
              [2 1] :a0 
              (_ :when #(= (count %) 2)) :a1
              :else :a2)
@@ -478,7 +478,7 @@
 
 (deftest exception-1
   (is (= (try
-           (match-1 :a :a (throw (Exception.)) :else :c)
+           (match :a :a (throw (Exception.)) :else :c)
            (catch Exception e
              :d))
          :d)))

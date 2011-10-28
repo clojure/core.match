@@ -1572,27 +1572,6 @@
 ;; ============================================================================
 ;; # Match macros
 
-(defmacro match-1 
-  "Pattern match a single value. Clause question-answer syntax is like
-  `cond`.
-  
-  Example:
-  (let [x 1]
-    (match-1 x
-             1 :answer1
-             2 :answer2
-             :else :default-answer)))"
-  [vars & clauses]
-  (binding [*line* (-> &form meta :line)
-            *locals* (dissoc &env '_)
-            *warned* (atom false)]
-    (let [[vars clauses] [[vars] (mapcat (fn [[row action]]
-                                           (if (not= row :else)
-                                             [[row] action]
-                                             [row action]))
-                                         (partition 2 clauses))]]
-      `~(clj-form vars clauses))))
-
 (defmacro match 
   "Pattern match a row of occurrences. Take a vector of occurrences, vars.
   Clause question-answer syntax is like `cond`. Questions must be
@@ -1606,10 +1585,16 @@
              [1 2 3] :answer1
              :else :default-answer))"
   [vars & clauses]
-  (binding [*line* (-> &form meta :line)
-            *locals* (dissoc &env '_)
-            *warned* (atom false)]
-    `~(clj-form vars clauses)))
+  (let [[vars clauses] (if (vector? vars)
+                         [vars clauses]
+                         [(vector vars)
+                          (mapcat (fn [[c a]]
+                                    [(if (not= c :else) (vector c) c) a])
+                                  (partition 2 clauses))])]
+   (binding [*line* (-> &form meta :line)
+             *locals* (dissoc &env '_)
+             *warned* (atom false)]
+     `~(clj-form vars clauses))))
 
 (defmacro matchv [type vars & clauses]
   (binding [*vector-type* type
