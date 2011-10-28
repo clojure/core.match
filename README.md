@@ -296,7 +296,7 @@ Matching single variables is simple:
 ;=> :a2
 ```
 
-Note that :else clauses are special and never need to be wrapped.
+Note that <code>:else</code> clauses are special and never need to be wrapped.
 
 Road Map
 ----
