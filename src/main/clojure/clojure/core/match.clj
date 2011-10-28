@@ -1361,34 +1361,37 @@
   "Handles patterns wrapped in the special list syntax. Dispatches
   on the second item in the list. For example, the pattern `(1 :as a)`
   is dispatched by :as."
-  (fn [syn] (second syn)))
+  (fn [[f s]]
+    (if (keyword? f)
+      [f (type s)]
+      [(type f) s])))
 
-(defmethod emit-pattern-for-syntax '|
+(defmethod emit-pattern-for-syntax [Object '|]
   [pat] (or-pattern
          (->> pat
               (remove '#{|})
               (map emit-pattern)
               (into []))))
 
-(defmethod emit-pattern-for-syntax :as
+(defmethod emit-pattern-for-syntax [Object :as]
   [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
 
-(defmethod emit-pattern-for-syntax :when
+(defmethod emit-pattern-for-syntax [Object :when]
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
 
-(defmethod emit-pattern-for-syntax :seq
+(defmethod emit-pattern-for-syntax [Object :seq]
   [pat]
   (let [p (first pat)]
     (if (empty? p)
       (literal-pattern ())
       (seq-pattern (emit-patterns p :seq)))))
 
-(defmethod emit-pattern-for-syntax ::vector
+(defmethod emit-pattern-for-syntax [Object ::vector]
   [[p t offset-key offset]] (let [ps (emit-patterns p :vector)]
                               (vector-pattern ps t offset (some rest-pattern? ps))))
 
-(defmethod emit-pattern-for-syntax :only
+(defmethod emit-pattern-for-syntax [Object :only]
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))
 
 (defmethod emit-pattern-for-syntax :default

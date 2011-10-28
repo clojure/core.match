@@ -55,12 +55,14 @@
                   [1] :a1
                   [1]))))
 
-(deftest match-list-syntax-error
-  (is (thrown-with-msg?
-        AssertionError
-        #"Invalid list syntax :what in \(1 :what a\). Valid syntax: \[:vector | :as :when\]"
-        (m-to-clj [x]
-                  [(1 :what a)] :a1))))
+(comment
+  (deftest match-list-syntax-error
+    (is (thrown-with-msg?
+          AssertionError
+          #"Invalid list syntax :what in \(1 :what a\). Valid syntax: \[:vector | :as :when\]"
+          (m-to-clj [x]
+                    [(1 :what a)] :a1))))
+  )
 
 (deftest match-else-clause-error
   (is (thrown-with-msg?
