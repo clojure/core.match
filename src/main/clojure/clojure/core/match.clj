@@ -983,7 +983,7 @@
                                   (set only)])))
                         (reduce concat)
                         (reduce set/union #{})
-                        (sort key-compare)) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
+                        (sort key-compare))
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
           nrows (->> rows
