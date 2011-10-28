@@ -308,7 +308,7 @@ This is equivalent to the following `match`.
 ;=> :a2
 ```
 
-As shown, :else clauses are special, in that they are not implicitely wrapped in `[]`.
+As shown, :else clauses are special, in that they are not wrapped in `[]`.
 
 
 Road Map
