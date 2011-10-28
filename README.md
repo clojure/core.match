@@ -285,31 +285,18 @@ For example, this syntax is illegal:
 Matching single variables
 ---
 
-`clojure.core.match/match-1` is sugar over `match` that allows pattern matching over a single variable, without
-an "extra" pair of `[]` around the occurrences and each pattern row.
+Matching single variables is simple:
 
 ```clojure
 (let [x 3]
-  (match-1 x
-           1 :a0
-           2 :a1
-           :else :a2))
+  (match x
+    1 :a0
+    2 :a1
+    :else :a2))
 ;=> :a2
 ```
 
-This is equivalent to the following `match`.
-
-```clojure
-(let [x 3]
-  (match [x]
-         [1] :a0
-         [2] :a1
-         :else :a2))
-;=> :a2
-```
-
-As shown, :else clauses are special, in that they are not wrapped in `[]`.
-
+Note that :else clauses are special and never need to be wrapped.
 
 Road Map
 ----
