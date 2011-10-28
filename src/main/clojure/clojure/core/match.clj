@@ -1456,9 +1456,16 @@
                               (recur pats (conj seen pat) dups))
               (vector? pat) (recur (concat pats pat) seen dups)
               (map? pat) (recur (concat pats (vals pat)) seen dups)
-              (seq? pat) (case (second pat)
-                           :as (recur (concat pats (take-nth 2 pat)) seen dups)
-                           (recur (conj pats (first pat)) seen dups))
+              (seq? pat) (cond
+                          (= (first pat) :or) (let [wds (map wildcards-and-duplicates
+                                                             (map list (take-nth 2 pat)))
+                                                    mseen (apply set/union (map first wds))]
+                                                (recur pats (set/union seen mseen)
+                                                       (apply set/union dups
+                                                              (set/intersection seen mseen)
+                                                              (map second wds))))
+                          (= (second pat) :as) (recur (concat pats (take-nth 2 pat)) seen dups)
+                          :else (recur (conj pats (first pat)) seen dups))
               :else (recur pats seen dups)))
       [seen dups])))
 
