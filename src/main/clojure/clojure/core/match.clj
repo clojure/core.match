@@ -950,6 +950,11 @@
 (declare map-pattern?)
 (declare guard-pattern)
 
+(defn key-compare [a b]
+    (if (= (type a) (type b))
+      (compare a b)
+      -1))
+
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
   (meta [_] _meta)
@@ -978,7 +983,7 @@
                                   (set only)])))
                         (reduce concat)
                         (reduce set/union #{})
-                        sort) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
+                        (sort key-compare)) ;; NOTE: this assumes keys are of a homogenous type, can't sort #{1 :a} - David
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
           nrows (->> rows
@@ -995,7 +1000,7 @@
                                                                            [{} wc-map])]
                                               (merge not-found-map wc-map m))
                                             wc-map)
-                                  ps (map second (sort ocr-map))
+                                  ps (map second (sort (fn [[a _] [b _]] (key-compare a b)) ocr-map))
                                   ps (if @only?
                                        (if only
                                          (let [a (with-meta (gensym) {:tag 'java.util.Map})]

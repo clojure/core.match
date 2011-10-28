@@ -469,6 +469,13 @@
                   :else :a1))
               :a1))))
 
+(deftest map-pattern-heterogenous-keys-1
+  (is (= (let [m {:foo 1 "bar" 2}]
+           (match [m]
+             [{:foo 1 "bar" 2}] :a0
+             :else :a1))
+         :a0)))
+
 (deftest exception-1
   (is (= (try
            (match-1 :a :a (throw (Exception.)) :else :c)
