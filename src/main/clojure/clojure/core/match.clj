@@ -1298,7 +1298,7 @@
 
 (defmulti emit-pattern 
   "Returns the corresponding pattern for the given syntax. Dispatches
-  on the class of its argument. For example, `[(1 | 2) 2]` is dispatched
+  on the class of its argument. For example, `[(:or 1 2) 2]` is dispatched
   as clojure.lang.IPersistentVector"
   class)
 
@@ -1366,10 +1366,9 @@
       [f (type s)]
       [(type f) s])))
 
-(defmethod emit-pattern-for-syntax [Object '|]
+(defmethod emit-pattern-for-syntax [:or Object]
   [pat] (or-pattern
          (->> pat
-              (remove '#{|})
               (map emit-pattern)
               (into []))))
 
@@ -1407,7 +1406,8 @@
   (#{:when :as} kw))
 
 (defn- interpose1
-  "Like regular interpose, but guarantees that at least one interposing sep is used.  For example, (interpose1 'x '(1)) => (1 x)"
+  "Like regular interpose, but guarantees that at least one interposing 
+   sep is used.  For example, (interpose1 'x '(1)) => (1 x)"
   [sep coll]
   (let [result (interpose sep coll)]
     (cond (seq (rest result)) result
@@ -1415,24 +1415,25 @@
           :else (list (first result) sep))))
 
 (let [void (gensym)]
-  ;; void is a unique placeholder for nothing -- we can't use nil because that's a legal symbol in a pattern row
+  ;; void is a unique placeholder for nothing -- we can't use nil
+  ;; because that's a legal symbol in a pattern row
   (defn- regroup-keywords [pattern]
     (cond (vector? pattern)
           (first (reduce (fn [[result p q] r]
-                           (cond (= void p) [result q r]
-                                 (and (not= void r) (pattern-keyword? q)) [(conj result (list (regroup-keywords p) q r)) void void]
-                                 :else [(conj result (regroup-keywords p)) q r]))
+                           (cond
+                            (= void p) [result q r]
+                            (and (not= void r) (pattern-keyword? q))
+                            [(conj result (list (regroup-keywords p) q r)) void void]
+                            :else [(conj result (regroup-keywords p)) q r]))
                          [[] void void]
                          (conj pattern void void)))
-          (seq? pattern) (if (= (second pattern) '|)
-                           (interpose1 '| (map regroup-keywords (take-nth 2 pattern)))
-                           (cons (regroup-keywords (first pattern)) (rest pattern)))
+          (seq? pattern) (cons (regroup-keywords (first pattern)) (rest pattern))
           :else pattern)))
 
  (defn- group-keywords 
-  "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  The original pattern
-may use the 'flattened' syntax.  For example, a 'flattened' pattern row like [a b :when even?]
-is grouped as [a (b :when even?)]."
+   "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  
+    The original pattern may use the 'flattened' syntax.  For example, a 'flattened' 
+    pattern row like [a b :when even?] is grouped as [a (b :when even?)]."
   [pattern]
   (if (vector? pattern) (regroup-keywords pattern) pattern))
 
@@ -1442,7 +1443,8 @@ is grouped as [a (b :when even?)]."
     (pattern-row p action)))
 
 (defn- wildcards-and-duplicates
-  "Returns a vector of two elements: the set of all wildcards and the set of duplicate wildcards.  The underbar _ is excluded from both."
+  "Returns a vector of two elements: the set of all wildcards and the 
+   set of duplicate wildcards.  The underbar _ is excluded from both."
   [patterns]
   (loop [remaining patterns seen #{} dups #{}]
     (if-let [patterns (seq remaining)]
@@ -1456,9 +1458,6 @@ is grouped as [a (b :when even?)]."
               (map? pat) (recur (concat pats (vals pat)) seen dups)
               (seq? pat) (case (second pat)
                            :as (recur (concat pats (take-nth 2 pat)) seen dups)
-                           | (let [wds (map wildcards-and-duplicates (map list (take-nth 2 pat)))
-                                   mseen (apply set/union (map first wds))]
-                               (recur pats (set/union seen mseen) (apply set/union dups (set/intersection seen mseen) (map second wds))))
                            (recur (conj pats (first pat)) seen dups))
               :else (recur pats seen dups)))
       [seen dups])))

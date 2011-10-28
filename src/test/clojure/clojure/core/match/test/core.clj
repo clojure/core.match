@@ -133,8 +133,8 @@
 (deftest or-pattern-match-1
   (is (= (let [x 4 y 6 z 9]
            (match [x y z]
-             [(1 | 2 | 3) _ _] :a0
-             [4 (5 | 6 | 7) _] :a1
+             [(:or 1 2 3) _ _] :a0
+             [4 (:or 5 6 7) _] :a1
              :else []))
          :a1)))
 
@@ -143,8 +143,8 @@
                y nil
                z nil]
            (match [x y z]
-             [([1 (3 | 4) 3] :seq) _ _] :a0
-             [([1 (2 | 3) 3] :seq) _ _] :a1
+             [([1 (:or 3 4) 3] :seq) _ _] :a0
+             [([1 (:or 2 3) 3] :seq) _ _] :a1
              :else []))
          :a1)))
 
@@ -153,8 +153,8 @@
                y nil
                z nil]
            (match [x y z]
-             [{:a (1 | 2)} _ _] :a0
-             [{:a (3 | 4)} _ _] :a1
+             [{:a (:or 1 2)} _ _] :a0
+             [{:a (:or 3 4)} _ _] :a1
              :else []))
          :a1)))
 
@@ -211,7 +211,7 @@
   (is (= (let [d (java.util.Date. 2010 10 1 12 30)]
            (match [d]
              [{:year 2009 :month a}] [:a0 a]
-             [{:year (2010 | 2011) :month b}] [:a1 b]
+             [{:year (:or 2010 2011) :month b}] [:a1 b]
              :else []))
          [:a1 10])))
 
@@ -262,7 +262,7 @@
 (deftest else-clause-or-pattern-1
   (is (= (let [v 3]
            (match [v]
-                  [(1 | 2)] :a0
+                  [(:or 1  2)] :a0
                   :else :a1))
          :a1)))
 
@@ -338,7 +338,7 @@
 (deftest test-lazy-source-case-1
   (is (= (let [x [1 2]]
            (match [x] 
-              [([1 2] | [3 4] | [5 6] | [7 8] | [9 10])] :a0
+              [(:or [1 2] [3 4] [5 6] [7 8] [9 10])] :a0
               :else (throw (Exception. "Shouldn't be here"))))
          :a0)))
 
@@ -365,10 +365,10 @@
 (deftest red-black-tree-pattern-1
   (is (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
            (match [n]
-             [([:black [:red [:red a x b] y c] z d] |
-               [:black [:red a x [:red b y c]] z d] |
-               [:black a x [:red [:red b y c] z d]] |
-               [:black a x [:red b y [:red c z d]]])] :balance
+             [(:or [:black [:red [:red a x b] y c] z d]
+                   [:black [:red a x [:red b y c]] z d]
+                   [:black a x [:red [:red b y c] z d]]
+                   [:black a x [:red b y [:red c z d]]])] :balance
              :else :valid))
          :balance)))
 

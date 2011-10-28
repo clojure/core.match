@@ -9,7 +9,7 @@
 (deftest bean-match-date
   (is (= 10 (match [(java.util.Date. 2009 10 1 12 30)]
                     [{:year 2009 :month a}] a
-                    [{:year (2010 | 2011) :month b}] b
+                    [{:year (:or 2010 2011) :month b}] b
                     :else :wrong))))
 
 (bean-match java.io.File)
