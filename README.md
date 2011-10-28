@@ -129,10 +129,10 @@ It's simple to extend match to support primitive arrays so you can write the fol
 ```clojure
 (defn balance [^objects node]
   (matchv ::objects [node]
-    [([:black [:red [:red a x b] y c] z d] |
-      [:black [:red a x [:red b y c]] z d] |
-      [:black a x [:red [:red b y c] z d]] |
-      [:black a x [:red b y [:red c z d]]])] (R (B a x b) y (B c z d))))
+    [(:or [:black [:red [:red a x b] y c] z d]
+          [:black [:red a x [:red b y c]] z d]
+          [:black a x [:red [:red b y c] z d]]
+          [:black a x [:red b y [:red c z d]]])] (R (B a x b) y (B c z d))))
 ```
 
 See <code>match.array</code> for some ideas.
@@ -198,14 +198,14 @@ Or patterns are supported anywhere you would use a pattern:
 ```clojure
 (let [x '(1 2 3)]
   (match [x]
-    [[1 (3 | 4) 3]] :a0
-    [[1 (2 | 3) 3]] :a1))
+    [[1 (:or 3 4) 3]] :a0
+    [[1 (:or 2 3) 3]] :a1))
 ;; => :a1
     
 (let [x {:a 3}]
   (match [x]
-    [{:a (1 | 2)}] :a0
-    [{:a (3 | 4)}] :a1))
+    [{:a (:or 1 2)}] :a0
+    [{:a (:or 3 4)}] :a1))
 ;; => :a1
 ```
 
@@ -255,7 +255,7 @@ By extending Java types to IMatchLookup, Java types can participate in map patte
 (let [d (java.util.Date. 2010 10 1 12 30)]
   (match [d]
     [{:year 2009 :month a}] [:a0 a]
-    [{:year (2010 | 2011) :month b}] [:a1 b]))
+    [{:year (:or 2010 2011) :month b}] [:a1 b]))
 ;; => [:a1 10]
 ```
 
