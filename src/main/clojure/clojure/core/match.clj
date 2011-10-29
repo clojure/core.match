@@ -1367,8 +1367,8 @@
 
 (defmulti emit-pattern-for-syntax 
   "Handles patterns wrapped in the special list syntax. Dispatches
-  on the second item in the list. For example, the pattern `(1 :as a)`
-  is dispatched by :as."
+  on the first or second keyword in the list. For example, the pattern 
+  `(:or 1 ...) is dispatches as :or, and `(1 :as a)` is dispatched by :as."
   (fn [[f s]]
     (if (keyword? f)
       [f (type s)]
