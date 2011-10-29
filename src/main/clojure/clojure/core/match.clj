@@ -1413,15 +1413,6 @@
 (defn- pattern-keyword? [kw]
   (#{:when :as} kw))
 
-(defn- interpose1
-  "Like regular interpose, but guarantees that at least one interposing 
-   sep is used.  For example, (interpose1 'x '(1)) => (1 x)"
-  [sep coll]
-  (let [result (interpose sep coll)]
-    (cond (seq (rest result)) result
-          (not (seq result)) (list sep)
-          :else (list (first result) sep))))
-
 (let [void (gensym)]
   ;; void is a unique placeholder for nothing -- we can't use nil
   ;; because that's a legal symbol in a pattern row
