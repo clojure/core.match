@@ -41,6 +41,27 @@
     </developer>
   </developers>
 
+  <dependencies>
+      <dependency>
+        <groupId>org.clojure</groupId>
+          <artifactId>core.logic</artifactId>
+          <version>0.6.5</version>
+      </dependency>
+      <dependency>
+        <optional>true</optional>
+        <groupId>vimclojure</groupId>
+        <artifactId>server</artifactId>
+        <version>2.3.0</version>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+      <repository>
+      <id>clojars.org</id>
+      <url>http://clojars.org/repo</url>
+  </repository>
+  </repositories>
+
   <scm>
     <connection>scm:git:git://github.com/clojure/core.match.git</connection>
     <developerConnection>scm:git:git://github.com/clojure/core.match.git</developerConnection>
