@@ -239,7 +239,7 @@ Sometimes you'd like capture a part of the match with a binding:
   (match [v]
     [[[3 1]]] :a0
     [[([1 a] :as b)]] [:a1 a b]))
-;; => [:a1 1 [1 2]]
+;; => [:a1 2 [1 2]]
 ```
 
 Java Interop
