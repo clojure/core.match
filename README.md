@@ -3,6 +3,13 @@ match
 
 An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later as well as ClojureScript.
 
+Contributing
+----
+
+No pull requests please. Please open tickets and submit patches to [JIRA](http://dev.clojure.org/jira/browse/MATCH)
+
+For simple fixes you can message [swannodette](http://github.com/swannodette). Thanks.
+
 Usage
 ----
 
