@@ -1,3 +1,11 @@
+From 0.2.0-alpha6 to 0.2.0-alpha7
+====
+
+Enhancements
+---
+* remove match-1, passing single value to match now works
+
+
 From 0.2.0-alpha5 to 0.2.0-alpha6
 ====
 
