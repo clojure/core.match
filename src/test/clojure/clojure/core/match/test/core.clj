@@ -196,6 +196,36 @@
              :else :fail))
          :success)))
 
+(deftest same-symbol-using-guards
+  (is (=  (let [e '(+ 1 (+ 2 3))
+                op (first e)
+                op? #(= % op)]
+            (match [e]
+                   [([p :when op? x ([p2 :when op? y z] :seq)] :seq)] (list p x y z)))
+          '(+ 1 2 3))))
+
+(deftest quoted-symbol
+  (is (=  (let [e '(+ 1 (+ 2 3))]
+            (match [e]
+                   [(['+ x (['+ y z] :seq)] :seq)] (list '+ x y z)))
+          '(+ 1 2 3))))
+
+(deftest literal-quote
+  (is (=  (let [e 'quote
+                f 10]
+            (match [e f]
+                   ['quote quote] quote))
+          10)))
+
+
+(deftest literal-quote-seq
+  (is (=  (let [e '(:a (quote 10))]
+            (match [e]
+                   [([quote (['quote 10] :seq)] :seq)] quote))
+          :a)))
+
+
+
 (extend-type java.util.Date
   IMatchLookup
   (val-at* [this k not-found]

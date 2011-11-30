@@ -1456,6 +1456,7 @@
               (vector? pat) (recur (concat pats pat) seen dups)
               (map? pat) (recur (concat pats (vals pat)) seen dups)
               (seq? pat) (cond
+                          (= (first pat) 'quote) (recur pats seen dups)
                           (= (first pat) :or) (let [wds (map wildcards-and-duplicates
                                                              (map list (take-nth 2 pat)))
                                                     mseen (apply set/union (map first wds))]
