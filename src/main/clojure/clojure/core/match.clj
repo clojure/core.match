@@ -988,8 +988,7 @@
                                  [(set (keys (.m p)))
                                   (set only)])))
                         (reduce concat)
-                        (reduce set/union #{})
-                        (sort key-compare))
+                        (reduce set/union #{}))
           wcs (repeatedly wildcard-pattern)
           wc-map (zipmap all-keys wcs)
           nrows (->> rows
@@ -1006,7 +1005,7 @@
                                                                            [{} wc-map])]
                                               (merge not-found-map wc-map m))
                                             wc-map)
-                                  ps (map second (sort (fn [[a _] [b _]] (key-compare a b)) ocr-map))
+                                  ps (map ocr-map all-keys)
                                   ps (if @only?
                                        (if only
                                          (let [a (with-meta (gensym) {:tag 'java.util.Map})]
