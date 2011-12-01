@@ -16,17 +16,13 @@ Usage
 The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
 
 ```clojure
-[org.clojure/core.match "0.2.0-alpha6"]
+[org.clojure/core.match "0.2.0-alpha7"]
 ```
 
 Use via:
 
 ```clojure
-;; when using HEAD
 (use '[clojure.core.match :only [match]])
-
-;; when using the latest released alpha
-(use '[clojure.core.match.core :only [match]])
 ```
 
 ClojureScript
