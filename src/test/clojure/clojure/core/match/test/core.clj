@@ -552,3 +552,12 @@
              [_ 2] :a3
              :else :a4))
          :a3)))
+
+(deftest match-order-5
+  (is (= (match [["foo"]]
+           [["foo"]] :a0
+           [["foo" a]] :a1
+           [["baz"]] :a2
+           [["baz" a b]] :a3
+           :else :a4)
+         :a0)))

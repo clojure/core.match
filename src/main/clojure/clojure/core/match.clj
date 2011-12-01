@@ -63,7 +63,7 @@
   *clojurescript* false)
 
 (def ^{:dynamic true} *line*)
-(def ^{:dynamic true} *locals*)
+(def ^{:dynamic true} *locals* nil)
 (def ^{:dynamic true} *warned*)
 (def ^{:dynamic true} *vector-type* ::vector)
 (def ^{:dynamic true} *match-breadcrumbs* [])
@@ -555,13 +555,19 @@
                         () ps)
                 reverse))
 
+          (collapse [ps]
+            (reduce (fn [a b]
+                      (if (pattern-equals (first (rseq a)) b)
+                        a
+                        (conj a b)))
+                    [] ps))
+
           (column-constructors 
-            ;; Returns a sorted-set of constructors in column i of matrix this
+            ;; Returns a vector of relevant constructors in column i of matrix this
             [this i]
-            (let [ps (group-vector-patterns (column this i))]
-             (->> ps
-                  (take-while (comp not wildcard-pattern?))
-                  (apply sorted-set-by (fn [a b] (pattern-compare a b))))))
+            (let [ps (group-vector-patterns (column this i))
+                  ps (take-while (comp not wildcard-pattern?) ps)]
+              (collapse ps)))
 
           (switch-clauses 
             ;; Compile a decision trees for each constructor cs and returns a clause list
@@ -836,7 +842,7 @@
   (toString [_]
     (if (nil? l)
       "nil"
-      (str l))))
+      (pr-str l))))
 
 (defn ^LiteralPattern literal-pattern [l] 
   (LiteralPattern. l nil))
