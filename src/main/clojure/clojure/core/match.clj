@@ -959,7 +959,7 @@
 (defn key-compare [a b]
     (if (= (type a) (type b))
       (compare a b)
-      -1))
+      1))
 
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
