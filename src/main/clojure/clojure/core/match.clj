@@ -1410,19 +1410,18 @@
                             (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
 
 
-(defn- pattern-keyword? [kw]
-  (#{:when :as} kw))
-
-(let [void (gensym)]
+(let [void (Object.)
+      void? #(identical? void %)
+      infix-keyword? #(#{:when :as} %)]
   ;; void is a unique placeholder for nothing -- we can't use nil
   ;; because that's a legal symbol in a pattern row
   (defn- regroup-keywords [pattern]
     (cond (vector? pattern)
           (first (reduce (fn [[result p q] r]
                            (cond
-                            (= void p) [result q r]
-                            (and (not= void r) (pattern-keyword? q))
-                            [(conj result (list (regroup-keywords p) q r)) void void]
+                            (void? p) [result q r]
+                            (and (not (void? r)) (infix-keyword? q))
+                              [(conj result (list (regroup-keywords p) q r)) void void]
                             :else [(conj result (regroup-keywords p)) q r]))
                          [[] void void]
                          (conj pattern void void)))
