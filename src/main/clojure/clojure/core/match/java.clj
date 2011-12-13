@@ -1,5 +1,5 @@
 (ns clojure.core.match.java
-  (:use [clojure.core.match :only [IMatchLookup val-at* match]]
+  (:use [clojure.core.match :only [IMatchLookup val-at match]]
         [clojure.string :only [lower-case]]))
 
 (def ^:private method-name-pattern #"^(is|get)([A-Z].*)$")
@@ -41,7 +41,7 @@
         this (gensym "this")]
     `(extend-type ~class
        IMatchLookup
-       (~'val-at* [~this k# not-found#]
+       (~'val-at [~this k# not-found#]
           (case k#
             ~@(mapcat 
                 (fn [n] [(keywordize n) `(. ~this (~(symbol n)))]) 

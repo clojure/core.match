@@ -117,24 +117,24 @@
   "Allows arbitrary objects to act like a map-like object when pattern
   matched. Avoid extending this directly for Java Beans, see
   `match.java/bean-match`."
-  (val-at* [this k not-found]))
+  (val-at [this k not-found]))
 
 ;; =============================================================================
 ;; # Map Pattern Interop
 
 (extend-type clojure.lang.ILookup
   IMatchLookup
-  (val-at* [this k not-found]
+  (val-at [this k not-found]
     (.valAt this k not-found)))
 
-(defn val-at
-  ([m k] (val-at* m k nil))
-  ([m k not-found] (val-at* m k not-found)))
+(defn val-at*
+  ([m k] (val-at m k nil))
+  ([m k not-found] (val-at m k not-found)))
 
 (defn val-at-expr [& args]
   (if *clojurescript*
     `(get ~@args)
-    `(val-at ~@args)))
+    `(val-at* ~@args)))
 
 ;; =============================================================================
 ;; # Vector Pattern Interop
