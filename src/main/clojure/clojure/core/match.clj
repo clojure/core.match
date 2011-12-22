@@ -1376,7 +1376,7 @@
 
 (defmethod emit-pattern-for-syntax [:or Object]
   [pat] (or-pattern
-         (->> pat
+         (->> (rest pat)
               (map emit-pattern)
               (into []))))
 
