@@ -561,3 +561,13 @@
            [["baz" a b]] :a3
            :else :a4)
          :a0)))
+
+;; FIXME
+(deftest match-group-type-1
+  (is (= (match [[2]]
+           [[1]] :a0
+           [1] :a1
+           [[2]] :a2
+           [2] :a3
+           :else :a4)
+         :a0)))

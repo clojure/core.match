@@ -542,6 +542,11 @@
                   (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                   (fail-node)))))
 
+          (group-patterns [[p & prs :as ps]]
+            (if (seq ps)
+              (let [[fs rs] ((juxt filter remove) #(= (type p) (type %)) prs)]
+               (concat (cons p fs) (group-patterns rs)))))
+
           ;; analyze vector patterns, if a vector-pattern containing a rest pattern
           ;; occurs, drop all previous vector patterns that it subsumes. note this
           ;; is a bit hard coding that should be removed when get a better sense
