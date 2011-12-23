@@ -570,7 +570,7 @@
           (column-constructors 
             ;; Returns a vector of relevant constructors in column i of matrix this
             [this i]
-            (let [ps (group-vector-patterns (column this i))
+            (let [ps (group-vector-patterns (group-patterns (column this i)))
                   ps (take-while (comp not wildcard-pattern?) ps)]
               (collapse ps)))
 
