@@ -562,12 +562,32 @@
            :else :a4)
          :a0)))
 
-;; FIXME
-#_(deftest match-group-type-1
+(deftest match-order-6
   (is (= (match [[2]]
            [[1]] :a0
            [1] :a1
            [[2]] :a2
            [2] :a3
            :else :a4)
-         :a0)))
+         :a2)))
+
+(deftest match-order-6-recur
+  (is (= ((fn [x done]
+            (if done
+              done
+              (match [x]
+                [[1]] (recur x :a0)
+                [1] (recur x :a1)
+                [[2]] (recur x :a2)
+                [2] (recur x :a3)
+                :else :a4))) [2] false)
+         :a2)))
+
+(deftest match-order-7
+  (is (= (match [[2]]
+           [1] :a0
+           [[1]] :a1
+           [2] :a2
+           [[2]] :a3
+           :else :a4)
+         :a3)))

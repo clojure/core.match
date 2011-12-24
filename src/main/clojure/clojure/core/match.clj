@@ -526,29 +526,25 @@
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
   [this col ocrs]
-  (letfn [(pseudo-patterns [this i]
-            (->> (column this i)
+  (letfn [(pseudo-patterns [matrix i]
+            (->> (column matrix i)
               (filter pseudo-pattern?)))
           
-          (default-matrix 
-            [this]
-            (let [m (pattern-matrix (into [] (drop-while #(not (wildcard-pattern? (first %)))
-                                                         (rows this)))
-                                    (occurrences this))]
+          (default-matrix  [matrix]
+            (let [m (pattern-matrix
+                     (into []
+                       (drop-while #(not (wildcard-pattern? (first %)))
+                                   (rows matrix)))
+                     (occurrences matrix))]
               (if-not (empty-matrix? m)
-                (do (trace-dag "Add specialized matrix on row of wildcards as default matrix for next node")
+                (do
+                  (trace-dag (str "Add specialized matrix on row of "
+                                  "wildcards as default matrix for next node"))
                   (compile m))
                 (do 
-                  (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
+                  (trace-dag (str "Add fail-node as default matrix for next "
+                                  "node (specialized matrix empty)"))
                   (fail-node)))))
-
-          (group-patterns [ps]
-            (let [[l r] (split-with #(not (wildcard-pattern? %)) ps)]
-              (letfn [(group [[p & prs :as ps]]
-                        (if (seq ps)
-                          (let [[fs rs] ((juxt filter remove) #(= (type p) (type %)) prs)]
-                            (concat (cons p fs) (group rs)))))]
-                (concat (group l) r))))
 
           (group-rows [rows]
             (let [[l r] (split-with #(not (wildcard-pattern? (first %))) rows)]
@@ -580,43 +576,30 @@
                         (conj a b)))
                     [] ps))
 
-          (column-constructors 
-            ;; Returns a vector of relevant constructors in column i of matrix this
-            [this i]
-            (let [ps (group-vector-patterns (group-patterns (column this i)))
-                  ps (take-while (comp not wildcard-pattern?) ps)]
-              (collapse ps)))
+          ;; Returns a vector of relevant constructors in column i of matrix
+          (column-constructors [matrix i]
+            (let [cs (group-vector-patterns (column matrix i))]
+              (collapse (take-while (comp not wildcard-pattern?) cs))))
 
-          ;; (column-constructors 
-          ;;   ;; Returns a vector of relevant constructors in column i of matrix this
-          ;;   [col i]
-          ;;   (let [cs (group-vector-patterns col)]
-          ;;     (collapse (take-while (comp not wildcard-pattern?) cs))))
-
-          (switch-clauses 
-            ;; Compile a decision trees for each constructor cs and returns a clause list
-            ;; usable by a switch node
-            [this cs]
+          ;; Compile a decision trees for each constructor cs and returns a clause list
+          ;; usable by a switch node
+          (switch-clauses [matrix cs]
             (into []
-                  (map (fn [c rows]
-                         (let [s (-> this 
-                                   (specialize c rows (occurrences this)) 
-                                   compile)]
-                           [c s]))
-                       cs (loop [[c :as cs] (seq cs) grouped [] rows (rows this)]
-                            (if (nil? cs)
-                              grouped
-                              (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
-                                (recur (next cs) (conj grouped l) r)))))))
+              (map (fn [c rows]
+                     (let [s (-> matrix
+                                 (specialize c rows (occurrences matrix)) 
+                                 compile)]
+                       [c s]))
+                   cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
+                        (if (nil? cs)
+                          grouped
+                          (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
+                            (recur (next cs) (conj grouped l) r)))))))
 
           (switch-or-bind-node [col ocrs clauses default]
-            (letfn [(expression? 
-                      ;; Returns true if occurrence ocr is an expression
-                      [ocr] 
+            (letfn [(expression? [ocr] 
                       (contains? (meta ocr) :ocr-expr))
-                    (bind-variables 
-                      ;; Return bindings usable by bind-node
-                      [ocrs] 
+                    (bind-variables [ocrs] 
                       (mapcat (fn [ocr]
                                 (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
                                   (if (not= bind-expr ::not-found)
@@ -632,13 +615,13 @@
                 (let [o (ocrs col)
                       _ (trace-dag "Add switch-node on occurrence " o)]
                   (switch-node o clauses default)))))]
-    (let [;; rows (group-rows rows)
-          this (reduce (fn [matrix p]
+    (let [exp-matrix (reduce (fn [matrix p]
                          (specialize matrix p (rows matrix) (occurrences matrix)))
                        this (pseudo-patterns this col))
-          constrs (column-constructors this col) ;; (column-constructors (map first rows))
-          clauses (switch-clauses this constrs)
-          default (default-matrix this)
+          new-matrix (pattern-matrix (group-rows (rows exp-matrix)) (occurrences exp-matrix))
+          constrs (column-constructors new-matrix col)
+          clauses (switch-clauses new-matrix constrs)
+          default (default-matrix new-matrix)
           _ (trace-dag "Column" col ":" constrs)]
       (switch-or-bind-node col ocrs clauses default))))
 
