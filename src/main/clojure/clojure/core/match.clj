@@ -542,13 +542,23 @@
                   (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                   (fail-node)))))
 
-          ;; keeps patterns together, up until the point that we reach a wildcard
-          ;; this is so that a user can interleave different constructors w/o running into
-          ;; ordering issues
-          (group-patterns [[p & prs :as ps]]
-            (if (seq ps)
-              (let [[fs rs] ((juxt filter remove) #(= (type p) (type %)) prs)]
-               (concat (cons p fs) (group-patterns rs)))))
+          (group-patterns [ps]
+            (let [[l r] (split-with #(not (wildcard-pattern? %)) ps)]
+              (letfn [(group [[p & prs :as ps]]
+                        (if (seq ps)
+                          (let [[fs rs] ((juxt filter remove) #(= (type p) (type %)) prs)]
+                            (concat (cons p fs) (group rs)))))]
+                (concat (group l) r))))
+
+          (group-rows [rows]
+            (let [[l r] (split-with #(not (wildcard-pattern? (first %))) rows)]
+              (letfn [(group [[r & rs :as rows]]
+                        (if (seq rows)
+                          (let [[fd rd] ((juxt filter remove)
+                                         #(= (type (first r)) (type (first %)))
+                                         rs)]
+                            (concat (cons r fd) (group rd)))))]
+                (into [] (concat (group l) r)))))
 
           ;; analyze vector patterns, if a vector-pattern containing a rest pattern
           ;; occurs, drop all previous vector patterns that it subsumes. note this
@@ -576,6 +586,12 @@
             (let [ps (group-vector-patterns (group-patterns (column this i)))
                   ps (take-while (comp not wildcard-pattern?) ps)]
               (collapse ps)))
+
+          ;; (column-constructors 
+          ;;   ;; Returns a vector of relevant constructors in column i of matrix this
+          ;;   [col i]
+          ;;   (let [cs (group-vector-patterns col)]
+          ;;     (collapse (take-while (comp not wildcard-pattern?) cs))))
 
           (switch-clauses 
             ;; Compile a decision trees for each constructor cs and returns a clause list
@@ -616,10 +632,11 @@
                 (let [o (ocrs col)
                       _ (trace-dag "Add switch-node on occurrence " o)]
                   (switch-node o clauses default)))))]
-    (let [this (reduce (fn [matrix p]
+    (let [;; rows (group-rows rows)
+          this (reduce (fn [matrix p]
                          (specialize matrix p (rows matrix) (occurrences matrix)))
                        this (pseudo-patterns this col))
-          constrs (column-constructors this col)
+          constrs (column-constructors this col) ;; (column-constructors (map first rows))
           clauses (switch-clauses this constrs)
           default (default-matrix this)
           _ (trace-dag "Column" col ":" constrs)]
