@@ -546,6 +546,10 @@
                                   "node (specialized matrix empty)"))
                   (fail-node)))))
 
+          ;; if the user interleaves patterns we want to make them adjacent
+          ;; up until the point that the first wildcard pattern appears in a
+          ;; column. everything including and after a wildcard pattern is always
+          ;; the default matrix
           (group-rows [rows]
             (let [[l r] (split-with #(not (wildcard-pattern? (first %))) rows)]
               (letfn [(group [[r & rs :as rows]]
