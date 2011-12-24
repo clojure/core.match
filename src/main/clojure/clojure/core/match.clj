@@ -542,6 +542,9 @@
                   (trace-dag "Add fail-node as default matrix for next node (specialized matrix empty)")
                   (fail-node)))))
 
+          ;; keeps patterns together, up until the point that we reach a wildcard
+          ;; this is so that a user can interleave different constructors w/o running into
+          ;; ordering issues
           (group-patterns [[p & prs :as ps]]
             (if (seq ps)
               (let [[fs rs] ((juxt filter remove) #(= (type p) (type %)) prs)]
