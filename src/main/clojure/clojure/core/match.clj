@@ -236,7 +236,7 @@
 ;; FIXME: we use 1 instead of -1, this means we probably have a reverse
 ;; somehwere - David
 
-(defmulti pattern-compare 
+(defmulti pattern-compare
   "Like `clojure.core/compare` but for comparing patterns"
   (fn [a b] [(type a) (type b)]))
 
@@ -245,6 +245,13 @@
 
 (defmethod pattern-compare :default
   [a b] (if (= (class a) (class b)) 0 1))
+
+(defmulti safe-pattern-compare
+  "Like pattern-compare but not affected by *recur-present*"
+  (fn [a b] [(type a) (type b)]))
+
+(defmethod safe-pattern-compare :default
+  [a b] (pattern-compare a b))
 
 ;; =============================================================================
 ;; # Pattern Rows
@@ -559,12 +566,14 @@
           ;; up until the point that the first wildcard pattern appears in a
           ;; column. everything including and after a wildcard pattern is always
           ;; the default matrix
+
+          ;; we don't want use pattern-equals because that's overriden by *recur-present*
           (group-rows [rows]
             (let [[l r] (split-with #(not (wildcard-pattern? (first %))) rows)]
               (letfn [(group [[r & rs :as rows]]
                         (if (seq rows)
                           (let [[fd rd] ((juxt filter remove)
-                                         #(= (type (first r)) (type (first %)))
+                                         #(pattern-compare (first r) (first %))
                                          rs)]
                             (concat (cons r fd) (group rd)))))]
                 (into [] (concat (group l) r)))))
@@ -1293,6 +1302,9 @@
 (defmethod pattern-compare [Object WildcardPattern]
   [a b] (if *recur-present* 0 1))
 
+(defmethod safe-pattern-compare [Object WildcardPattern]
+  [a b] 1)
+
 (prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
 (defmethod pattern-compare [LiteralPattern Object]
@@ -1328,11 +1340,12 @@
 
 (defmethod pattern-compare [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b]
-  (if (or (not (touched? b))
-          (= (.size a) (.size b))
-          (and (.rest? a) (<= (.size a) (.size b)))
-          (and (.rest? b) (<= (.size b) (.size a))))
-    0 1))
+  (cond
+   (not (touched? b)) 0
+   (= (.size a) (.size b)) 0
+   (and (.rest? a) (<= (.size a) (.size b))) 0
+   (and (.rest? b) (<= (.size b) (.size a))) 0
+   :else 1))
 
 ;; =============================================================================
 ;; # Interface
@@ -1640,16 +1653,13 @@
          ~@body))))
 
 (comment
-  (let [v [1 2]]
-    (match v
-      [1] :a0
-      [1 2] :a1
-      [1 2 3] :a2))
   
-  (macroexpand '(match v
-                 [1] :a0
-                 [1 2] :a1
-                 [1 2 3] :a3))
+  (defn f [xs]
+    (match xs
+      [:a] "a"
+      [:b b] b
+      [:c] "c"
+      :else "problem!"))
   
   (require '[clojure.core.match.debug :as d])
   (d/build-matrix
