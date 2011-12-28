@@ -289,6 +289,9 @@
     (PatternRow. (into [x] ps) action bindings))
   (swap [_ n]
     (PatternRow. (swap ps n) action bindings))
+  clojure.lang.Associative
+  (assoc [this k v]
+    (PatternRow. (assoc ps k v) action bindings))
   clojure.lang.Indexed
   (nth [_ i]
     (nth ps i))
@@ -1065,6 +1068,13 @@
 
 (declare vector-pattern?)
 
+(defn touched? [vp]
+  (-> vp meta :touched))
+
+(defn touch [vp]
+  (let [meta (meta vp)]
+    (with-meta vp (assoc meta :touched true))))
+
 (deftype VectorPattern [v t size offset rest? _meta]
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1090,11 +1100,16 @@
                (let [rest? (some rest-pattern? rv)
                      rvc (count rv)
                      size (if rest? (dec rvc) rvc)]
-                (VectorPattern. rv t size n rest? _meta)))]
+                 (VectorPattern. rv t size n rest? _meta)))]
       [pl pr]))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
+          rows (map (fn [[p & ps :as row]]
+                      (if (not (touched? p))
+                        (assoc row 0 p)
+                        row))
+                    rows)
           ^VectorPattern fp (ffirst rows)
           [rest? min-size] (->> rows
                                 (reduce (fn [[rest? min-size] [p & ps]]
@@ -1308,7 +1323,8 @@
 
 (defmethod pattern-compare [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b]
-  (if (or (= (.size a) (.size b))
+  (if (or (not (touched? b))
+          (= (.size a) (.size b))
           (and (.rest? a) (<= (.size a) (.size b)))
           (and (.rest? b) (<= (.size b) (.size a))))
     0 1))
