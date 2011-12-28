@@ -436,8 +436,7 @@
              :else 2))
          1)))
 
-;; stackoverflow
-#_(deftest empty-vector-2
+(deftest empty-vector-2
   (is (= (let [v [1 2]]
            (match [v]
              [[]] :a0
@@ -445,8 +444,7 @@
              :else :a2))
          :a1)))
 
-;; index out of bounds
-#_(deftest vector-pattern-length-1
+(deftest vector-pattern-length-1
   (is (= (let [v [[1 2]]]
            (match [v]
              [[3 1]] :a0
