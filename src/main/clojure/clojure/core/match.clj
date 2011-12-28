@@ -139,14 +139,17 @@
 ;; =============================================================================
 ;; # Vector Pattern Interop
 
+(defn vector-type [t & r] t)
+
 (defmulti check-size? identity)
 (defmulti tag (fn [t] t))
-(defmulti test-inline (fn [t & r] t))
-(defmulti test-with-size-inline (fn [t & r] t))
-(defmulti count-inline (fn [t & r] t))
-(defmulti nth-inline (fn [t & r] t))
-(defmulti nth-offset-inline (fn [t & r] t))
-(defmulti subvec-inline (fn ([t & r] t)))
+(defmulti test-inline vector-type)
+(defmulti test-with-size-inline vector-type)
+(defmulti count-inline vector-type)
+(defmulti nth-inline vector-type)
+(defmulti nth-offset-inline vector-type)
+(defmulti subvec-inline vector-type)
+(defmulti nthnext-inline vector-type)
 
 (defmethod check-size? :default
   [_] true)
@@ -185,6 +188,9 @@
 (defmethod subvec-inline ::vector
   ([_ ocr start] `(subvec ~ocr ~start))
   ([_ ocr start end] `(subvec ~ocr ~start ~end)))
+
+(defmethod nthnext-inline ::vector
+  ([_ ocr n] `(nthnext ~ocr ~n)))
 
 ;; =============================================================================
 ;; # Extensions and Protocols
