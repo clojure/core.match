@@ -593,3 +593,13 @@
            [[2]] :a3
            :else :a4)
          :a3)))
+
+;; MATCH-43
+#_(deftest match-order-8
+  (is (= (let [xs [:c]]
+           (match xs
+             [:a] :a0
+             [:b b] :a1
+             [:c] :a2
+             :else :a3))
+         :a2)))
