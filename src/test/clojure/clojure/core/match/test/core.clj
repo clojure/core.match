@@ -326,10 +326,11 @@
 ;; whatever pattern they actually contain - David
 (comment
   (deftest match-single-3
-    (is (= (match [1 2] 
-             [2 1] :a0 
-             (_ :when #(= (count %) 2)) :a1
-             :else :a2)
+    (is (= (let [x [1 2]]
+             (match x
+               [2 1] :a0 
+               (_ :when #(= (count %) 2)) :a1
+               :else :a2))
            :a1)))
   )
 
