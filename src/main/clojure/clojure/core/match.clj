@@ -1649,17 +1649,3 @@
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
-
-(comment
-  
-  (defn f [xs]
-    (match xs
-      [:a] "a"
-      [:b b] b
-      [:c] "c"
-      :else "problem!"))
-  
-  (require '[clojure.core.match.debug :as d])
-  (d/build-matrix
-   )
-  )
