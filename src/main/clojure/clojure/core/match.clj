@@ -566,14 +566,12 @@
           ;; up until the point that the first wildcard pattern appears in a
           ;; column. everything including and after a wildcard pattern is always
           ;; the default matrix
-
-          ;; we don't want use pattern-equals because that's overriden by *recur-present*
           (group-rows [rows]
             (let [[l r] (split-with #(not (wildcard-pattern? (first %))) rows)]
               (letfn [(group [[r & rs :as rows]]
                         (if (seq rows)
                           (let [[fd rd] ((juxt filter remove)
-                                         #(pattern-compare (first r) (first %))
+                                         #(pattern-equals (first r) (first %))
                                          rs)]
                             (concat (cons r fd) (group rd)))))]
                 (into [] (concat (group l) r)))))

@@ -565,9 +565,8 @@
            :else :a4)
          :a0)))
 
-;; FAILS
-#_(deftest match-order-6
-  (is (= (match [[2]]
+(deftest match-order-6
+    (is (= (match [[2]]
            [[1]] :a0
            [1] :a1
            [[2]] :a2
@@ -575,8 +574,7 @@
            :else :a4)
          :a2)))
 
-;; FAILS
-#_(deftest match-order-6-recur
+(deftest match-order-6-recur
   (is (= ((fn [x done]
             (if done
               done
@@ -588,18 +586,16 @@
                 :else :a4))) [2] false)
          :a2)))
 
-;; FAILS
-#_(deftest match-order-7
+(deftest match-order-7
     (is (= (match [[2]]
            [1] :a0
            [[1]] :a1
            [2] :a2
            [[2]] :a3
            :else :a4)
-         :a3)))
+           :a3)))
 
-;; MATCH-43
-#_(deftest match-order-8
+(deftest match-order-8
   (is (= (let [xs [:c]]
            (match xs
              [:a] :a0
