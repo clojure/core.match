@@ -228,7 +228,7 @@
 
 (extend-type java.util.Date
   IMatchLookup
-  (val-at* [this k not-found]
+  (val-at [this k not-found]
     (case k
       :year    (.getYear this)
       :month   (.getMonth this)
