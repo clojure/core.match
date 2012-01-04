@@ -1,3 +1,19 @@
+From 0.2.0-alpha8 to 0.2.0-alpha0
+====
+
+Fixes
+---
+* MATCH-43: fix another subtle pattern ordering issue
+* MATCH-45: group like patterns together, including vector patterns of different sizes
+* MATCH-46: fix :or leakage
+
+Breaking Changes
+---
+* val-at* -> val-at
+
+Enhancements
+---
+
 From 0.2.0-alpha7 to 0.2.0-alpha8
 ====
 

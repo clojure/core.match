@@ -16,7 +16,7 @@ Usage
 The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
 
 ```clojure
-[org.clojure/core.match "0.2.0-alpha8"]
+[org.clojure/core.match "0.2.0-alpha9"]
 ```
 
 Use via:
