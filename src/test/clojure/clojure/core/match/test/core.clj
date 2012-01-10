@@ -187,6 +187,14 @@
              :else []))
          9)))
 
+(deftest guard-pattern-match-4
+  (is (= (match [1 2]
+                [(a :when #(odd? %)) (b :when #(odd? %))] :a1
+                [(a :when #(odd? %)) _] :a2
+                [_ (b :when #(even? %))] :a3
+                :else :a4)
+         :a2)))
+
 ;; use ':when pattern to match literal :when (as opposed to guard syntax)
 (deftest literal-when-match-1
   (is (= (let [x :as y :when z 1]
