@@ -225,6 +225,9 @@ Guards are simple boolean tests. You can specify them like so:
 ;; => :a1
 ```
 
+Please note that neither inline function expressions <code>(fn ...)</code> nor
+<code>#(foo %)</code> are currently supported.
+
 As Patterns
 ----
 
