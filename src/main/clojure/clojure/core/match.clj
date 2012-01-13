@@ -253,6 +253,16 @@
 (defmethod safe-pattern-compare :default
   [a b] (pattern-compare a b))
 
+(defmulti mutually-exclusive-inequality?
+  "Returns true if it is possible to tell at compile time whether two
+   different versions of the same object can never match the same
+   object."
+  type)
+
+(defmethod mutually-exclusive-inequality? :default
+  [x]
+  false)
+
 ;; =============================================================================
 ;; # Pattern Rows
 
@@ -873,7 +883,7 @@
       (pr-str l))))
 
 (defn ^LiteralPattern literal-pattern [l] 
-  (LiteralPattern. l nil))
+  (LiteralPattern. l (meta l)))
 
 (defn literal-pattern? [x]
   (instance? LiteralPattern x))
@@ -1291,7 +1301,12 @@
 ;; Pattern Comparisons
 
 (defmethod pattern-compare [WildcardPattern WildcardPattern]
-  [a b] 0)
+  [a b]
+  1)
+
+(defmethod mutually-exclusive-inequality? WildcardPattern
+  [x]
+  false)
 
 ;; NOTE: if recur is present we want all objects to equal wildcards, this is
 ;; because we push the wildcard matches along as well in the matrix specialization
@@ -1319,8 +1334,16 @@
      (= la lb) 0
      :else 1)))
 
+(defmethod mutually-exclusive-inequality? LiteralPattern
+  [x]
+  (not (-> x meta :local)))
+
 (defmethod pattern-compare [GuardPattern GuardPattern]
   [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
+
+(defmethod mutually-exclusive-inequality? GuardPattern
+  [x]
+  false)
 
 (defmethod pattern-compare [GuardPattern WildcardPattern]
   [^GuardPattern a ^WildcardPattern b]
@@ -1336,6 +1359,11 @@
              (every? identity (map pattern-equals as bs)))
       0 1)))
 
+(defmethod mutually-exclusive-inequality? OrPattern
+  [x]
+  (let [xs (.ps x)]
+    (every? mutually-exclusive-inequality? xs)))
+
 (defmethod pattern-compare [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b]
   (cond
@@ -1344,6 +1372,10 @@
    (and (.rest? a) (<= (.size a) (.size b))) 0
    (and (.rest? b) (<= (.size b) (.size a))) 0
    :else 1))
+
+(defmethod mutually-exclusive-inequality? VectorPattern
+  [x]
+  (every? mutually-exclusive-inequality? (.v x)))
 
 ;; =============================================================================
 ;; # Interface
