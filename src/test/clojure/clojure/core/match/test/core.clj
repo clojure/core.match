@@ -82,20 +82,20 @@
          :a1)))
 
 (deftest map-pattern-match-only-1
-  (is (and (= (let [x {:a 1 :b 2}]
-                (match [x]
+  (is (= (let [x {:a 1 :b 2}]
+           (match [x]
                   [({:a _ :b 2} :only [:a :b])] :a0
                   [{:a 1 :c _}] :a1
                   [{:c 3 :d _ :e 4}] :a2
                   :else []))
-              :a0)
-           (= (let [x {:a 1 :b 2 :c 3}]
-                (match [x]
+           :a0))
+  (is (= (let [x {:a 1 :b 2 :c 3}]
+           (match [x]
                   [({:a _ :b 2} :only [:a :b])] :a0
                   [{:a 1 :c _}] :a1
                   [{:c 3 :d _ :e 4}] :a2
                   :else []))
-              :a1))))
+         :a1)))
 
 (deftest map-pattern-match-bind-1
   (is (= (let [x {:a 1 :b 2}]
@@ -194,6 +194,36 @@
                 [_ (b :when #(even? %))] :a3
                 :else :a4)
          :a2)))
+
+(deftest guard-pattern-match-5
+  (is (=
+       (let [oddp odd?]
+         (match [1 2]
+                [a :when odd? b :when odd?] :a1
+                [a :when oddp _] :a2
+                [_ b :when even?] :a3
+                :else :a4))
+       :a2)))
+
+(deftest unequal-equal-tests
+  (is (=
+       (match ["foo" "bar"]
+              [#".*" #"baz"] :a1
+              [#"foo" _] :a2
+              [_ "bar"] :a3
+              :else :a4)
+       :a2)))
+
+(deftest unequal-equal-tests-2
+  (is (=
+       (let [a 1 b 1]
+         (match [1 2]
+                [a 3] :a1
+                [1 2] :a2
+                [2 _] :a5
+                [_ 3] :a4
+                :else :a3))
+       :a2)))
 
 ;; use ':when pattern to match literal :when (as opposed to guard syntax)
 (deftest literal-when-match-1
