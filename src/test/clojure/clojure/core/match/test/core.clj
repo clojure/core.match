@@ -189,8 +189,8 @@
 
 (deftest guard-pattern-match-4
   (is (= (match [1 2]
-                [(a :when #(odd? %)) (b :when #(odd? %))] :a1
-                [(a :when #(odd? %)) _] :a2
+                [(a :guard #(odd? %)) (b :when #(odd? %))] :a1
+                [(a :guard #(odd? %)) _] :a2
                 [_ (b :when #(even? %))] :a3
                 :else :a4)
          :a2)))
@@ -199,8 +199,8 @@
   (is (=
        (let [oddp odd?]
          (match [1 2]
-                [a :when odd? b :when odd?] :a1
-                [a :when oddp _] :a2
+                [a :guard odd? b :when odd?] :a1
+                [a :guard oddp _] :a2
                 [_ b :when even?] :a3
                 :else :a4))
        :a2)))

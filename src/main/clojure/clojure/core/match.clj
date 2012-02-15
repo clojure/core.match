@@ -1264,7 +1264,7 @@
 ;; ## Guard Patterns
 ;;
 ;; Guard patterns are used to represent guards on patterns, for example
-;;   `(1 :when even?)`
+;;   `(1 :guard even?)`
 ;;
 
 (declare guard-pattern?)
@@ -1281,7 +1281,7 @@
                  gs (repeat ocr))))
   Object
   (toString [this]
-    (str p " :when " gs))
+    (str p " :guard " gs))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (->> rows
@@ -1303,7 +1303,61 @@
   (instance? GuardPattern x))
 
 (defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
-  (.write writer (str "<GuardPattern " (.p p) " :when " (.gs p) ">")))
+  (.write writer (str "<GuardPattern " (.p p) " :guard " (.gs p) ">")))
+
+;; -----------------------------------------------------------------------------
+;; ## Predicate Patterns
+;;
+;; Predicate patterns are used to represent simple guards on patterns,
+;; for example
+;;   `(1 :when even?)`
+;;
+;; The predicates in predicate patterns should not overlap.  That is,
+;; no two predicates should return the same answer given the same
+;; input.  For example, in the unlikely case that there was a function
+;; named `four?` and defined as `(defn four? [x] (= 4 x))`, then using
+;; `x :when four?` and `y :when even?` in the same match expression
+;; will yield an incorrect decision tree.  In cases where overlapping
+;; predicates are desired, use guard patterns.
+;;
+
+(declare predicate-pattern?)
+
+(deftype PredicatePattern [p gs _meta]
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (PredicatePattern. p gs new-meta))
+  IPatternCompile
+  (to-source* [this ocr]
+    `(and ~@(map (fn [expr ocr]
+                   (list expr ocr))
+                 gs (repeat ocr))))
+  Object
+  (toString [this]
+    (str p " :when " gs))
+  ISpecializeMatrix
+  (specialize-matrix [this rows ocrs]
+    (let [nrows (->> rows
+                     (map (fn [row]
+                            (let [p (first row)]
+                              (if (predicate-pattern? p)
+                                (let [^PredicatePattern p p]
+                                  (update-pattern row 0 (.p p)))
+                                row))))
+                     vec)
+          _ (trace-dag "PredicatePattern specialization")]
+      (pattern-matrix nrows ocrs))))
+
+(defn ^PredicatePattern predicate-pattern [p gs]
+  {:pre [(set? gs)]}
+  (PredicatePattern. p gs nil))
+
+(defn predicate-pattern? [x]
+  (instance? PredicatePattern x))
+
+(defmethod print-method PredicatePattern [^PredicatePattern p ^Writer writer]
+  (.write writer (str "<PredicatePattern " (.p p) " :when " (.gs p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
@@ -1355,6 +1409,19 @@
 
 (defmethod pattern-compare [GuardPattern WildcardPattern]
   [^GuardPattern a ^WildcardPattern b]
+  (let [p (.p a)]
+    (if (wildcard-pattern? p)
+      (pattern-compare p b) 1)))
+
+(defmethod pattern-compare [PredicatePattern PredicatePattern]
+  [^PredicatePattern a ^PredicatePattern b] (if (= (.gs a) (.gs b)) 0 1))
+
+(defmethod comparable? PredicatePattern
+  [x]
+  true)
+
+(defmethod pattern-compare [PredicatePattern WildcardPattern]
+  [^PredicatePattern a ^WildcardPattern b]
   (let [p (.p a)]
     (if (wildcard-pattern? p)
       (pattern-compare p b) 1)))
@@ -1444,6 +1511,7 @@
 (declare or-pattern)
 (declare as-pattern)
 (declare guard-pattern)
+(declare predicate-pattern)
 (declare vector-pattern)
 
 (defmethod emit-pattern clojure.lang.ISeq
@@ -1474,6 +1542,10 @@
 
 (defmethod emit-pattern-for-syntax [Object :when]
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
+              (predicate-pattern (emit-pattern p) (set gs))))
+
+(defmethod emit-pattern-for-syntax [Object :guard]
+  [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
 
 (defmethod emit-pattern-for-syntax [Object :seq]
@@ -1501,7 +1573,7 @@
 
 (let [void (Object.)
       void? #(identical? void %)
-      infix-keyword? #(#{:when :as} %)]
+      infix-keyword? #(#{:when :as :guard} %)]
   ;; void is a unique placeholder for nothing -- we can't use nil
   ;; because that's a legal symbol in a pattern row
   (defn- regroup-keywords [pattern]
