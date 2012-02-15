@@ -253,13 +253,13 @@
 (defmethod safe-pattern-compare :default
   [a b] (pattern-compare a b))
 
-(defmulti mutually-exclusive-inequality?
+(defmulti comparable?
   "Returns true if it is possible to tell at compile time whether two
    different versions of the same object can never match the same
    object."
   type)
 
-(defmethod mutually-exclusive-inequality? :default
+(defmethod comparable? :default
   [x]
   false)
 
@@ -558,8 +558,8 @@
 
           (matrix-splitter [rows]
             (let [f (first rows)
-                  [x y] (split-with #(if (mutually-exclusive-inequality? f)
-                                       (mutually-exclusive-inequality? %)
+                  [x y] (split-with #(if (comparable? f)
+                                       (comparable? %)
                                        (pattern-equals f %)) (rest rows))]
               [(cons f x) y]))
 
@@ -1312,7 +1312,7 @@
   [a b]
   1)
 
-(defmethod mutually-exclusive-inequality? WildcardPattern
+(defmethod comparable? WildcardPattern
   [x]
   false)
 
@@ -1342,14 +1342,14 @@
      (= la lb) 0
      :else 1)))
 
-(defmethod mutually-exclusive-inequality? LiteralPattern
+(defmethod comparable? LiteralPattern
   [x]
   (not (-> x meta :local)))
 
 (defmethod pattern-compare [GuardPattern GuardPattern]
   [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
 
-(defmethod mutually-exclusive-inequality? GuardPattern
+(defmethod comparable? GuardPattern
   [x]
   false)
 
@@ -1367,10 +1367,9 @@
              (every? identity (map pattern-equals as bs)))
       0 1)))
 
-(defmethod mutually-exclusive-inequality? OrPattern
+(defmethod comparable? OrPattern
   [x]
-  (let [xs (.ps x)]
-    (every? mutually-exclusive-inequality? xs)))
+  false)
 
 (defmethod pattern-compare [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b]
@@ -1381,9 +1380,9 @@
    (and (.rest? b) (<= (.size b) (.size a))) 0
    :else 1))
 
-(defmethod mutually-exclusive-inequality? VectorPattern
+(defmethod comparable? VectorPattern
   [x]
-  (every? mutually-exclusive-inequality? (.v x)))
+  true)
 
 ;; =============================================================================
 ;; # Interface
