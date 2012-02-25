@@ -261,7 +261,7 @@
 
 (defmethod comparable? :default
   [x]
-  false)
+  true)
 
 ;; =============================================================================
 ;; # Pattern Rows
@@ -1416,10 +1416,6 @@
 (defmethod pattern-compare [PredicatePattern PredicatePattern]
   [^PredicatePattern a ^PredicatePattern b] (if (= (.gs a) (.gs b)) 0 1))
 
-(defmethod comparable? PredicatePattern
-  [x]
-  true)
-
 (defmethod pattern-compare [PredicatePattern WildcardPattern]
   [^PredicatePattern a ^WildcardPattern b]
   (let [p (.p a)]
@@ -1434,10 +1430,6 @@
              (every? identity (map pattern-equals as bs)))
       0 1)))
 
-(defmethod comparable? OrPattern
-  [x]
-  false)
-
 (defmethod pattern-compare [VectorPattern VectorPattern]
   [^VectorPattern a ^VectorPattern b]
   (cond
@@ -1446,10 +1438,6 @@
    (and (.rest? a) (<= (.size a) (.size b))) 0
    (and (.rest? b) (<= (.size b) (.size a))) 0
    :else 1))
-
-(defmethod comparable? VectorPattern
-  [x]
-  true)
 
 ;; =============================================================================
 ;; # Interface

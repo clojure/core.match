@@ -1,6 +1,7 @@
 (ns clojure.core.match.regex
   (:use [clojure.core.match
-         :only [emit-pattern to-source pattern-equals pattern-compare]])
+         :only [emit-pattern to-source pattern-equals
+                pattern-compare comparable?]])
   (:import java.util.regex.Pattern))
 
 ;; # Regular Expression Extension
@@ -12,7 +13,6 @@
 (defmethod emit-pattern java.util.regex.Pattern
   [pat]
   (RegexPattern. pat))
-
 
 ;; Regular expressions are matched with `re-matches`.
 ;;
@@ -35,3 +35,7 @@
                  (= (.flags ^Pattern (:regex a)) (.flags ^Pattern (:regex b))))
           0
           -1))
+
+(defmethod comparable? RegexPattern
+  [x]
+  false)
