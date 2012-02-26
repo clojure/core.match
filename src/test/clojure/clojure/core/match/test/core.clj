@@ -161,6 +161,10 @@
 (defn div3? [n]
     (= (mod n 3) 0))
 
+(defpred even?)
+(defpred odd?)
+(defpred div3?)
+
 (deftest guard-pattern-match-1
   (is (= (let [y '(2 3 4 5)]
            (match [y]
@@ -189,9 +193,9 @@
 
 (deftest guard-pattern-match-4
   (is (= (match [1 2]
-                [(a :guard #(odd? %)) (b :when #(odd? %))] :a1
+           [(a :guard #(odd? %)) (b :when odd?)] :a1
                 [(a :guard #(odd? %)) _] :a2
-                [_ (b :when #(even? %))] :a3
+                [_ (b :when even?)] :a3
                 :else :a4)
          :a2)))
 
@@ -239,7 +243,7 @@
                 op (first e)
                 op? #(= % op)]
             (match [e]
-                   [([p :when op? x ([p2 :when op? y z] :seq)] :seq)] (list p x y z)))
+                   [([p :guard op? x ([p2 :guard op? y z] :seq)] :seq)] (list p x y z)))
           '(+ 1 2 3))))
 
 (deftest quoted-symbol

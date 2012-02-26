@@ -1321,6 +1321,14 @@
 ;; predicates are desired, use guard patterns.
 ;;
 
+(def preds (atom {}))
+
+(defmacro defpred
+  ([name]
+     (swap! preds assoc name name))
+  ([name f]
+     (swap! preds assoc name f)))
+
 (declare predicate-pattern?)
 
 (deftype PredicatePattern [p gs _meta]
@@ -1529,8 +1537,11 @@
   [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
 
 (defmethod emit-pattern-for-syntax [Object :when]
-  [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
-              (predicate-pattern (emit-pattern p) (set gs))))
+  [[p _ gs]]
+  (let [gs (if (not (vector? gs)) [gs] gs)]
+    (assert (every? symbol? gs) (str "Invalid predicate expression " gs))
+    (assert (every? #(contains? @preds %) gs) (str "Unknown predicate in " gs))
+    (predicate-pattern (emit-pattern p) (set gs))))
 
 (defmethod emit-pattern-for-syntax [Object :guard]
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
