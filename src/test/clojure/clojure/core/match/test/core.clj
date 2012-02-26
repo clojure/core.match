@@ -395,6 +395,14 @@
              :else :a3))
          :a2)))
 
+(deftest match-local-3
+  (is (= (let [a 1]
+           (match [1 2]
+             [1 3] :a0
+             [a 2] :a1
+             :else :a2))
+         :a1)))
+
 (deftest basic-regex
          (is (= (match ["asdf"]
                        [#"asdf"] 1
