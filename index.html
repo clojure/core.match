@@ -1,0 +1,457 @@
+<html>
+  <head>
+    <title>clojure.core.match - Pattern match and predicate dispatch 0.2.0-alpha10 API documentation</title>
+    <link href="static/favicon.png" rel="icon" />
+    <link href="static/favicon.png" rel="shortcut icon" />
+    <link media="all" type="text/css" href="static/clojure.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/wiki.css" rel="stylesheet" />
+    <link media="all" type="text/css" href="static/internal.css" rel="stylesheet" />
+    <style>.menuWrapper{height: 36px;}</style>
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" href="http://www.wikispaces.com/_/2009051601/s/internal_ie.css" type="text/css" />
+    <![endif]-->
+  </head>
+<!--
+This document was auto-generated from the source by the clojure autodoc system.
+To report errors or ask questions about the overall documentation structure, formatting,
+etc., contact Tom Faulhaber (google mail name: tomfaulhaber).
+For errors in the documentation of a particular namespace, contact the author of that
+namespace.
+-->
+  <body>
+    <div id="AllContentContainer">
+      <div id="Header">
+	<a id="Logo" href="index.html"><img alt="Clojure" height="100" width="100" src="static/clojure-icon.gif" /></a>
+	<h1><a title="page header title" id="page-header" href="index.html">core.match API Reference</a></h1>
+      </div>
+      <div id="leftcolumn"><div style="text-align: center;"></div>
+<div class="menu">
+  <div class="WikiCustomNav WikiElement wiki">
+    <span class="toc-header"><span id="project-name">Pattern match and predicate dispatch</span> <span id="version">0.2.0-alpha10</span> API</span><br />
+    <ul>
+      <li><a class="wiki_link" href="index.html">Overview</a></li>
+      <li><a class="wiki_link" href="api-index.html">API Index</a></li>
+    </ul>
+    
+    
+    <a href="http://clojure.org" class="wiki_link">Clojure Home</a>
+  </div>
+</div>
+</div>
+      <div id="rightcolumn">
+	<div id="Content">
+	  <div class="contentBox"><div class="innerContentBox">
+              <div id="content_view" class="wiki wikiPage">
+                <div id="right-sidebar"><div id="toc">
+  <h1 class="nopad">Table of Contents</h1>
+  <div style="margin-left: 1em;" class="toc-section">
+    <a href="#toc0" style="margin-top: 3px;">Overview</a>
+    
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#proto-section" style="margin-top: 3px;">Protocols</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/IMatchLookup">IMatchLookup</a>
+      <div style="margin-left: 1em;" class="toc-subentry">
+        <a class="toc-subentry-anchor" href="#clojure.core.match/val-at">val-at</a>
+      </div>
+    </div>
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#type-section" style="margin-top: 3px;">Types</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/BindNode">BindNode</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/FailNode">FailNode</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/GuardPattern">GuardPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/LeafNode">LeafNode</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/LiteralPattern">LiteralPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/MapPattern">MapPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/OrPattern">OrPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/PatternMatrix">PatternMatrix</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/PatternRow">PatternRow</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/PredicatePattern">PredicatePattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/RestPattern">RestPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/SeqPattern">SeqPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/SwitchNode">SwitchNode</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/VectorPattern">VectorPattern</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/WildcardPattern">WildcardPattern</a>
+      
+    </div>
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#var-section" style="margin-top: 3px;">Vars and Functions</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/*backtrack-with-errors*">*backtrack-with-errors*</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/*breadcrumbs*">*breadcrumbs*</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/*syntax-check*">*syntax-check*</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/*trace*">*trace*</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/match">match</a>
+      
+    </div>
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#clojure.core.match.java" style="margin-top: 3px;">clojure.core.match.java</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match.java/bean-match">bean-match</a>
+      
+    </div>
+  </div><div style="margin-left: 1em;" class="toc-section">
+    <a href="#clojure.core.match.regex" style="margin-top: 3px;">clojure.core.match.regex</a>
+    <div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match.regex/RegexPattern">RegexPattern</a>
+      
+    </div>
+  </div>
+</div>
+</div>
+                <div id="content-tag"><h1 id="overview">API for <span id="clojure.core.match">clojure.core.match</span>
+  - <span id="header-project">Pattern match and predicate dispatch</span> <span id="header-version">0.2.0-alpha10</span><span id="header-status-block"> (<span id="header-status">in development</span>)</span>
+  </h1>
+
+<br />Full namespace name: <span id="long-name">clojure.core.match</span>
+<p></p>
+<h2>Overview</h2>
+<pre id="namespace-docstr"></pre>
+
+
+<br />
+
+<div id="proto-section">
+  <p></p>
+  <h2>Protocols</h2>
+  <div id="proto-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/IMatchLookup">IMatchLookup</h2>
+    <span id="proto-type">Protocol</span><br />
+    <pre id="proto-docstr">Allows arbitrary objects to act like a map-like object when pattern
+matched. Avoid extending this directly for Java Beans, see
+`match.java/bean-match`.</pre>
+    Known implementations: <span id="proto-impls">clojure.lang.ILookup, java.util.Date</span>
+    <div id="proto-var-entry">
+      <br />
+      <h3 id="clojure.core.match/val-at">val-at</h3>
+      <span id="var-type">function</span><br />
+      <pre id="var-usage">Usage: (val-at this k not-found)
+</pre>
+      <pre id="var-docstr"></pre>
+      
+      
+      
+    </div>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L116" id="proto-source">Source</a>
+  </div>
+</div>
+<div id="type-section">
+  <p></p>
+  <h2>Types</h2>
+  <div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/BindNode">BindNode</h2>
+    <span id="type-type">record</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[bindings node]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/INodeCompile">INodeCompile</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/FailNode">FailNode</h2>
+    <span id="type-type">record</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/INodeCompile">INodeCompile</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/GuardPattern">GuardPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[p gs _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternCompile">IPatternCompile</a>, <a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/LeafNode">LeafNode</h2>
+    <span id="type-type">record</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[value bindings]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/INodeCompile">INodeCompile</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/LiteralPattern">LiteralPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[l _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternCompile">IPatternCompile</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/MapPattern">MapPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[m _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternCompile">IPatternCompile</a>, <a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/OrPattern">OrPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[ps _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/PatternMatrix">PatternMatrix</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[rows ocrs _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternMatrix">IPatternMatrix</a>, <a href="#clojure.core.match/IVecMod">IVecMod</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/PatternRow">PatternRow</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[ps action bindings]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternRow">IPatternRow</a>, <a href="#clojure.core.match/IVecMod">IVecMod</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.Associative, clojure.lang.IFn, clojure.lang.IPersistentCollection, clojure.lang.ISeq, clojure.lang.Indexed</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/PredicatePattern">PredicatePattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[p gs _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternCompile">IPatternCompile</a>, <a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/RestPattern">RestPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[p _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternContainer">IPatternContainer</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/SeqPattern">SeqPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[s _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IPatternCompile">IPatternCompile</a>, <a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/SwitchNode">SwitchNode</h2>
+    <span id="type-type">record</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[occurrence cases default]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/INodeCompile">INodeCompile</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/VectorPattern">VectorPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[v t size offset rest? _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IContainsRestPattern">IContainsRestPattern</a>, <a href="#clojure.core.match/IPatternCompile">IPatternCompile</a>, <a href="#clojure.core.match/ISpecializeMatrix">ISpecializeMatrix</a>, <a href="#clojure.core.match/IVectorPattern">IVectorPattern</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div><div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/WildcardPattern">WildcardPattern</h2>
+    <span id="type-type">type</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[sym _meta]</span><br />
+    Protocols: <span id="type-protocols"><a href="#clojure.core.match/IWildcardPattern">IWildcardPattern</a></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IObj</span><br />
+  </div>
+</div>
+<div id="var-section">
+  <p></p>
+  <h2>Public Variables and Functions</h2>
+  <div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/*backtrack-with-errors*">*backtrack-with-errors*</h2>
+    <span id="var-type">var</span><br />
+    <pre id="var-usage"></pre>
+    <pre id="var-docstr">Enable backtracking diagnostics</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L58" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/*breadcrumbs*">*breadcrumbs*</h2>
+    <span id="var-type">var</span><br />
+    <pre id="var-usage"></pre>
+    <pre id="var-docstr">Enable breadcrumb diagnostics with fail nodes</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L50" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/*syntax-check*">*syntax-check*</h2>
+    <span id="var-type">var</span><br />
+    <pre id="var-usage"></pre>
+    <pre id="var-docstr">Enable syntax check of match macros</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L46" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/*trace*">*trace*</h2>
+    <span id="var-type">var</span><br />
+    <pre id="var-usage"></pre>
+    <pre id="var-docstr">Enable pattern compile time tracing</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L54" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/match">match</h2>
+    <span id="var-type">macro</span><br />
+    <pre id="var-usage">Usage: (match vars &amp; clauses)
+</pre>
+    <pre id="var-docstr">Pattern match a row of occurrences. Take a vector of occurrences, vars.
+Clause question-answer syntax is like `cond`. Questions must be
+wrapped in a vector, with same arity as vars. Last question can be :else,
+which expands to a row of wildcards.
+
+Example:
+(let [x 1
+      y 2]
+    (match [x y 3]
+           [1 2 3] :answer1
+           :else :default-answer))</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/15663c79cf91521aa344f7378d18a0ed726280bd/src/main/clojure/clojure/core/match.clj#L1726" id="var-source">Source</a>
+  </div>
+</div>
+<br />
+<h2 id="clojure.core.match.java">clojure.core.match.java</h2>
+<pre id="namespace-docstr"></pre>
+
+
+<br />
+
+
+<div id="var-section">
+  <p></p>
+  <h2>Public Variables and Functions</h2>
+  <div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match.java/bean-match">bean-match</h2>
+    <span id="var-type">macro</span><br />
+    <pre id="var-usage">Usage: (bean-match class)
+</pre>
+    <pre id="var-docstr">Generate an implementation of match.core/IMatchLookup for a Java bean.
+Accessor method names are mapped to keys like this:
+
+  isVisible       -&gt; :visible?
+  getText         -&gt; :text
+  getAbsolutePath -&gt; :absolute-path 
+  isFUD           -&gt; :fud?
+  getFUDFactor    -&gt; :fud-factor
+
+</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/ce66e9385bdfed0d8572fe706c950ecdb3d748c7/src/main/clojure/clojure/core/match/java.clj#L20" id="var-source">Source</a>
+  </div>
+</div>
+<br />
+<h2 id="clojure.core.match.regex">clojure.core.match.regex</h2>
+<pre id="namespace-docstr"></pre>
+
+
+<br />
+
+<div id="type-section">
+  <p></p>
+  <h2>Types</h2>
+  <div id="type-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match.regex/RegexPattern">RegexPattern</h2>
+    <span id="type-type">record</span><br />
+    <pre id="type-docstr"></pre>
+    Fields: <span id="type-fields">[regex]</span><br />
+    Protocols: <span id="type-protocols"></span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+  </div>
+</div>
+
+
+
+</div>
+              </div>
+            </div>
+          </div>
+	</div>
+	<div id="foot">
+	  <div style="text-align: center;" id="copyright">Copyright 2007-2012 by Rich Hickey and the various contributors</div>
+	</div>
+      </div>
+      <div id="DesignedBy">Logo &amp; site design by <a title="Visit Tom Hickey's website." href="http://www.tomhickey.com">Tom Hickey</a>.<br />
+      Clojure auto-documentation system by Tom Faulhaber.</div>
+    </div>
+    <!-- /AllContentContainer -->
+  </body>
+
+</html>
