@@ -3,6 +3,10 @@ match
 
 An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later as well as ClojureScript.
 
+Alpha Status
+----
+It's important to note that core.match is alpha quality software. There are many known issues. In particular if your project depends on AOT do not use core.match at this time. Patches for any and all issues welcome!
+
 Contributing
 ----
 
