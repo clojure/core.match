@@ -1010,7 +1010,7 @@
   IPatternCompile
   (to-source* [this ocr]
     (if *clojurescript*
-      `(or (satisfies? cljs.core.ILookup ~ocr))
+      `(satisfies? cljs.core/ILookup ~ocr)
       `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))))
   Object
   (toString [_]
