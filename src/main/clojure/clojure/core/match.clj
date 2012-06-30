@@ -1051,7 +1051,9 @@
                                        (if only
                                          (let [a (with-meta (gensym) {:tag 'java.util.Map})]
                                            (cons (guard-pattern (wildcard-pattern)
-                                                                (set [`(fn [~a] (= (.keySet ~a) #{~@only}))]))
+                                                                (set [(if *clojurescript*
+                                                                        `(fn [~a] (= (set (keys ~a)) #{~@only}))
+                                                                        `(fn [~a] (= (.keySet ~a) #{~@only})))]))
                                                  ps))
                                          (cons (wildcard-pattern) ps))
                                        ps)]
