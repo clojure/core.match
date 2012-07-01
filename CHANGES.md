@@ -1,3 +1,11 @@
+From 0.2.0-alpha9 to 0.2.0-alpha10
+====
+
+Fixes
+---
+* MATCH-62: ClojureScript map-matching should use cljs.core/ILookup, not cljs.core.ILookup
+* MATCH-60: Matching maps with :only broken in CLJS
+
 From 0.2.0-alpha8 to 0.2.0-alpha9
 ====
 
