@@ -17,7 +17,7 @@ For simple fixes you can message [swannodette](http://github.com/swannodette). T
 Usage
 ----
 
-The fastest way to use this library is with Leiningen or Cake. Add the following to your project.clj dependencies:
+The fastest way to use this library is with [Leiningen](http://github.com/technomancy/leiningen/). Add the following to your project.clj dependencies:
 
 ```clojure
 [org.clojure/core.match "0.2.0-alpha9"]
