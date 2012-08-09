@@ -38,7 +38,7 @@ Example Usage
 From Clojure:
 
 ```clojure
-(use '[match.core :only (match)])
+(use '[clojure.core.match :only (match)])
 
 (doseq [n (range 1 101)]
   (println
