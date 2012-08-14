@@ -76,10 +76,74 @@
   (is (= (let [x {:a 1 :b 1}]
            (match [x]
              [{:a _ :b 2}] :a0
-             [{:a 1 :c _}] :a1
+             [{:a 1 :b 1}] :a1
              [{:c 3 :d _ :e 4}] :a2
              :else []))
          :a1)))
+
+(deftest map-pattern-match-2
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+             [{:a _ :b 1}] :a0
+             [{:a 1 :b _}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else []))
+         :a0)))
+
+(deftest map-pattern-match-3
+  (is (= (let [x {:a 1 :b 1 :c 1}]
+           (match [x]
+             [{:a _ :b 2}] :a0
+             [{:a 1 :b _}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else []))
+         :a1)))
+
+(deftest map-pattern-match-4
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+             [{:a _ :b 2}] :a0
+             [{:a _ :b _}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else []))
+         :a1)))
+
+(deftest map-pattern-match-5
+  (is (= (let [x {:a 1}]
+           (match [x]
+             [{:a 1 :b 1}] :a0
+             [{:a _ :b _}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else []))
+         [])))
+
+(deftest map-pattern-match-6
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+             [{:b 1}] :a0
+             [{:a _ :b _}] :a1
+             [{:a _ :b _}] :a2
+             :else []))
+         :a0)))
+
+(deftest map-pattern-match-7
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+             [{}] :a0
+             [{:a _ :b _}] :a1
+             [{:a 1 :b 1}] :a2
+             :else []))
+         :a0)))
+
+(deftest map-pattern-match-8
+  (is (= (let [x {:a 1 :b 1}]
+           (match [x]
+             [{:x nil :y nil}] :a0
+             [{:a _ :b _}] :a1
+             [{:a 1 :b 1}] :a2
+             :else []))
+         :a1)))
+
 
 (deftest map-pattern-match-only-1
   (is (= (let [x {:a 1 :b 2}]
