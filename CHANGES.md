@@ -1,3 +1,10 @@
+From 0.2.0-alpha10 to 0.2.0-alpha11
+====
+
+Fixes
+---
+* MATCH-52: bad map pattern matching behavior
+
 From 0.2.0-alpha9 to 0.2.0-alpha10
 ====
 
