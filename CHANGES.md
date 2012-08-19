@@ -8,6 +8,10 @@ Fixes
 From 0.2.0-alpha9 to 0.2.0-alpha10
 ====
 
+Breaking Changes
+---
+* :when is now for predicates. Use :guard for the old behavior of :when.
+
 Fixes
 ---
 * MATCH-62: ClojureScript map-matching should use cljs.core/ILookup, not cljs.core.ILookup
