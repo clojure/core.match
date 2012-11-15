@@ -1,6 +1,6 @@
 {:namespaces
  ({:source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match/clojure.core.match-api.html",
    :name "clojure.core.match",
@@ -21,10 +21,10 @@
  ({:name "*backtrack-with-errors*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L58",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L58",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*backtrack-with-errors*",
    :doc "Enable backtracking diagnostics",
@@ -34,10 +34,10 @@
   {:name "*breadcrumbs*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L50",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L50",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*breadcrumbs*",
    :doc "Enable breadcrumb diagnostics with fail nodes",
@@ -47,10 +47,10 @@
   {:name "*syntax-check*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L46",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L46",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*syntax-check*",
    :doc "Enable syntax check of match macros",
@@ -60,10 +60,10 @@
   {:name "*trace*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L54",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L54",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*trace*",
    :doc "Enable pattern compile time tracing",
@@ -74,15 +74,15 @@
    :name "match",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L1728",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L1740",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/match",
    :doc
    "Pattern match a row of occurrences. Take a vector of occurrences, vars.\nClause question-answer syntax is like `cond`. Questions must be\nwrapped in a vector, with same arity as vars. Last question can be :else,\nwhich expands to a row of wildcards.\n\nExample:\n(let [x 1\n      y 2]\n    (match [x y 3]\n           [1 2 3] :answer1\n           :else :default-answer))",
    :var-type "macro",
-   :line 1728,
+   :line 1740,
    :file "src/main/clojure/clojure/core/match.clj"}
   {:file nil,
    :raw-source-url nil,
@@ -206,9 +206,9 @@
    :name "WildcardPattern"}
   {:file "src/main/clojure/clojure/core/match.clj",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj",
    :source-url
-   "https://github.com/clojure/core.match/blob/241a3a3ab5344cc7c97fb3ab0b3783ce97b09f6d/src/main/clojure/clojure/core/match.clj#L116",
+   "https://github.com/clojure/core.match/blob/7f73cee3f78417f1fb59bcbb4a8cda52de22efbd/src/main/clojure/clojure/core/match.clj#L116",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/IMatchLookup",
    :namespace "clojure.core.match",
