@@ -429,7 +429,7 @@
 (declare to-source)
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (let [test (if (extends? IPatternCompile (class pattern))
+  (let [test (if (instance? clojure.core.match.IPatternCompile pattern)
                (to-source* pattern occurrence) 
                (to-source pattern occurrence))]
     (if @*breadcrumbs*
