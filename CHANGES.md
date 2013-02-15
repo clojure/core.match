@@ -1,3 +1,10 @@
+From 0.2.0-alpha11 to 0.2.0-alpha12
+====
+
+Fixes
+---
+* MATCH-67: fix ClojureScript support regression
+
 From 0.2.0-alpha10 to 0.2.0-alpha11
 ====
 
