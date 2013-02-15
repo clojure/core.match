@@ -1,5 +1,6 @@
 (ns clojure.core.match.js.tests
-  (:use-macros [clojure.core.match.js :only [match]]))
+  (:use-macros [clojure.core.match.js :only [match]])
+  (:require [clojure.core.match]))
 
 (defn js-print [& args]
   (if (js* "typeof console != 'undefined'")

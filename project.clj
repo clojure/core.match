@@ -11,19 +11,19 @@
 
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/clojurescript "0.0-1576"]]
-  :dev-dependencies [[nrepl "0.2.1"]]
+  :dev-dependencies [[org.clojure/tools.nrepl "0.2.1"]]
   :plugins [[lein-cljsbuild "0.3.0"]]
 
   :cljsbuild
   {:builds
    [{:id "test"
      :source-paths ["src/test/cljs"]
-     :compiler {:output-js "test.js"
+     :compiler {:output-to "test.js"
                 :pretty-print true
                 :static-fns true
                 :optimizations :simple}}
     {:id "test-adv"
      :source-paths ["src/test/cljs"]
-     :compiler {:output-js "test-adv.js"
+     :compiler {:output-to "test-adv.js"
                 :pretty-print true
                 :optimizations :advanced}}]})

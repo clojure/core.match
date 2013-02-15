@@ -79,7 +79,7 @@
 
 (defn backtrack-expr []
   (if *clojurescript*
-    `(throw 0)
+    `(throw clojure.core.match/backtrack)
     `(throw clojure.core.match/backtrack)))
 
 (defn warn [msg]
@@ -439,8 +439,8 @@
 
 (defn catch-error [& body]
   (if *clojurescript*
-    `(catch e#
-       (if (identical? e# 0)
+    `(catch js/Error e#
+       (if (identical? e# clojure.core.match/backtrack)
          (do
            ~@body)
          (throw e#)))
