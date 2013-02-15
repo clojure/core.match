@@ -9,6 +9,16 @@
   :test-paths ["src/test/clojure"]
   :source-paths ["src/main/clojure"]
 
-  :dependencies [[org.clojure/clojure "1.4.0"]]
-  :dev-dependencies [[lein-swank "1.4.4"]
-                     [lein-cljsbuild "0.2.9"]])
+  :dependencies [[org.clojure/clojure "1.4.0"]
+                 [org.clojure/clojurescript "0.0-1576"]]
+  :dev-dependencies [[nrepl "0.2.1"]]
+  :plugins [[lein-cljsbuild "0.3.0"]]
+
+  :cljsbuild
+  {:builds
+   [{:test ["src/test/cljs/clojure/core/match/js/"],
+     :id "test",
+     :compiler {:output-js "test.js", :optimizations :simple}}
+    {:test ["src/test/cljs/clojure/core/match/js/"],
+     :id "test-adv",
+     :compiler {:output-js "test-adv.js", :optimizations :advanced}}]})
