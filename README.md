@@ -12,14 +12,14 @@ It's important to note that core.match is alpha quality software. There are many
 Releases and dependency information
 ----
 
-Latest alpha: 0.2.0-alpha11
+Latest alpha: 0.2.0-alpha12
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [Leiningen](http://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "0.2.0-alpha11"]
+[org.clojure/core.match "0.2.0-alpha12"]
 ```
 
 [Maven](http://maven.apache.org) dependency information:
@@ -28,7 +28,7 @@ Latest alpha: 0.2.0-alpha11
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>0.2.0-alpha11</version>
+  <version>0.2.0-alpha12</version>
 </dependency>
 ```
 
@@ -53,7 +53,8 @@ From ClojureScript:
 
 ```clojure
 (ns foo.bar
-  (:use-macros [clojure.core.match.js :only [match]]))
+  (:use-macros [clojure.core.match.js :only [match]])
+  (:require [clojure.core.match]))
 
 (doseq [n (range 1 101)]
   (println
