@@ -16,9 +16,14 @@
 
   :cljsbuild
   {:builds
-   [{:test ["src/test/cljs/clojure/core/match/js/"],
-     :id "test",
-     :compiler {:output-js "test.js", :optimizations :simple}}
-    {:test ["src/test/cljs/clojure/core/match/js/"],
-     :id "test-adv",
-     :compiler {:output-js "test-adv.js", :optimizations :advanced}}]})
+   [{:id "test"
+     :source-paths ["src/test/cljs"]
+     :compiler {:output-js "test.js"
+                :pretty-print true
+                :static-fns true
+                :optimizations :simple}}
+    {:id "test-adv"
+     :source-paths ["src/test/cljs"]
+     :compiler {:output-js "test-adv.js"
+                :pretty-print true
+                :optimizations :advanced}}]})
