@@ -12,6 +12,12 @@
    :name "clojure.core.match.java",
    :doc nil}
   {:source-url
+   "https://github.com/clojure/core.match/blob/ec5823744b3073cbbc66e575620b8c2ebd41f2df/src/main/clojure/clojure/core/match/pred.clj",
+   :wiki-url
+   "http://clojure.github.com/core.match/clojure.core.match.pred-api.html",
+   :name "clojure.core.match.pred",
+   :doc nil}
+  {:source-url
    "https://github.com/clojure/core.match/blob/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj",
    :wiki-url
    "http://clojure.github.com/core.match/clojure.core.match.regex-api.html",
@@ -241,6 +247,27 @@
    :var-type "macro",
    :line 20,
    :file "src/main/clojure/clojure/core/match/java.clj"}
+  {:arglists ([super sub]),
+   :name "subsumes",
+   :namespace "clojure.core.match.pred",
+   :source-url
+   "https://github.com/clojure/core.match/blob/ec5823744b3073cbbc66e575620b8c2ebd41f2df/src/main/clojure/clojure/core/match/pred.clj#L74",
+   :raw-source-url
+   "https://github.com/clojure/core.match/raw/ec5823744b3073cbbc66e575620b8c2ebd41f2df/src/main/clojure/clojure/core/match/pred.clj",
+   :wiki-url
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match.pred/subsumes",
+   :doc "Declares super as a strict superset of sub",
+   :var-type "function",
+   :line 74,
+   :file "src/main/clojure/clojure/core/match/pred.clj"}
+  {:file nil,
+   :raw-source-url nil,
+   :source-url nil,
+   :wiki-url
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match.pred/DispMatrix",
+   :namespace "clojure.core.match.pred",
+   :var-type "type",
+   :name "DispMatrix"}
   {:file nil,
    :raw-source-url nil,
    :source-url nil,
