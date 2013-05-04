@@ -284,9 +284,7 @@
   (all-wildcards? [this])
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
 
-(declare leaf-bind-expr)
-(declare named-wildcard-pattern?)
-(declare sym)
+(declare leaf-bind-expr named-wildcard-pattern? sym)
 
 (deftype PatternRow [ps action bindings]
   IPatternRow
@@ -504,9 +502,7 @@
   (occurrences [this])
   (action-for-row [this j]))
 
-(declare empty-matrix?)
-(declare useful-p?)
-(declare useful?)
+(declare empty-matrix? useful-p? useful?)
 
 ;; # Compilation Cases
 ;;
@@ -553,10 +549,7 @@
           _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
       (leaf-node a bs))))
 
-(declare pseudo-pattern?)
-(declare wildcard-pattern)
-(declare vector-pattern?)
-(declare pattern-matrix)
+(declare pseudo-pattern? wildcard-pattern vector-pattern? pattern-matrix)
 
 (defn- first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
@@ -919,9 +912,7 @@
 ;; They are split into multiple patterns, testing each element of the seq in order.
 ;;
 
-(declare seq-pattern?)
-(declare rest-pattern?)
-(declare seq-pattern)
+(declare seq-pattern? rest-pattern? seq-pattern)
 
 (deftype SeqPattern [s _meta]
   clojure.lang.IObj
@@ -1011,8 +1002,7 @@
 ;; 
 ;; Map patterns match maps, or any object that satisfies IMatchLookup.
 
-(declare map-pattern?)
-(declare guard-pattern)
+(declare map-pattern? guard-pattern)
 
 (deftype MapPattern [m _meta]
   clojure.lang.IObj
@@ -1517,12 +1507,8 @@
   [pat]
   (literal-pattern pat))
 
-(declare emit-pattern-for-syntax)
-(declare or-pattern)
-(declare as-pattern)
-(declare guard-pattern)
-(declare predicate-pattern)
-(declare vector-pattern)
+(declare emit-pattern-for-syntax or-pattern as-pattern guard-pattern
+         predicate-pattern vector-pattern)
 
 (defmethod emit-pattern clojure.lang.ISeq
   [pat] (if (and (= (count pat) 2)
@@ -1773,3 +1759,12 @@
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
+
+(comment
+  (defn foo [dirs cljs]
+    (match [dirs cljs]
+      [[:nothing] []] [:nothing]
+      [[:nothing] lst] [:just lst]
+      [[:just a] b] [:just (concat a b)]))
+
+  )
