@@ -65,9 +65,17 @@
 (def ^{:dynamic true} *line*)
 (def ^{:dynamic true} *locals* nil)
 (def ^{:dynamic true} *warned*)
-(def ^{:dynamic true} *vector-type* ::vector)
+
+(def ^{:dynamic true
+       :doc "Default vector type. Can be rebound allowing emission of custom
+             inline code for vector patterns, for example type-hinted primitive 
+             array operations"}
+  *vector-type* ::vector)
+
 (def ^{:dynamic true} *match-breadcrumbs* [])
-(def ^{:dynamic true} *recur-present* false)
+(def ^{:dynamic true
+       :doc "In the presence of recur we cannot apply code size optimizations"}
+  *recur-present* false)
 
 (defn set-trace! [b]
   (reset! *trace* b))
@@ -75,7 +83,8 @@
 (defn set-breadcrumbs! [b]
   (reset! *breadcrumbs* b))
 
-(def backtrack (Exception. "Could not find match."))
+(def ^{:doc "Pre-allocated exception used for backtracing"}
+  backtrack (Exception. "Could not find match."))
 
 (defn backtrack-expr []
   (if *clojurescript*
@@ -148,6 +157,11 @@
 
 ;; =============================================================================
 ;; # Vector Pattern Interop
+;;
+;; Vectors patterns can generate code specialized on type. This is useful for
+;; generating optimal code for data like primitive arrays and bytes. Defaults for
+;; vector are provided, see clojure.core.match.array and clojure.core.match.bits
+;; for experiments involving these types.
 
 (defn vector-type [t & r] t)
 
