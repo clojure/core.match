@@ -227,6 +227,11 @@
 (defprotocol IPatternCompile
   (to-source* [this ocr]))
 
+;; Pattern matrices are represented with persistent vectors. Operations
+;; on pattern matrices require us to move something from the middle of the
+;; vector to the front - thus prepend and drop-nth. swap will swap the 0th
+;; element with the nth element.
+
 (defprotocol IVecMod
   (prepend [this x])
   (drop-nth [this n])
@@ -289,12 +294,16 @@
 
 ;; =============================================================================
 ;; # Pattern Rows
+;;
+;; Pattern rows are one line of a matrix. They correspond to one clause in the
+;; in the user's original pattern. patterns, action, bindings are accessors.
+;; 
 
 (defprotocol IPatternRow
-  (action [this])
   (patterns [this])
-  (update-pattern [this i p])
+  (action [this])
   (bindings [this])
+  (update-pattern [this i p])
   (all-wildcards? [this])
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
 
@@ -1269,6 +1278,10 @@
 
 ;; -----------------------------------------------------------------------------
 ;; Pseudo-patterns
+;;
+;; Pseudo-patterns like OrPatterns are not real patterns. OrPatterns are much
+;; like a macro, they just expands into a simpler form. This expansion is
+;; dealt with specially in first-column-chosen-case.
 
 (defmulti pseudo-pattern? type)
 
@@ -1774,11 +1787,3 @@
        (match [~@bindvars#]
          ~@body))))
 
-(comment
-  (defn foo [dirs cljs]
-    (match [dirs cljs]
-      [[:nothing] []] [:nothing]
-      [[:nothing] lst] [:just lst]
-      [[:just a] b] [:just (concat a b)]))
-
-  )
