@@ -321,7 +321,7 @@
                      (conj bindings [sym bind-expr])
                      bindings)
           bindings (if (named-wildcard-pattern? p)
-                       (conj bindings [(sym p) bind-expr])
+                       (conj bindings [(:sym p) bind-expr])
                        bindings)]
       (PatternRow. (drop-nth ps n) action
                    bindings)))
@@ -556,7 +556,7 @@
             ;; Returns bindings usable by leaf-node
             [f ocrs]
             (let [ps (.ps ^PatternRow f)
-                  wc-syms (map #(sym %) ps)
+                  wc-syms (map :sym ps)
                   wc-bindings (map vector wc-syms
                                    (map leaf-bind-expr ocrs))]
               (concat (bindings f)
@@ -844,27 +844,15 @@
 ;;
 ;; In practice, the DAG compilation eliminates any wildcard patterns.
 
-(defprotocol IWildcardPattern
-  (sym [this]))
+(defrecord WildcardPattern [sym])
 
-(deftype WildcardPattern [sym _meta]
-  IWildcardPattern
-  (sym [_] sym)
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (WildcardPattern. sym new-meta))
-  Object
-  (toString [_]
-    (str sym)))
-
-(defn ^WildcardPattern wildcard-pattern
-  ([] (WildcardPattern. '_ nil))
+(defn wildcard-pattern
+  ([] (WildcardPattern. '_))
   ([sym] 
      {:pre [(symbol? sym)]}
      (if (= sym '_)
-       (WildcardPattern. (gensym) nil)
-       (WildcardPattern. sym nil))))
+       (WildcardPattern. (gensym))
+       (WildcardPattern. sym))))
 
 (defn wildcard-pattern? [x]
   (instance? WildcardPattern x))
@@ -874,10 +862,10 @@
 
 (defn named-wildcard-pattern? [x]
   (when (instance? WildcardPattern x)
-    (not= (.sym ^WildcardPattern x) '_)))
+    (not= (:sym x) '_)))
 
-(defmethod print-method WildcardPattern [^WildcardPattern p ^Writer writer]
-  (.write writer (str "<WildcardPattern: " (.sym p) ">")))
+(defmethod print-method WildcardPattern [p ^Writer writer]
+  (.write writer (str "<WildcardPattern: " (:sym p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; ## Literal Pattern
