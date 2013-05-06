@@ -30,11 +30,6 @@
 ;; * :a0 and :a1 are _actions_
 ;; 
 
-(comment
- (match [x y]
-   [1 2] :a0 
-   [3 4] :a1))
-
 ;; ============================================
 ;; # Debugging tools
 ;;
