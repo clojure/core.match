@@ -32,8 +32,8 @@
 
 (comment
  (match [x y]
-        [1 2] :a0 
-        [3 4] :a1))
+   [1 2] :a0 
+   [3 4] :a1))
 
 ;; ============================================
 ;; # Debugging tools
@@ -1759,9 +1759,9 @@
   Example:
   (let [x 1
         y 2]
-      (match [x y 3]
-             [1 2 3] :answer1
-             :else :default-answer))"
+    (match [x y 3]
+      [1 2 3] :answer1
+      :else :default-answer))"
   [vars & clauses]
   (let [[vars clauses] (if (vector? vars)
                          [vars clauses]
