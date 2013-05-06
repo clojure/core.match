@@ -21,3 +21,5 @@
       :else 5)))
 
 (assert (= (pattern-match-1) 4))
+
+(println "Tests completed without exception.")

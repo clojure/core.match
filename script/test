@@ -1,26 +1,26 @@
 rm -rf out
 mkdir -p out
-
 lein cljsbuild clean
-lein cljsbuild once
+
+lein cljsbuild once test-adv
 
 if [ "$V8_HOME" == "" ]; then
   echo "V8_HOME not set, skipping V8 tests"
 else
   echo "Testing with V8"
-  ${V8_HOME}/d8 tests.js
+  ${V8_HOME}/d8 out/test_adv.js
 fi
 
 if [ "$SPIDERMONKEY_HOME" == "" ]; then
   echo "SPIDERMONKEY_HOME not set, skipping SpiderMonkey tests"
 else
   echo "Testing with SpiderMonkey"
-  ${SPIDERMONKEY_HOME}/js tests.js
+  ${SPIDERMONKEY_HOME}/js out/test_adv.js
 fi
 
 if [ "$JSC_HOME" == "" ]; then
   echo "JSC_HOME not set, skipping JavaScriptCore tests"
 else
   echo "Testing with JavaScriptCore"
-  ${JSC_HOME}/jsc tests.js
+  ${JSC_HOME}/jsc out/test_adv.js
 fi
