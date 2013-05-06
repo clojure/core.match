@@ -913,7 +913,31 @@
 
 (declare seq-pattern? rest-pattern? seq-pattern)
 
+(defn specialize-seq-pattern-row [focr row]
+  (let [p (first row)
+        [h t] (if (seq-pattern? p)
+                (let [[h & t] (:s p)
+                      t (cond
+                          (empty? t) (literal-pattern ())
+                          (rest-pattern? (first t)) (pattern (first t))
+                          :else (seq-pattern t))]
+                  [h t])
+                [(wildcard-pattern) (wildcard-pattern)])]
+    (reduce prepend (drop-nth-bind row 0 focr) [t h])))
+
+(defn specialize-seq-pattern-matrix [rows focr]
+  (->> rows
+    (map (partial specialize-seq-pattern-row focr))
+    vec))
+
 (deftype SeqPattern [s _meta]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :s s
+      not-found))
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
@@ -927,21 +951,7 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
-          nrows (->> rows
-                     (map (fn [row]
-                            (let [p (first row)
-                                  [h t] (if (seq-pattern? p)
-                                          (let [^SeqPattern p p
-                                                [h & t] (.s p)
-                                                t (cond
-                                                   (empty? t) (literal-pattern ())
-                                                   (rest-pattern? (first t)) (pattern (first t))
-                                                   :else (seq-pattern t))]
-                                            [h t])
-                                          [(wildcard-pattern) (wildcard-pattern)])]
-                              (reduce prepend (drop-nth-bind row 0 focr)
-                                      [t h]))))
-                     vec)
+          nrows (specialize-seq-pattern-matrix rows focr)
           nocrs (let [seq-ocr focr
                       seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
                       sym-meta {:occurrence-type :seq
