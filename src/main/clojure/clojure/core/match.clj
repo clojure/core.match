@@ -695,13 +695,7 @@
 
 (declare default-specialize-matrix)
 
-(deftype PatternMatrix [rows ocrs _meta]
-  clojure.lang.IObj
-  (meta [_] _meta)
-
-  (withMeta [_ new-meta]
-    (PatternMatrix. rows ocrs new-meta))
-
+(defrecord PatternMatrix [rows ocrs]
   IPatternMatrix
   (width [_] (if (not (empty? rows))
                (count (rows 0))
@@ -779,13 +773,11 @@
 
   (insert-row [_ i row]
     (PatternMatrix. (into (conj (subvec rows 0 i) row) (subvec rows i))
-                    ocrs
-                    _meta))
+                    ocrs))
 
   (insert-rows [_ i rows]
     (PatternMatrix. (into (into (subvec rows 0 i) rows) (subvec rows i))
-                    ocrs
-                    _meta))
+                    ocrs))
 
   (occurrences [_] ocrs)
 
@@ -794,18 +786,17 @@
 
   IVecMod
   (drop-nth [_ i]
-    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs _meta))
+    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
 
   ;; Swap column number idx with the first column
   (swap [_ idx]
     (PatternMatrix. (vec (map #(swap % idx) rows))
-                    (swap ocrs idx)
-                    _meta)))
+                    (swap ocrs idx))))
 
-(defn ^PatternMatrix pattern-matrix [rows ocrs]
+(defn pattern-matrix [rows ocrs]
   {:pre [(vector rows) 
          (vector ocrs)]}
-  (PatternMatrix. rows ocrs nil))
+  (PatternMatrix. rows ocrs))
 
 (defn empty-matrix? [pm]
   (= (dim pm) [0 0]))
