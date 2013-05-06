@@ -295,9 +295,6 @@
 ;; 
 
 (defprotocol IPatternRow
-  (patterns [this])
-  (action [this])
-  (bindings [this])
   (update-pattern [this i p])
   (all-wildcards? [this])
   (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
@@ -306,11 +303,8 @@
 
 (deftype PatternRow [ps action bindings]
   IPatternRow
-  (action [_] action)
-  (patterns [_] ps)
   (update-pattern [_ i p]
     (PatternRow. (assoc ps i p) action bindings))
-  (bindings [_] bindings)
   (all-wildcards? [this]
     (every? wildcard-pattern? ps))
   (drop-nth-bind [this n ocr]
@@ -355,6 +349,15 @@
     (seq ps))
   (count [_]
     (count ps))
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :ps ps
+      :action action
+      :bindings bindings
+      not-found))
   clojure.lang.IFn
   (invoke [_ n]
     (nth ps n))
@@ -362,7 +365,7 @@
   (cons [_ x]
     (PatternRow. (conj ps x) action bindings)))
 
-(defn ^PatternRow pattern-row
+(defn pattern-row
   ([ps action] 
    {:pre [(vector? ps)]}
    (PatternRow. ps action nil))
@@ -538,9 +541,9 @@
   "Case 2: If the first row is empty then matching always succeeds 
   and yields the first action."
   [rows ocr]
-  (let [^PatternRow f (first rows)
-        a (action f)
-        bs (bindings f)
+  (let [f (first rows)
+        a (:action f)
+        bs (:bindings f)
         _ (trace-dag "Empty row, add leaf-node."
                      "Could not find match for: " ocr
                      "Action:" a
@@ -555,14 +558,13 @@
   (letfn [(row-bindings 
             ;; Returns bindings usable by leaf-node
             [f ocrs]
-            (let [ps (.ps ^PatternRow f)
+            (let [ps (:ps f)
                   wc-syms (map :sym ps)
                   wc-bindings (map vector wc-syms
                                    (map leaf-bind-expr ocrs))]
-              (concat (bindings f)
-                      wc-bindings)))]
+              (concat (:bindings f) wc-bindings)))]
     (let [f (first rows)
-          a (action f)
+          a (:action f)
           bs (row-bindings f ocrs)
           _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
       (leaf-node a bs))))
@@ -725,7 +727,7 @@
               (zero? i))
             
             (empty-row? [row]
-              (let [ps (patterns row)]
+              (let [ps (:ps row)]
                 (and (not (nil? ps))
                      (empty? ps))))]
       (cond
@@ -782,7 +784,7 @@
   (occurrences [_] ocrs)
 
   (action-for-row [_ j]
-    (action (rows j)))
+    (:action (rows j)))
 
   IVecMod
   (drop-nth [_ i]

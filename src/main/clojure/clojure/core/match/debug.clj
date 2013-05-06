@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match 
          :only [emit-matrix compile occurrences
-                rows patterns action-for-row n-to-clj clj-form]])
+                rows action-for-row n-to-clj clj-form]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]
@@ -47,7 +47,7 @@
        (prn)
        (doseq [[i row] (map-indexed (fn [p i] [p i]) (rows pm))]
          (print "|")
-         (doseq [p (patterns row)]
+         (doseq [p (:ps row)]
            (pp/cl-format true "~4D~7,vT" (str p) col-width))
          (print "|")
          (print " " (action-for-row pm i))
