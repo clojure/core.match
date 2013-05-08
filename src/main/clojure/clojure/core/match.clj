@@ -531,13 +531,13 @@
 ;; case 1, 2, 2 (also), 3a and 3b.
 ;;
 
-(defn- empty-rows-case 
+(defn empty-rows-case 
   "Case 1: If there are no pattern rows to match, then matching always fails"
   []
   (let [_ (trace-dag "No rows left, add fail-node")]
     (fail-node)))
 
-(defn- first-row-empty-case 
+(defn first-row-empty-case 
   "Case 2: If the first row is empty then matching always succeeds 
   and yields the first action."
   [rows ocr]
@@ -551,7 +551,7 @@
     ;; FIXME: wtf f, the first row is an infinite list of nil - David
     (leaf-node a bs)))
 
-(defn- first-row-wildcards-case 
+(defn first-row-wildcards-case 
   "Case 2: If the first row is constituted by wildcards then matching
   matching always succeeds and yields the first action."
   [rows ocrs]
@@ -571,122 +571,130 @@
 
 (declare pseudo-pattern? wildcard-pattern vector-pattern? pattern-matrix)
 
-(defn- first-column-chosen-case 
+(defn pseudo-patterns [matrix i]
+  (filter pseudo-pattern? (column matrix i)))
+
+(defn matrix-splitter [rows]
+  (let [f (first rows)
+        [x y] (split-with
+                #(if (comparable? f)
+                   (comparable? %)
+                   (pattern-equals f %))
+                (rest rows))]
+    [(cons f x) y]))
+
+(defn default-matrix [matrix]
+  (let [rs (rows matrix)
+        m (pattern-matrix
+            (into []
+              (drop (count (first (matrix-splitter (map first rs)))) rs))
+            (occurrences matrix))]
+    (if-not (empty-matrix? m)
+      (do
+        (trace-dag (str "Add specialized matrix on row of "
+                     "wildcards as default matrix for next node"))
+        (compile m))
+      (do 
+        (trace-dag (str "Add fail-node as default matrix for next "
+                     "node (specialized matrix empty)"))
+        (fail-node)))))
+
+;; if the user interleaves patterns we want to make them adjacent
+;; up until the point that the first wildcard pattern appears in a
+;; column. everything including and after a wildcard pattern is always
+;; the default matrix
+(defn group-rows [rows]
+  (let [[s-m-1 s-m-2] (map count (matrix-splitter (map first rows)))
+        [l r] [(take s-m-1 rows) (drop s-m-1 rows)]]
+    (letfn [(group [[r & rs :as rows]]
+              (if (seq rows)
+                (let [[fd rd] ((juxt filter remove)
+                                #(pattern-equals (first r) (first %))
+                                rs)]
+                  (concat (cons r fd) (group rd)))))]
+      (into [] (concat (group l) r)))))
+
+;; analyze vector patterns, if a vector-pattern containing a rest pattern
+;; occurs, drop all previous vector patterns that it subsumes. note this
+;; is a bit hard coding that should be removed when get a better sense
+;; how to abstract a protocol for this.
+(defn group-vector-patterns [ps]
+  (reverse
+    (reduce
+      (fn [ps p]
+        (if (and (vector-pattern? p)
+              (contains-rest-pattern? p))
+          (conj (drop-while #(pattern-equals p %) ps) p)
+          (conj ps p)))
+      () ps)))
+
+(defn collapse [ps]
+  (reduce
+    (fn [a b]
+      (if (pattern-equals (first (rseq a)) b)
+        a
+        (conj a b)))
+    [] ps))
+
+;; Returns a vector of relevant constructors in column i of matrix
+(defn column-constructors [matrix i]
+  (let [cs (group-vector-patterns (column matrix i))]
+    (collapse (first (matrix-splitter cs)))))
+
+;; Compile a decision trees for each constructor cs and returns a clause list
+;; usable by a switch node
+(defn switch-clauses [matrix cs]
+  (into []
+    (map (fn [c rows]
+           (let [s (-> matrix
+                     (specialize c rows (occurrences matrix)) 
+                     compile)]
+             [c s]))
+      cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
+           (if (nil? cs)
+             grouped
+             (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
+               (recur (next cs) (conj grouped l) r)))))))
+
+(defn switch-or-bind-node [col ocrs clauses default]
+  (letfn [(expression? [ocr] 
+            (contains? (meta ocr) :ocr-expr))
+          (bind-variables [ocrs] 
+            (mapcat (fn [ocr]
+                      (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
+                        (if (not= bind-expr ::not-found)
+                          [ocr bind-expr]
+                          [ocr ocr])))
+              ocrs))]
+    (if (some expression? ocrs)
+      (let [b (bind-variables ocrs)
+            o (ocrs col)
+            n (switch-node o clauses default)
+            _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
+        (bind-node b n))
+      (let [o (ocrs col)
+            _ (trace-dag "Add switch-node on occurrence " o)]
+        (switch-node o clauses default)))))
+
+(defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
   [this col ocrs]
-  (letfn [(pseudo-patterns [matrix i]
-            (->> (column matrix i)
-              (filter pseudo-pattern?)))
+  (let [exp-matrix (reduce
+                     (fn [matrix p]
+                       (specialize matrix p
+                         (rows matrix) (occurrences matrix)))
+                     this (pseudo-patterns this col))
+        new-matrix (pattern-matrix
+                     (group-rows (rows exp-matrix))
+                     (occurrences exp-matrix))
+        constrs (column-constructors new-matrix col)
+        clauses (switch-clauses new-matrix constrs)
+        default (default-matrix new-matrix)
+        _       (trace-dag "Column" col ":" constrs)]
+    (switch-or-bind-node col ocrs clauses default)))
 
-          (matrix-splitter [rows]
-            (let [f (first rows)
-                  [x y] (split-with #(if (comparable? f)
-                                       (comparable? %)
-                                       (pattern-equals f %)) (rest rows))]
-              [(cons f x) y]))
-
-          (default-matrix  [matrix]
-            (let [rs (rows matrix)
-                  m (pattern-matrix
-                     (into []
-                           (drop (count (first (matrix-splitter (map first rs)))) rs))
-                     (occurrences matrix))]
-              (if-not (empty-matrix? m)
-                (do
-                  (trace-dag (str "Add specialized matrix on row of "
-                                  "wildcards as default matrix for next node"))
-                  (compile m))
-                (do 
-                  (trace-dag (str "Add fail-node as default matrix for next "
-                                  "node (specialized matrix empty)"))
-                  (fail-node)))))
-
-          ;; if the user interleaves patterns we want to make them adjacent
-          ;; up until the point that the first wildcard pattern appears in a
-          ;; column. everything including and after a wildcard pattern is always
-          ;; the default matrix
-          (group-rows [rows]
-            (let [[s-m-1 s-m-2] (map count (matrix-splitter (map first rows)))
-                  [l r] [(take s-m-1 rows) (drop s-m-1 rows)]]
-              (letfn [(group [[r & rs :as rows]]
-                        (if (seq rows)
-                          (let [[fd rd] ((juxt filter remove)
-                                         #(pattern-equals (first r) (first %))
-                                         rs)]
-                            (concat (cons r fd) (group rd)))))]
-                (into [] (concat (group l) r)))))
-
-          ;; analyze vector patterns, if a vector-pattern containing a rest pattern
-          ;; occurs, drop all previous vector patterns that it subsumes. note this
-          ;; is a bit hard coding that should be removed when get a better sense
-          ;; how to abstract a protocol for this.
-          (group-vector-patterns [ps]
-            (-> (reduce (fn [ps p]
-                          (if (and (vector-pattern? p)
-                                   (contains-rest-pattern? p))
-                            (conj (drop-while #(pattern-equals p %) ps) p)
-                            (conj ps p)))
-                        () ps)
-                reverse))
-
-          (collapse [ps]
-            (reduce (fn [a b]
-                      (if (pattern-equals (first (rseq a)) b)
-                        a
-                        (conj a b)))
-                    [] ps))
-
-          ;; Returns a vector of relevant constructors in column i of matrix
-          (column-constructors [matrix i]
-            (let [cs (group-vector-patterns (column matrix i))]
-              (collapse (first (matrix-splitter cs)))))
-
-          ;; Compile a decision trees for each constructor cs and returns a clause list
-          ;; usable by a switch node
-          (switch-clauses [matrix cs]
-            (into []
-              (map (fn [c rows]
-                     (let [s (-> matrix
-                                 (specialize c rows (occurrences matrix)) 
-                                 compile)]
-                       [c s]))
-                   cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
-                        (if (nil? cs)
-                          grouped
-                          (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
-                            (recur (next cs) (conj grouped l) r)))))))
-
-          (switch-or-bind-node [col ocrs clauses default]
-            (letfn [(expression? [ocr] 
-                      (contains? (meta ocr) :ocr-expr))
-                    (bind-variables [ocrs] 
-                      (mapcat (fn [ocr]
-                                (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
-                                  (if (not= bind-expr ::not-found)
-                                    [ocr bind-expr]
-                                    [ocr ocr])))
-                              ocrs))]
-              (if (some expression? ocrs)
-                (let [b (bind-variables ocrs)
-                      o (ocrs col)
-                      n (switch-node o clauses default)
-                      _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
-                  (bind-node b n))
-                (let [o (ocrs col)
-                      _ (trace-dag "Add switch-node on occurrence " o)]
-                  (switch-node o clauses default)))))]
-    (let [exp-matrix (reduce (fn [matrix p]
-                         (specialize matrix p (rows matrix) (occurrences matrix)))
-                       this (pseudo-patterns this col))
-          new-matrix (pattern-matrix (group-rows (rows exp-matrix)) (occurrences exp-matrix))
-          constrs (column-constructors new-matrix col)
-          clauses (switch-clauses new-matrix constrs)
-          default (default-matrix new-matrix)
-          _ (trace-dag "Column" col ":" constrs)]
-      (switch-or-bind-node col ocrs clauses default))))
-
-(defn- other-column-chosen-case 
+(defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
   and compile the result"
   [this col]
@@ -1588,7 +1596,7 @@
       infix-keyword? #(#{:when :as :guard} %)]
   ;; void is a unique placeholder for nothing -- we can't use nil
   ;; because that's a legal symbol in a pattern row
-  (defn- regroup-keywords [pattern]
+  (defn regroup-keywords [pattern]
     (cond (vector? pattern)
           (first (reduce (fn [[result p q] r]
                            (cond
@@ -1601,7 +1609,7 @@
           (seq? pattern) (cons (regroup-keywords (first pattern)) (rest pattern))
           :else pattern)))
 
- (defn- group-keywords 
+ (defn group-keywords 
    "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  
     The original pattern may use the 'flattened' syntax.  For example, a 'flattened' 
     pattern row like [a b :when even?] is grouped as [a (b :when even?)]."
@@ -1613,7 +1621,7 @@
   (let [p (into [] (map emit-pattern (group-keywords pat)))]
     (pattern-row p action)))
 
-(defn- wildcards-and-duplicates
+(defn wildcards-and-duplicates
   "Returns a vector of two elements: the set of all wildcards and the 
    set of duplicate wildcards.  The underbar _ is excluded from both."
   [patterns]
@@ -1641,12 +1649,12 @@
               :else (recur pats seen dups)))
       [seen dups])))
 
-(defn- find-duplicate-wildcards [pattern]
+(defn find-duplicate-wildcards [pattern]
   (second (wildcards-and-duplicates pattern)))
 
 ;; This could be scattered around in other functions to be more efficient
 ;; Turn off *syntax-check* to disable
-(defn- check-matrix-args [vars clauses]
+(defn check-matrix-args [vars clauses]
   (cond
    (symbol? vars) (throw (AssertionError.
                           (str "Occurrences must be in a vector."
