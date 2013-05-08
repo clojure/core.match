@@ -666,25 +666,28 @@
              (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
                (recur (next cs) (conj grouped l) r)))))))
 
+(defn expression? [ocr]
+  (contains? (meta ocr) :ocr-expr))
+
+(defn bind-variables [ocrs] 
+  (mapcat
+    (fn [ocr]
+      (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
+        (if (not= bind-expr ::not-found)
+          [ocr bind-expr]
+          [ocr ocr])))
+    ocrs))
+
 (defn switch-or-bind-node [col ocrs clauses default]
-  (letfn [(expression? [ocr] 
-            (contains? (meta ocr) :ocr-expr))
-          (bind-variables [ocrs] 
-            (mapcat (fn [ocr]
-                      (let [bind-expr (get (meta ocr) :ocr-expr ::not-found)]
-                        (if (not= bind-expr ::not-found)
-                          [ocr bind-expr]
-                          [ocr ocr])))
-              ocrs))]
-    (if (some expression? ocrs)
-      (let [b (bind-variables ocrs)
-            o (ocrs col)
-            n (switch-node o clauses default)
-            _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
-        (bind-node b n))
-      (let [o (ocrs col)
-            _ (trace-dag "Add switch-node on occurrence " o)]
-        (switch-node o clauses default)))))
+  (if (some expression? ocrs)
+    (let [b (bind-variables ocrs)
+          o (ocrs col)
+          n (switch-node o clauses default)
+          _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
+      (bind-node b n))
+    (let [o (ocrs col)
+          _ (trace-dag "Add switch-node on occurrence " o)]
+      (switch-node o clauses default))))
 
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
