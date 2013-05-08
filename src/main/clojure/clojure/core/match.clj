@@ -718,11 +718,34 @@
 
 (declare default-specialize-matrix)
 
+;; Return a column number of a column which contains at least
+;; one non-wildcard constructor
+(defn choose-column [this]
+  (let [col (necessary-column this)
+        _ (trace-dag "Pick column" col "as necessary column.")]
+    col))
+
+(defn first-column? [i] (zero? i))
+
+(defn empty-row? [row]
+  (let [ps (:ps row)]
+    (and (not (nil? ps))
+         (empty? ps))))
+
+(defn score-column [i col]
+  [i (reduce
+       (fn [score useful]
+         (if useful
+           (clojure.core/inc score)
+           score))
+       0 col)])
+
 (defrecord PatternMatrix [rows ocrs]
   IPatternMatrix
-  (width [_] (if (not (empty? rows))
-               (count (rows 0))
-               0))
+  (width [_]
+    (if (not (empty? rows))
+      (count (rows 0))
+      0))
 
   (height [_] (count rows))
 
@@ -736,58 +759,43 @@
   (column [_ i] (vec (map #(nth % i) rows)))
 
   (compile [this]
-    (letfn [(choose-column 
-              ;; Return a column number of a column which contains at least
-              ;; one non-wildcard constructor
-              [this]
-              (let [col (necessary-column this)
-                    _ (trace-dag "Pick column" col "as necessary column.")]
-                col))
-            
-            (first-column? [i]
-              (zero? i))
-            
-            (empty-row? [row]
-              (let [ps (:ps row)]
-                (and (not (nil? ps))
-                     (empty? ps))))]
-      (cond
-        (empty? rows) (empty-rows-case)
+    (cond
+      (empty? rows)
+      (empty-rows-case)
 
-        (empty-row? (first rows)) (first-row-empty-case rows (first ocrs))
+      (empty-row? (first rows))
+      (first-row-empty-case rows (first ocrs))
 
-        (all-wildcards? (first rows)) (first-row-wildcards-case rows ocrs)
+      (all-wildcards? (first rows))
+      (first-row-wildcards-case rows ocrs)
 
-        :else (let [col (choose-column this)]
-                (if (first-column? col)
-                  (first-column-chosen-case this col ocrs)
-                  (other-column-chosen-case this col))))))
+      :else
+      (let [col (choose-column this)]
+        (if (first-column? col)
+          (first-column-chosen-case this col ocrs)
+          (other-column-chosen-case this col)))))
 
   (pattern-at [_ i j] ((rows j) i))
 
   (row [_ j] (nth rows j))
 
   (necessary-column [this]
-    (letfn [(score-column [i col]
-              [i (reduce (fn [score useful]
-                           (if useful
-                             (clojure.core/inc score)
-                             score))
-                         0 col)])]
-      (first
-       (->> (apply map vector (useful-matrix this))
-            (map-indexed score-column)
-            (reduce (fn [[col score :as curr]
-                         [ocol oscore :as cand]]
-                      (if (> oscore score) cand curr))
-                    [0 0])))))
+    (first
+      (->> (apply map vector (useful-matrix this))
+        (map-indexed score-column)
+        (reduce
+          (fn [[col score :as curr]
+               [ocol oscore :as cand]]
+            (if (> oscore score) cand curr))
+          [0 0]))))
 
   (useful-matrix [this]
-    (vec (->> (for [j (range (height this))
-                    i (range (width this))]
-                (useful-p? this i j))
-              (partition (width this))
-              (map vec))))
+    (vec
+      (->> (for [j (range (height this))
+                 i (range (width this))]
+             (useful-p? this i j))
+        (partition (width this))
+        (map vec))))
 
   (select [this]
     (swap this (necessary-column this)))
@@ -795,12 +803,12 @@
   (rows [_] rows)
 
   (insert-row [_ i row]
-    (PatternMatrix. (into (conj (subvec rows 0 i) row) (subvec rows i))
-                    ocrs))
+    (let [nrows (into (conj (subvec rows 0 i) row) (subvec rows i))]
+      (PatternMatrix. nrows ocrs)))
 
   (insert-rows [_ i rows]
-    (PatternMatrix. (into (into (subvec rows 0 i) rows) (subvec rows i))
-                    ocrs))
+    (let [nrows (into (into (subvec rows 0 i) rows) (subvec rows i))]
+      (PatternMatrix. nrows ocrs)))
 
   (occurrences [_] ocrs)
 
@@ -809,12 +817,13 @@
 
   IVecMod
   (drop-nth [_ i]
-    (PatternMatrix. (vec (map #(drop-nth % i) rows)) ocrs))
+    (let [nrows (vec (map #(drop-nth % i) rows))]
+      (PatternMatrix. nrows ocrs)))
 
   ;; Swap column number idx with the first column
   (swap [_ idx]
-    (PatternMatrix. (vec (map #(swap % idx) rows))
-                    (swap ocrs idx))))
+    (let [nrows (vec (map #(swap % idx) rows))]
+      (PatternMatrix. nrows (swap ocrs idx)))))
 
 (defn pattern-matrix [rows ocrs]
   {:pre [(vector rows) 
