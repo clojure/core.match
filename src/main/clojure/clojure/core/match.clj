@@ -475,21 +475,29 @@
     (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
           bind-expr (-> occurrence meta :bind-expr)
           cond-expr (if *recur-present*
-                      (doall (concat `(cond ~@clauses)
-                                     `(:else ~(n-to-clj default))))
-                      (doall (concat `(cond ~@clauses)
-                                     `(:else ~(if @*backtrack-with-errors*
-                                                `(throw (Exception. (str "Could not match" ~occurrence)))
-                                                (backtrack-expr))))))]
+                      (doall
+                        (concat
+                          `(cond ~@clauses)
+                          `(:else ~(n-to-clj default))))
+                      (doall
+                        (concat
+                          `(cond ~@clauses)
+                          `(:else
+                             ~(if @*backtrack-with-errors*
+                                `(throw
+                                   (Exception. (str "Could not match" ~occurrence)))
+                                (backtrack-expr))))))]
       (if *recur-present*
         (if bind-expr
           `~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
           `~cond-expr)
         (if bind-expr
-          `(try ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
-                ~(catch-error (n-to-clj default)))
-          `(try ~cond-expr
-                ~(catch-error (n-to-clj default))))))))
+          `(try
+             ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+             ~(catch-error (n-to-clj default)))
+          `(try
+             ~cond-expr
+             ~(catch-error (n-to-clj default))))))))
 
 (defn ^SwitchNode switch-node
   ([occurrence cases default]
@@ -551,23 +559,23 @@
     ;; FIXME: wtf f, the first row is an infinite list of nil - David
     (leaf-node a bs)))
 
+;; Returns bindings usable by leaf-node
+(defn row-bindings [f ocrs]
+  (let [ps (:ps f)
+        wc-syms (map :sym ps)
+        wc-bindings (map vector wc-syms
+                      (map leaf-bind-expr ocrs))]
+    (concat (:bindings f) wc-bindings)))
+
 (defn first-row-wildcards-case 
   "Case 2: If the first row is constituted by wildcards then matching
   matching always succeeds and yields the first action."
   [rows ocrs]
-  (letfn [(row-bindings 
-            ;; Returns bindings usable by leaf-node
-            [f ocrs]
-            (let [ps (:ps f)
-                  wc-syms (map :sym ps)
-                  wc-bindings (map vector wc-syms
-                                   (map leaf-bind-expr ocrs))]
-              (concat (:bindings f) wc-bindings)))]
-    (let [f (first rows)
-          a (:action f)
-          bs (row-bindings f ocrs)
-          _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
-      (leaf-node a bs))))
+  (let [f (first rows)
+        a (:action f)
+        bs (row-bindings f ocrs)
+        _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
+    (leaf-node a bs)))
 
 (declare pseudo-pattern? wildcard-pattern vector-pattern? pattern-matrix)
 
@@ -591,12 +599,14 @@
             (occurrences matrix))]
     (if-not (empty-matrix? m)
       (do
-        (trace-dag (str "Add specialized matrix on row of "
-                     "wildcards as default matrix for next node"))
+        (trace-dag
+          (str "Add specialized matrix on row of "
+            "wildcards as default matrix for next node"))
         (compile m))
       (do 
-        (trace-dag (str "Add fail-node as default matrix for next "
-                     "node (specialized matrix empty)"))
+        (trace-dag
+          (str "Add fail-node as default matrix for next "
+            "node (specialized matrix empty)"))
         (fail-node)))))
 
 ;; if the user interleaves patterns we want to make them adjacent
@@ -834,9 +844,9 @@
 (defn default-specialize-matrix [p rows ocrs]
   (let [focr (first ocrs)
         nrows (->> rows
-                   (filter #(pattern-equals p (first %)))
-                   (map #(drop-nth-bind % 0 focr))
-                   vec)
+                (filter #(pattern-equals p (first %)))
+                (map #(drop-nth-bind % 0 focr))
+                vec)
         nocrs (drop-nth ocrs 0)
         _ (trace-dag "Perform default matrix specialization on ocr" focr
                      ", new num ocrs: " 
@@ -859,10 +869,10 @@
 (defn wildcard-pattern
   ([] (WildcardPattern. '_))
   ([sym] 
-     {:pre [(symbol? sym)]}
-     (if (= sym '_)
-       (WildcardPattern. (gensym))
-       (WildcardPattern. sym))))
+    {:pre [(symbol? sym)]}
+    (if (= sym '_)
+      (WildcardPattern. (gensym))
+      (WildcardPattern. sym))))
 
 (defn wildcard-pattern? [x]
   (instance? WildcardPattern x))
