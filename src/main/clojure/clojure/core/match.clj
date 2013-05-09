@@ -1043,7 +1043,65 @@
 
 (declare map-pattern? guard-pattern)
 
+(defn row-keys [row env]
+  (let [p    (first row)
+        only (-> p meta :only)]
+    (when (and (not @(:only? env))
+               (seq only))
+      (reset! (:only? env) true))
+    [(set (keys (:m p)))
+     (set only)]))
+
+(defn get-all-keys [rows env]
+  (->> rows
+    (remove (comp wildcard-pattern? first))
+    (map #(row-keys % env))
+    (reduce concat)
+    (reduce set/union #{})))
+
+(defn get-ocr-map [p env]
+  (if (map-pattern? p)
+    (let [m (:m p)
+          wcs (repeatedly wildcard-pattern)
+          [not-found-map wc-map]
+          (if-let [only (:only env)]
+            [(zipmap (:all-keys env)
+               (repeat (literal-pattern ::not-found)))
+             (zipmap only wcs)]
+            [{} (:wc-map env)])]
+      (merge not-found-map (:wc-map env) m))
+    (:wc-map env)))
+
+(defn specialize-map-pattern-row [row env]
+  (let [p       (first row)
+        only    (seq (-> p meta :only))
+        ocr-map (get-ocr-map p (assoc env :only only))
+        ps      (doall (map ocr-map (:all-keys env)))
+        ps      (if @(:only? env)
+                  (if only
+                    (let [a (with-meta (gensym) {:tag 'java.util.Map})]
+                      (cons
+                        (guard-pattern (wildcard-pattern)
+                          (set [(if *clojurescript*
+                                  `(fn [~a] (= (set (keys ~a)) #{~@only}))
+                                  `(fn [~a] (= (.keySet ~a) #{~@only})))]))
+                        ps))
+                    (cons (wildcard-pattern) ps))
+                  ps)]
+    (reduce prepend (drop-nth-bind row 0 (:focr env))
+      (reverse ps))))
+
+(defn specialize-map-pattern-matrix [rows env]
+  (vec (map #(specialize-map-pattern-row % env) rows)))
+
 (deftype MapPattern [m _meta]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :m m
+      not-found))
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
@@ -1058,67 +1116,35 @@
     (str m " :only " (or (:only _meta) [])))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [focr (first ocrs)
-          only? (atom false)
-          all-keys (->> rows
-                        (remove (comp wildcard-pattern? first))
-                        (map (fn [row]
-                               (let [^MapPattern p (first row)
-                                     only (-> p meta :only)]
-                                 (when (and (not @only?) (seq only))
-                                   (reset! only? true))
-                                 [(set (keys (.m p)))
-                                  (set only)])))
-                        (reduce concat)
-                        (reduce set/union #{}))
-          wcs (repeatedly wildcard-pattern)
-          wc-map (zipmap all-keys wcs)
-          nrows (->> rows
-                     (map (fn [row]
-                            (let [p (first row)
-                                  only (seq (-> p meta :only))
-                                  ocr-map (if (map-pattern? p)
-                                            (let [^MapPattern p p
-                                                  m (.m p)
-                                                  [not-found-map wc-map] (if only
-                                                                           [(zipmap all-keys
-                                                                                    (repeat (literal-pattern ::not-found)))
-                                                                            (zipmap only wcs)]
-                                                                           [{} wc-map])]
-                                              (merge not-found-map wc-map m))
-                                            wc-map)
-                                  ps (map ocr-map all-keys)
-                                  ps (if @only?
-                                       (if only
-                                         (let [a (with-meta (gensym) {:tag 'java.util.Map})]
-                                           (cons (guard-pattern (wildcard-pattern)
-                                                                (set [(if *clojurescript*
-                                                                        `(fn [~a] (= (set (keys ~a)) #{~@only}))
-                                                                        `(fn [~a] (= (.keySet ~a) #{~@only})))]))
-                                                 ps))
-                                         (cons (wildcard-pattern) ps))
-                                       ps)]
-                              (reduce prepend (drop-nth-bind row 0 focr)
-                                      (reverse ps)))))
-                     vec)
-          nocrs (let [map-ocr focr
-                      ocr-sym (fn ocr-sym [k]
-                                (let [ocr (gensym (str (name map-ocr) "_" (name k) "__"))]
-                                  (with-meta ocr
-                                    {:occurrence-type :map
-                                     :key k
-                                     :map-sym map-ocr
-                                     :bind-expr (val-at-expr map-ocr k ::not-found)})))
-                      mocrs (map ocr-sym all-keys)
-                      mocrs (if @only?
-                              (cons map-ocr mocrs)
-                              mocrs)]
-                  (into (into [] mocrs)
-                        (drop-nth ocrs 0)))
-          _ (trace-dag "MapPattern specialization")]
+    (let [focr     (first ocrs)
+          only?    (atom false)
+          env      {:focr focr
+                    :only? only?}
+          all-keys (get-all-keys rows env)
+          wc-map   (zipmap all-keys (repeatedly wildcard-pattern))
+          nrows    (specialize-map-pattern-matrix rows
+                     (assoc env
+                       :all-keys all-keys
+                       :wc-map wc-map))
+          nocrs    (let [map-ocr focr
+                         ocr-sym
+                         (fn ocr-sym [k]
+                           (let [ocr (gensym (str (name map-ocr) "_" (name k) "__"))]
+                             (with-meta ocr
+                               {:occurrence-type :map
+                                 :key k
+                                 :map-sym map-ocr
+                                 :bind-expr (val-at-expr map-ocr k ::not-found)})))
+                         mocrs (map ocr-sym all-keys)
+                         mocrs (if @only?
+                                 (cons map-ocr mocrs)
+                                 mocrs)]
+                     (into (into [] mocrs)
+                       (drop-nth ocrs 0)))
+         _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
-(defn ^MapPattern map-pattern
+(defn map-pattern
   ([] (MapPattern. {} nil))
   ([m] {:pre [(map? m)]}
      (MapPattern. m nil)))
@@ -1126,7 +1152,7 @@
 (defn map-pattern? [x]
   (instance? MapPattern x))
 
-(defmethod print-method MapPattern [^MapPattern p ^Writer writer]
+(defmethod print-method MapPattern [p ^Writer writer]
   (.write writer (str "<MapPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
