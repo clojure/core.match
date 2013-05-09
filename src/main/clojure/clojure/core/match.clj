@@ -1094,6 +1094,25 @@
 (defn specialize-map-pattern-matrix [rows env]
   (vec (map #(specialize-map-pattern-row % env) rows)))
 
+(defn map-pattern-matrix-ocr-sym [k env]
+  (let [focr (:focr env)
+        ocr  (gensym (str (name focr) "_" (name k) "__"))]
+    (with-meta ocr
+      {:occurrence-type :map
+       :key k
+       :map-sym focr
+       :bind-expr (val-at-expr focr k ::not-found)})))
+
+(defn map-pattern-matrix-ocrs [ocrs env]
+  (let [focr  (:focr env)
+        mocrs (map #(map-pattern-matrix-ocr-sym % env)
+                (:all-keys env))
+        mocrs (vec
+                (if @(:only? env)
+                  (cons focr mocrs)
+                  mocrs))]
+    (into mocrs (drop-nth ocrs 0))))
+
 (deftype MapPattern [m _meta]
   clojure.lang.ILookup
   (valAt [this k]
@@ -1117,30 +1136,14 @@
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr     (first ocrs)
-          only?    (atom false)
           env      {:focr focr
-                    :only? only?}
+                    :only? (atom false)}
           all-keys (get-all-keys rows env)
-          wc-map   (zipmap all-keys (repeatedly wildcard-pattern))
-          nrows    (specialize-map-pattern-matrix rows
-                     (assoc env
-                       :all-keys all-keys
-                       :wc-map wc-map))
-          nocrs    (let [map-ocr focr
-                         ocr-sym
-                         (fn ocr-sym [k]
-                           (let [ocr (gensym (str (name map-ocr) "_" (name k) "__"))]
-                             (with-meta ocr
-                               {:occurrence-type :map
-                                 :key k
-                                 :map-sym map-ocr
-                                 :bind-expr (val-at-expr map-ocr k ::not-found)})))
-                         mocrs (map ocr-sym all-keys)
-                         mocrs (if @only?
-                                 (cons map-ocr mocrs)
-                                 mocrs)]
-                     (into (into [] mocrs)
-                       (drop-nth ocrs 0)))
+          env'     (assoc env
+                     :all-keys all-keys
+                     :wc-map (zipmap all-keys (repeatedly wildcard-pattern)))
+          nrows    (specialize-map-pattern-matrix rows env')
+          nocrs    (map-pattern-matrix-ocrs ocrs env')
          _ (trace-dag "MapPattern specialization")]
       (pattern-matrix nrows nocrs))))
 
