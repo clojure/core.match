@@ -1,6 +1,6 @@
 {:namespaces
  ({:source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match/clojure.core.match-api.html",
    :name "clojure.core.match",
@@ -27,411 +27,207 @@
  ({:name "*backtrack-with-errors*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L58",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L53",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*backtrack-with-errors*",
    :doc "Enable backtracking diagnostics",
    :var-type "var",
-   :line 58,
+   :line 53,
    :file "src/main/clojure/clojure/core/match.clj"}
   {:name "*breadcrumbs*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L50",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L45",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*breadcrumbs*",
    :doc "Enable breadcrumb diagnostics with fail nodes",
    :var-type "var",
-   :line 50,
+   :line 45,
+   :file "src/main/clojure/clojure/core/match.clj"}
+  {:name "*recur-present*",
+   :namespace "clojure.core.match",
+   :source-url
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L71",
+   :dynamic true,
+   :raw-source-url
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
+   :wiki-url
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*recur-present*",
+   :doc
+   "In the presence of recur we cannot apply code size optimizations",
+   :var-type "var",
+   :line 71,
    :file "src/main/clojure/clojure/core/match.clj"}
   {:name "*syntax-check*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L46",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L41",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*syntax-check*",
    :doc "Enable syntax check of match macros",
    :var-type "var",
-   :line 46,
+   :line 41,
    :file "src/main/clojure/clojure/core/match.clj"}
   {:name "*trace*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L54",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L49",
    :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*trace*",
    :doc "Enable pattern compile time tracing",
    :var-type "var",
-   :line 54,
+   :line 49,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([bindings node]),
-   :name "->BindNode",
+  {:name "*vector-type*",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L417",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L64",
+   :dynamic true,
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->BindNode",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/*vector-type*",
    :doc
-   "Positional factory function for class clojure.core.match.BindNode.",
-   :var-type "function",
-   :line 417,
+   "Default vector type. Can be rebound allowing emission of custom\ninline code for vector patterns, for example type-hinted primitive \narray operations",
+   :var-type "var",
+   :line 64,
    :file "src/main/clojure/clojure/core/match.clj"}
+  {:file "src/main/clojure/clojure/core/match.clj",
+   :raw-source-url
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
+   :source-url
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L81",
+   :wiki-url
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/backtrack",
+   :namespace "clojure.core.match",
+   :line 81,
+   :var-type "var",
+   :doc "Pre-allocated exception used for backtracing",
+   :name "backtrack"}
   {:arglists ([]),
-   :name "->FailNode",
+   :name "empty-rows-case",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L400",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L542",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->FailNode",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/empty-rows-case",
    :doc
-   "Positional factory function for class clojure.core.match.FailNode.",
+   "Case 1: If there are no pattern rows to match, then matching always fails",
    :var-type "function",
-   :line 400,
+   :line 542,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([p gs _meta]),
-   :name "->GuardPattern",
+  {:arglists ([this col ocrs]),
+   :name "first-column-chosen-case",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1286",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L692",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->GuardPattern",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/first-column-chosen-case",
    :doc
-   "Positional factory function for class clojure.core.match.GuardPattern.",
+   "Case 3a: The first column is chosen. Compute and return a switch/bind node\nwith a default matrix case",
    :var-type "function",
-   :line 1286,
+   :line 692,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([value bindings]),
-   :name "->LeafNode",
+  {:arglists ([rows ocr]),
+   :name "first-row-empty-case",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L363",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L548",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->LeafNode",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/first-row-empty-case",
    :doc
-   "Positional factory function for class clojure.core.match.LeafNode.",
+   "Case 2: If the first row is empty then matching always succeeds \nand yields the first action.",
    :var-type "function",
-   :line 363,
+   :line 548,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([l _meta]),
-   :name "->LiteralPattern",
+  {:arglists ([rows ocrs]),
+   :name "first-row-wildcards-case",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L888",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L570",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->LiteralPattern",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/first-row-wildcards-case",
    :doc
-   "Positional factory function for class clojure.core.match.LiteralPattern.",
+   "Case 2: If the first row is constituted by wildcards then matching\nmatching always succeeds and yields the first action.",
    :var-type "function",
-   :line 888,
+   :line 570,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([m _meta]),
-   :name "->MapPattern",
+  {:arglists ([pattern]),
+   :name "group-keywords",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1017",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L1660",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->MapPattern",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/group-keywords",
    :doc
-   "Positional factory function for class clojure.core.match.MapPattern.",
+   "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  \nThe original pattern may use the 'flattened' syntax.  For example, a 'flattened' \npattern row like [a b :when even?] is grouped as [a (b :when even?)].",
    :var-type "function",
-   :line 1017,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([ps _meta]),
-   :name "->OrPattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1231",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->OrPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.OrPattern.",
-   :var-type "function",
-   :line 1231,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([rows ocrs _meta]),
-   :name "->PatternMatrix",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L687",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->PatternMatrix",
-   :doc
-   "Positional factory function for class clojure.core.match.PatternMatrix.",
-   :var-type "function",
-   :line 687,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([ps action bindings]),
-   :name "->PatternRow",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L291",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->PatternRow",
-   :doc
-   "Positional factory function for class clojure.core.match.PatternRow.",
-   :var-type "function",
-   :line 291,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([p gs _meta]),
-   :name "->PredicatePattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1348",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->PredicatePattern",
-   :doc
-   "Positional factory function for class clojure.core.match.PredicatePattern.",
-   :var-type "function",
-   :line 1348,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([p _meta]),
-   :name "->RestPattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L989",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->RestPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.RestPattern.",
-   :var-type "function",
-   :line 989,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([s _meta]),
-   :name "->SeqPattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L926",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->SeqPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.SeqPattern.",
-   :var-type "function",
-   :line 926,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([occurrence cases default]),
-   :name "->SwitchNode",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L453",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->SwitchNode",
-   :doc
-   "Positional factory function for class clojure.core.match.SwitchNode.",
-   :var-type "function",
-   :line 453,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([v t size offset rest? _meta]),
-   :name "->VectorPattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1125",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->VectorPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.VectorPattern.",
-   :var-type "function",
-   :line 1125,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([sym _meta]),
-   :name "->WildcardPattern",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L848",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/->WildcardPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.WildcardPattern.",
-   :var-type "function",
-   :line 848,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:file "src/main/clojure/clojure/core/match.clj",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L266",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/comparable?",
-   :namespace "clojure.core.match",
-   :line 266,
-   :var-type "var",
-   :doc
-   "Returns true if it is possible to tell at compile time whether two\ndifferent versions of the same object can never match the same\nobject.",
-   :name "comparable?"}
-  {:file "src/main/clojure/clojure/core/match.clj",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1473",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/emit-pattern",
-   :namespace "clojure.core.match",
-   :line 1473,
-   :var-type "var",
-   :doc
-   "Returns the corresponding pattern for the given syntax. Dispatches\non the class of its argument. For example, `[(:or 1 2) 2]` is dispatched\nas clojure.lang.IPersistentVector",
-   :name "emit-pattern"}
-  {:file "src/main/clojure/clojure/core/match.clj",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1535",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/emit-pattern-for-syntax",
-   :namespace "clojure.core.match",
-   :line 1535,
-   :var-type "var",
-   :doc
-   "Handles patterns wrapped in the special list syntax. Dispatches\non the first or second keyword in the list. For example, the pattern \n`(:or 1 ...) is dispatches as :or, and `(1 :as a)` is dispatched by :as.",
-   :name "emit-pattern-for-syntax"}
-  {:arglists ([m__5828__auto__]),
-   :name "map->BindNode",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L417",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/map->BindNode",
-   :doc
-   "Factory function for class clojure.core.match.BindNode, taking a map of keywords to field values.",
-   :var-type "function",
-   :line 417,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([m__5828__auto__]),
-   :name "map->FailNode",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L400",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/map->FailNode",
-   :doc
-   "Factory function for class clojure.core.match.FailNode, taking a map of keywords to field values.",
-   :var-type "function",
-   :line 400,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([m__5828__auto__]),
-   :name "map->LeafNode",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L363",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/map->LeafNode",
-   :doc
-   "Factory function for class clojure.core.match.LeafNode, taking a map of keywords to field values.",
-   :var-type "function",
-   :line 363,
-   :file "src/main/clojure/clojure/core/match.clj"}
-  {:arglists ([m__5828__auto__]),
-   :name "map->SwitchNode",
-   :namespace "clojure.core.match",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L453",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/map->SwitchNode",
-   :doc
-   "Factory function for class clojure.core.match.SwitchNode, taking a map of keywords to field values.",
-   :var-type "function",
-   :line 453,
+   :line 1660,
    :file "src/main/clojure/clojure/core/match.clj"}
   {:arglists ([vars & clauses]),
    :name "match",
    :namespace "clojure.core.match",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1740",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L1795",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/match",
    :doc
-   "Pattern match a row of occurrences. Take a vector of occurrences, vars.\nClause question-answer syntax is like `cond`. Questions must be\nwrapped in a vector, with same arity as vars. Last question can be :else,\nwhich expands to a row of wildcards.\n\nExample:\n(let [x 1\n      y 2]\n    (match [x y 3]\n           [1 2 3] :answer1\n           :else :default-answer))",
+   "Pattern match a row of occurrences. Take a vector of occurrences, vars.\nClause question-answer syntax is like `cond`. Questions must be\nwrapped in a vector, with same arity as vars. Last question can be :else,\nwhich expands to a row of wildcards.\n\nExample:\n(let [x 1\n      y 2]\n  (match [x y 3]\n    [1 2 3] :answer1\n    :else :default-answer))",
    :var-type "macro",
-   :line 1740,
+   :line 1795,
    :file "src/main/clojure/clojure/core/match.clj"}
-  {:file "src/main/clojure/clojure/core/match.clj",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L249",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/pattern-compare",
+  {:arglists ([this col]),
+   :name "other-column-chosen-case",
    :namespace "clojure.core.match",
-   :line 249,
-   :var-type "var",
-   :doc "Like `clojure.core/compare` but for comparing patterns",
-   :name "pattern-compare"}
-  {:file "src/main/clojure/clojure/core/match.clj",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L259",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/safe-pattern-compare",
-   :namespace "clojure.core.match",
-   :line 259,
-   :var-type "var",
-   :doc "Like pattern-compare but not affected by *recur-present*",
-   :name "safe-pattern-compare"}
-  {:file "src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L710",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
-   :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L1467",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/to-source",
-   :namespace "clojure.core.match",
-   :line 1467,
-   :var-type "var",
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/other-column-chosen-case",
    :doc
-   "Returns a Clojure form that, when executed, is truthy if the pattern matches\nthe occurrence. Dispatches on the `type` of the pattern. For instance, a literal pattern \nmight return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match.",
-   :name "to-source"}
+   "Case 3b: A column other than the first is chosen. Swap column col with the first column\nand compile the result",
+   :var-type "function",
+   :line 710,
+   :file "src/main/clojure/clojure/core/match.clj"}
+  {:arglists ([patterns]),
+   :name "wildcards-and-duplicates",
+   :namespace "clojure.core.match",
+   :source-url
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L1672",
+   :raw-source-url
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
+   :wiki-url
+   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/wildcards-and-duplicates",
+   :doc
+   "Returns a vector of two elements: the set of all wildcards and the \nset of duplicate wildcards.  The underbar _ is excluded from both.",
+   :var-type "function",
+   :line 1672,
+   :file "src/main/clojure/clojure/core/match.clj"}
   {:file nil,
    :raw-source-url nil,
    :source-url nil,
@@ -494,7 +290,7 @@
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/PatternMatrix",
    :namespace "clojure.core.match",
-   :var-type "type",
+   :var-type "record",
    :name "PatternMatrix"}
   {:file nil,
    :raw-source-url nil,
@@ -550,17 +346,17 @@
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/WildcardPattern",
    :namespace "clojure.core.match",
-   :var-type "type",
+   :var-type "record",
    :name "WildcardPattern"}
   {:file "src/main/clojure/clojure/core/match.clj",
    :raw-source-url
-   "https://github.com/clojure/core.match/raw/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj",
+   "https://github.com/clojure/core.match/raw/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj",
    :source-url
-   "https://github.com/clojure/core.match/blob/3bab92b6620dccdcb9e55941af4599e3adf78a6e/src/main/clojure/clojure/core/match.clj#L116",
+   "https://github.com/clojure/core.match/blob/b5689f7a64d1b2e9180de4b3d1ab25bb12db3b51/src/main/clojure/clojure/core/match.clj#L120",
    :wiki-url
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/IMatchLookup",
    :namespace "clojure.core.match",
-   :line 116,
+   :line 120,
    :var-type "protocol",
    :doc
    "Allows arbitrary objects to act like a map-like object when pattern\nmatched. Avoid extending this directly for Java Beans, see\n`match.java/bean-match`.",
@@ -589,20 +385,6 @@
    :var-type "macro",
    :line 20,
    :file "src/main/clojure/clojure/core/match/java.clj"}
-  {:arglists ([dispatches]),
-   :name "->DispMatrix",
-   :namespace "clojure.core.match.pred",
-   :source-url
-   "https://github.com/clojure/core.match/blob/ec5823744b3073cbbc66e575620b8c2ebd41f2df/src/main/clojure/clojure/core/match/pred.clj#L40",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/ec5823744b3073cbbc66e575620b8c2ebd41f2df/src/main/clojure/clojure/core/match/pred.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match.pred/->DispMatrix",
-   :doc
-   "Positional factory function for class clojure.core.match.pred.DispMatrix.",
-   :var-type "function",
-   :line 40,
-   :file "src/main/clojure/clojure/core/match/pred.clj"}
   {:arglists ([super sub]),
    :name "subsumes",
    :namespace "clojure.core.match.pred",
@@ -624,34 +406,6 @@
    :namespace "clojure.core.match.pred",
    :var-type "type",
    :name "DispMatrix"}
-  {:arglists ([regex]),
-   :name "->RegexPattern",
-   :namespace "clojure.core.match.regex",
-   :source-url
-   "https://github.com/clojure/core.match/blob/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj#L11",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match.regex/->RegexPattern",
-   :doc
-   "Positional factory function for class clojure.core.match.regex.RegexPattern.",
-   :var-type "function",
-   :line 11,
-   :file "src/main/clojure/clojure/core/match/regex.clj"}
-  {:arglists ([m__5828__auto__]),
-   :name "map->RegexPattern",
-   :namespace "clojure.core.match.regex",
-   :source-url
-   "https://github.com/clojure/core.match/blob/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj#L11",
-   :raw-source-url
-   "https://github.com/clojure/core.match/raw/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj",
-   :wiki-url
-   "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match.regex/map->RegexPattern",
-   :doc
-   "Factory function for class clojure.core.match.regex.RegexPattern, taking a map of keywords to field values.",
-   :var-type "function",
-   :line 11,
-   :file "src/main/clojure/clojure/core/match/regex.clj"}
   {:file nil,
    :raw-source-url nil,
    :source-url nil,
