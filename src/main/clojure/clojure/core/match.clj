@@ -1448,7 +1448,23 @@
 
 (declare predicate-pattern?)
 
+(defn specialize-predicate-pattern-matrix [rows]
+  (->> rows
+    (map (fn [[p :as row]]
+           (if (predicate-pattern? p)
+             (update-pattern row 0 (:p p))
+             row)))
+    vec))
+
 (deftype PredicatePattern [p gs _meta]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :p p
+      :gs gs
+      not-found))
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
@@ -1463,14 +1479,7 @@
     (str p " :when " gs))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [nrows (->> rows
-                     (map (fn [row]
-                            (let [p (first row)]
-                              (if (predicate-pattern? p)
-                                (let [^PredicatePattern p p]
-                                  (update-pattern row 0 (.p p)))
-                                row))))
-                     vec)
+    (let [nrows (specialize-predicate-pattern-matrix rows) 
           _ (trace-dag "PredicatePattern specialization")]
       (pattern-matrix nrows ocrs))))
 
