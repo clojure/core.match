@@ -960,6 +960,18 @@
     (map (partial specialize-seq-pattern-row focr))
     vec))
 
+(defn seq-pattern-matrix-ocrs [ocrs focr]
+  (let [seq-sym (or (-> focr meta :seq-sym) focr)
+        sym-meta {:occurrence-type :seq
+                  :seq-sym focr}
+        hsym (gensym (str (name seq-sym) "_head__"))
+        hsym (with-meta hsym
+               (assoc sym-meta :bind-expr `(first ~focr)))
+        tsym (gensym (str (name seq-sym) "_tail__"))
+        tsym (with-meta tsym
+               (assoc sym-meta :bind-expr `(rest ~focr)))]
+    (into [hsym tsym] (drop-nth ocrs 0))))
+
 (deftype SeqPattern [s _meta]
   clojure.lang.ILookup
   (valAt [this k]
@@ -982,17 +994,7 @@
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
           nrows (specialize-seq-pattern-matrix rows focr)
-          nocrs (let [seq-ocr focr
-                      seq-sym (or (-> seq-ocr meta :seq-sym) seq-ocr)
-                      sym-meta {:occurrence-type :seq
-                                :seq-sym seq-ocr}
-                      hsym (gensym (str (name seq-sym) "_head__"))
-                      hsym (with-meta hsym
-                             (assoc sym-meta :bind-expr `(first ~seq-ocr)))
-                      tsym (gensym (str (name seq-sym) "_tail__"))
-                      tsym (with-meta tsym
-                             (assoc sym-meta :bind-expr `(rest ~seq-ocr)))]
-                  (into [hsym tsym] (drop-nth ocrs 0)))
+          nocrs (seq-pattern-matrix-ocrs ocrs focr)
           _ (trace-dag "SeqPattern specialization on ocr " focr
                        ", new num ocrs" 
                        (count ocrs) "->" (count nocrs))]
