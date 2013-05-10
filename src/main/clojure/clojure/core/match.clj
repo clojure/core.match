@@ -1377,7 +1377,23 @@
 
 (declare guard-pattern?)
 
+(defn specialize-guard-pattern-matrix [rows]
+  (->> rows
+    (map (fn [[p :as row]]
+           (if (guard-pattern? p)
+             (update-pattern row 0 (:p p))
+             row)))
+    vec))
+
 (deftype GuardPattern [p gs _meta]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :p p
+      :gs gs
+      not-found))
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
@@ -1392,14 +1408,7 @@
     (str p " :guard " gs))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [nrows (->> rows
-                     (map (fn [row]
-                            (let [p (first row)]
-                              (if (guard-pattern? p)
-                                (let [^GuardPattern p p]
-                                  (update-pattern row 0 (.p p)))
-                                row))))
-                     vec)
+    (let [nrows (specialize-guard-pattern-matrix rows)
           _ (trace-dag "GuardPattern specialization")]
       (pattern-matrix nrows ocrs))))
 
