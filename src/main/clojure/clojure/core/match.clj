@@ -1159,6 +1159,10 @@
   (.write writer (str "<MapPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
+;; Vector Pattern
+;;
+;; Vector patterns match any Sequential data structure. Note this means that
+;; the lazy semantics may mean poorer performance for sequences.
 
 (defprotocol IVectorPattern
   (split [this n]))
@@ -1180,7 +1184,77 @@
                 row)))
        (into [])))
 
+(defn calc-rest?-and-min-size [rows env]
+  (reduce
+    (fn [[rest? min-size] [p & ps]]
+      (if (vector-pattern? p)
+        [(or rest? (:rest? p))
+         (min min-size (:size p))]
+        [rest? min-size]))
+    [false (-> env :fp :size)] rows))
+
+(defn specialize-vector-pattern-row
+  [row {:keys [focr min-size]}]
+  (let [p  (first row)
+        ps (cond
+             (vector-pattern? p) (split p min-size)
+             :else [(wildcard-pattern) (wildcard-pattern)])]
+    (reduce prepend (drop-nth-bind row 0 focr) (reverse ps))))
+
+(defn specialize-vector-pattern-row-non-rest
+  [row {:keys [focr min-size]}]
+  (let [p  (first row)
+        ps (if (vector-pattern? p)
+             (reverse (:v p))
+             (repeatedly min-size wildcard-pattern))]
+    (reduce prepend (drop-nth-bind row 0 focr) ps)))
+
+(defn specialize-vector-pattern-matrix [rows env]
+  (if (:rest? env)
+    (vec (map #(specialize-vector-pattern-row % env) rows))
+    (vec (map #(specialize-vector-pattern-row-non-rest % env) rows))))
+
+(defn vector-pattern-ocr-sym
+  [{:keys [pat focr tag]} i]
+  (let [ocr (gensym (str (name focr) "_" i "__"))]
+    (with-meta ocr
+      {:occurrence-type tag
+       :vec-sym focr
+       :index i
+       :bind-expr
+       (if-let [offset (:offset pat)]
+         (nth-offset-inline tag (with-tag tag focr) i offset)
+         (nth-inline tag (with-tag tag focr) i))})))
+
+(defn vector-pattern-maxtrix-ocrs
+  [ocrs {:keys [focr tag min-size rest?] :as env}]
+  (if rest?
+    (let [ocr-meta {:occurrence-type tag
+                    :vec-sym focr}
+          vl-ocr (gensym (str (name focr) "_left__"))
+          vl-ocr (with-meta vl-ocr
+                   (assoc ocr-meta :bind-expr
+                     (subvec-inline tag (with-tag tag focr) 0 min-size )))
+          vr-ocr (gensym (str (name focr) "_right__"))
+          vr-ocr (with-meta vr-ocr
+                   (assoc ocr-meta :bind-expr
+                     (subvec-inline tag (with-tag tag focr) min-size)))]
+      (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))
+    (into (into [] (map (partial vector-pattern-ocr-sym env) (range min-size)))
+      (drop-nth ocrs 0))))
+
 (deftype VectorPattern [v t size offset rest? _meta]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :v v
+      :t t
+      :size size
+      :offset offset
+      :rest? rest?
+      not-found))
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
@@ -1212,75 +1286,31 @@
     (if (not (touched? (ffirst rows)))
       (pattern-matrix (touch-all-first rows) ocrs)
       (let [focr (first ocrs)
-            ^VectorPattern fp (ffirst rows)
-            [rest? min-size] (->> rows
-                                 (reduce (fn [[rest? min-size] [p & ps]]
-                                           (if (vector-pattern? p)
-                                             [(or rest? (.rest? ^VectorPattern p))
-                                              (min min-size (.size ^VectorPattern p))]
-                                             [rest? min-size]))
-                                         [false (.size ^VectorPattern fp)]))
-           [nrows nocrs] (if rest?
-                           [(->> rows
-                                 (map (fn [row]
-                                        (let [p (first row)
-                                              ps (cond
-                                                  (vector-pattern? p) (split p min-size)
-                                                  :else [(wildcard-pattern) (wildcard-pattern)])]
-                                          (reduce prepend (drop-nth-bind row 0 focr) (reverse ps)))))
-                                 vec)
-                            (let [vec-ocr focr
-                                  t (.t this)
-                                  ocr-meta {:occurrence-type t
-                                            :vec-sym vec-ocr}
-                                  vl-ocr (gensym (str (name vec-ocr) "_left__"))
-                                  vl-ocr (with-meta vl-ocr
-                                           (assoc ocr-meta :bind-expr (subvec-inline t (with-tag t vec-ocr) 0 min-size )))
-                                  vr-ocr (gensym (str (name vec-ocr) "_right__"))
-                                  vr-ocr (with-meta vr-ocr
-                                           (assoc ocr-meta :bind-expr (subvec-inline t (with-tag t vec-ocr) min-size)))]
-                              (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))]
-                           [(->> rows
-                                 (map (fn [row]
-                                        (let [p (first row)
-                                              ps (if (vector-pattern? p)
-                                                   (reverse (.v ^VectorPattern p))
-                                                   (repeatedly min-size wildcard-pattern))]
-                                          (reduce prepend (drop-nth-bind row 0 focr) ps))))
-                                 vec)
-                            (let [vec-ocr focr
-                                  ocr-sym (fn [i]
-                                            (let [ocr (gensym (str (name vec-ocr) "_" i "__"))
-                                                  t (.t this)]
-                                              (with-meta ocr
-                                                {:occurrence-type t
-                                                 :vec-sym vec-ocr
-                                                 :index i
-                                                 :bind-expr (if-let [offset (.offset this)]
-                                                              (nth-offset-inline t (with-tag t vec-ocr) i offset)
-                                                              (nth-inline t (with-tag t vec-ocr) i))})))]
-                              (into (into [] (map ocr-sym (range min-size)))
-                                (drop-nth ocrs 0)))])
-           matrix (pattern-matrix nrows nocrs)]
-       matrix))))
+            env {:focr focr
+                 :fp   (ffirst rows)
+                 :pat  this}
+            [rest? min-size] (calc-rest?-and-min-size rows env)
+            env' (assoc env
+                   :rest? rest? :min-size min-size :tag (:t this))
+            nrows (specialize-vector-pattern-matrix rows env')
+            nocrs (vector-pattern-maxtrix-ocrs ocrs env')]
+        (pattern-matrix nrows nocrs)))))
 
-(defn ^VectorPattern vector-pattern
+(defn vector-pattern
   ([] (vector-pattern [] ::vector nil nil))
-  ([v]
-     (vector-pattern v ::vector nil nil))
-  ([v t]
-     (vector-pattern v t nil nil nil))
-  ([v t offset]
-     (vector-pattern v t offset nil))
-  ([v t offset rest?] {:pre [(vector? v)]}
-     (let [c (count v)
-           size (if rest? (dec c) c)]
+  ([v] (vector-pattern v ::vector nil nil))
+  ([v t] (vector-pattern v t nil nil nil))
+  ([v t offset] (vector-pattern v t offset nil))
+  ([v t offset rest?]
+    {:pre [(vector? v)]}
+    (let [c    (count v)
+          size (if rest? (dec c) c)]
       (VectorPattern. v t size offset rest? nil))))
 
 (defn vector-pattern? [x]
   (instance? VectorPattern x))
 
-(defmethod print-method VectorPattern [^VectorPattern p ^Writer writer]
+(defmethod print-method VectorPattern [p ^Writer writer]
   (.write writer (str "<VectorPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
@@ -1515,13 +1545,13 @@
       0 1)))
 
 (defmethod pattern-compare [VectorPattern VectorPattern]
-  [^VectorPattern a ^VectorPattern b]
+  [a b]
   (cond
-   (not (touched? b)) 0
-   (= (.size a) (.size b)) 0
-   (and (.rest? a) (<= (.size a) (.size b))) 0
-   (and (.rest? b) (<= (.size b) (.size a))) 0
-   :else 1))
+    (not (touched? b)) 0
+    (= (:size a) (:size b)) 0
+    (and (:rest? a) (<= (:size a) (:size b))) 0
+    (and (:rest? b) (<= (:size b) (:size a))) 0
+    :else 1))
 
 ;; =============================================================================
 ;; # Interface
