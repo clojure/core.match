@@ -1318,6 +1318,17 @@
 ;; -----------------------------------------------------------------------------
 ;; Or Patterns
 
+(defn specialize-or-pattern-row [row pat ps]
+  (let [p (first row)]
+    ;; NOTE: hmm why can't we remove this - David
+    (if (and (pattern-equals pat p)
+             (not (wildcard-pattern? p)))
+      (map (fn [p] (update-pattern row 0 p)) ps) [row])))
+
+(defn specialize-or-pattern-matrix [rows pat ps]
+  (vec (apply concat
+         (map #(specialize-or-pattern-row % pat ps) rows))))
+
 (deftype OrPattern [ps _meta]
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1328,19 +1339,8 @@
     (str ps))
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [ps (.ps this)
-          nrows (->> rows
-                     (map (fn [row]
-                            (let [p (first row)]
-                              ;; NOTE: hmm why can't we remove this - David
-                              (if (and (pattern-equals this p)
-                                       (not (wildcard-pattern? p)))
-                                (map (fn [p]
-                                       (update-pattern row 0 p)) ps)
-                                [row]))))
-                     (apply concat)
-                     vec)
-          _ (trace-dag "OrPattern specialization")]
+    (let [nrows (specialize-or-pattern-matrix rows this ps)
+          _     (trace-dag "OrPattern specialization")]
       (pattern-matrix nrows ocrs))))
 
 (defn ^OrPattern or-pattern [p]
