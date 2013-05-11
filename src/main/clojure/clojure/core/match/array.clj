@@ -33,6 +33,14 @@
   [_] "[Ljava.lang.Object;")
 
 (comment
+  ;; specialize based on type hints in match
+  (let [x (int-array [1 2 3])]
+    (match [^ints x]
+      [[_ _ 2]] :a0
+      [[1 1 3]] :a1
+      [[1 2 3]] :a2
+      :else :a3))
+  
   (let [x (int-array [1 2 3])]
     (match [x]
       [([_ _ 2] ::ints)] :a0
@@ -40,7 +48,7 @@
       [([1 2 3] ::ints)] :a2
       :else :a3))
   
- ;; 60ms
+  ;; 60ms
   (let [x (int-array [1 2 3])]
     (dotimes [_ 10]
       (time
@@ -126,11 +134,11 @@
     (let [^objects node (B (R (R nil nil nil) nil nil) nil nil)]
       (dotimes [_ 10]
         (time
-         (dotimes [_ 1e5]
+         (dotimes [_ 1e6]
            (balance-array node)))))
 
     ;; strange it looks like we actually see the inlining happen
-    (let [^objects node (B nil nil (R (R nil nil nil) nil nil))]
+    #_(let [^objects node (B nil nil (R (R nil nil nil) nil nil))]
       (dotimes [_ 10]
         (time
          (dotimes [_ 1e5]
