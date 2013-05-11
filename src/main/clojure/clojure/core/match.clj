@@ -1347,6 +1347,14 @@
   (withMeta [_ new-meta]
     (OrPattern. ps new-meta))
 
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :ps ps
+      not-found))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (specialize-or-pattern-matrix rows this ps)
