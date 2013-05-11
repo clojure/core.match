@@ -299,6 +299,15 @@
 (declare leaf-bind-expr named-wildcard-pattern? sym)
 
 (deftype PatternRow [ps action bindings]
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :ps ps
+      :action action
+      :bindings bindings
+      not-found))
   IPatternRow
   (update-pattern [_ i p]
     (PatternRow. (assoc ps i p) action bindings))
