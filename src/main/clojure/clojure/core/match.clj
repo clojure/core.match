@@ -297,33 +297,43 @@
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action bindings))
+
   (prepend [_ x]
     (PatternRow. (into [x] ps) action bindings))
+
   (swap [_ n]
     (PatternRow. (swap ps n) action bindings))
+
   clojure.lang.Associative
   (assoc [this k v]
     (PatternRow. (assoc ps k v) action bindings))
+
   clojure.lang.Indexed
   (nth [_ i]
     (nth ps i))
   (nth [_ i x]
     (nth ps i x))
+
   clojure.lang.ISeq
   (first [_] (first ps))
+
   (next [_]
     (if-let [nps (next ps)]
       (PatternRow. nps action bindings)
       (PatternRow. [] action bindings)))
+
   (more [_]
     (if (empty? ps)
       nil
       (let [nps (rest ps)]
         (PatternRow. nps action bindings))))
+
   (seq [this]
     (seq ps))
+
   (count [_]
     (count ps))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -333,9 +343,11 @@
       :action action
       :bindings bindings
       not-found))
+
   clojure.lang.IFn
   (invoke [_ n]
     (nth ps n))
+
   clojure.lang.IPersistentCollection
   (cons [_ x]
     (PatternRow. (conj ps x) action bindings)))
@@ -888,21 +900,24 @@
 ;; It "literally" matches a given occurrence.
 
 (deftype LiteralPattern [l _meta]
+  Object
+  (toString [_]
+    (if (nil? l)
+      "nil"
+      (pr-str l)))
+  
   clojure.lang.IObj
   (meta [_] _meta)
+
   (withMeta [_ new-meta]
     (LiteralPattern. l new-meta))
+
   IPatternCompile
   (to-source* [this ocr]
     (cond
      (= l ()) `(empty? ~ocr)
      (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
-     :else `(= ~ocr ~l)))
-  Object
-  (toString [_]
-    (if (nil? l)
-      "nil"
-      (pr-str l))))
+     :else `(= ~ocr ~l))))
 
 (defn ^LiteralPattern literal-pattern [l] 
   (LiteralPattern. l (meta l)))
@@ -953,6 +968,15 @@
     (into [hsym tsym] (drop-nth ocrs 0))))
 
 (deftype SeqPattern [s _meta]
+  Object
+  (toString [_]
+    (str s))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (SeqPattern. s new-meta))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -960,16 +984,11 @@
     (case k
       :s s
       not-found))
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (SeqPattern. s new-meta))
+  
   IPatternCompile
   (to-source* [this ocr]
     `(or (seq? ~ocr) (sequential? ~ocr)))
-  Object
-  (toString [_]
-    (str s))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
@@ -1087,6 +1106,15 @@
     (into mocrs (drop-nth ocrs 0))))
 
 (deftype MapPattern [m _meta]
+  Object
+  (toString [_]
+    (str m " :only " (or (:only _meta) [])))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (MapPattern. m new-meta))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -1094,18 +1122,13 @@
     (case k
       :m m
       not-found))
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (MapPattern. m new-meta))
+
   IPatternCompile
   (to-source* [this ocr]
     (if *clojurescript*
       `(satisfies? cljs.core/ILookup ~ocr)
       `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))))
-  Object
-  (toString [_]
-    (str m " :only " (or (:only _meta) [])))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [focr     (first ocrs)
@@ -1217,6 +1240,15 @@
       (drop-nth ocrs 0))))
 
 (deftype VectorPattern [v t size offset rest? _meta]
+  Object
+  (toString [_]
+    (str v " " t))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (VectorPattern. v t size offset rest? new-meta))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -1228,20 +1260,16 @@
       :offset offset
       :rest? rest?
       not-found))
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (VectorPattern. v t size offset rest? new-meta))
+
   IPatternCompile
   (to-source* [this ocr]
     (if (and (touched? this) (not rest?) size (check-size? t))
       (test-with-size-inline t ocr size)
       (test-inline t ocr)))
-  Object
-  (toString [_]
-    (str v " " t))
+
   IContainsRestPattern
   (contains-rest-pattern? [_] rest?)
+
   IVectorPattern
   (split [this n]
     (let [lv (subvec v 0 n)
@@ -1254,6 +1282,7 @@
                      size (if rest? (dec rvc) rvc)]
                  (VectorPattern. rv t size n rest? _meta)))]
       [pl pr]))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (if (not (touched? (ffirst rows)))
@@ -1301,13 +1330,15 @@
          (map #(specialize-or-pattern-row % pat ps) rows))))
 
 (deftype OrPattern [ps _meta]
+  Object
+  (toString [this]
+    (str ps))
+
   clojure.lang.IObj
   (meta [_] _meta)
   (withMeta [_ new-meta]
     (OrPattern. ps new-meta))
-  Object
-  (toString [this]
-    (str ps))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (specialize-or-pattern-matrix rows this ps)
@@ -1357,6 +1388,15 @@
     vec))
 
 (deftype GuardPattern [p gs _meta]
+  Object
+  (toString [this]
+    (str p " :guard " gs))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (GuardPattern. p gs new-meta))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -1365,18 +1405,13 @@
       :p p
       :gs gs
       not-found))
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (GuardPattern. p gs new-meta))
+
   IPatternCompile
   (to-source* [this ocr]
     `(and ~@(map (fn [expr ocr]
                    (list expr ocr))
                  gs (repeat ocr))))
-  Object
-  (toString [this]
-    (str p " :guard " gs))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (specialize-guard-pattern-matrix rows)
@@ -1428,6 +1463,15 @@
     vec))
 
 (deftype PredicatePattern [p gs _meta]
+  Object
+  (toString [this]
+    (str p " :when " gs))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (PredicatePattern. p gs new-meta))
+
   clojure.lang.ILookup
   (valAt [this k]
     (.valAt this k nil))
@@ -1436,18 +1480,13 @@
       :p p
       :gs gs
       not-found))
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (PredicatePattern. p gs new-meta))
+
   IPatternCompile
   (to-source* [this ocr]
     `(and ~@(map (fn [expr ocr]
                    (list expr ocr))
                  gs (repeat ocr))))
-  Object
-  (toString [this]
-    (str p " :when " gs))
+
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
     (let [nrows (specialize-predicate-pattern-matrix rows) 
