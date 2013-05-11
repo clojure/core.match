@@ -512,21 +512,6 @@
 (defn map-occurrence? [ocr]
   (= (-> ocr meta :occurrence-type) :map))
 
-(defprotocol IPatternMatrix
-  (specialize [this c rows ocrs])
-  (compile [this])
-  (pattern-at [this i j])
-  (column [this i])
-  (row [this j])
-  (rows [this])
-  (insert-row [this i row])
-  (insert-rows [this i rows])
-  (necessary-column [this])
-  (useful-matrix [this])
-  (select [this])
-  (occurrences [this])
-  (action-for-row [this j]))
-
 (declare empty-matrix? useful-p? useful?)
 
 ;; # Compilation Cases
@@ -573,7 +558,9 @@
         _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
     (leaf-node a bs)))
 
-(declare pseudo-pattern? wildcard-pattern vector-pattern? pattern-matrix)
+(declare pseudo-pattern? wildcard-pattern column
+         vector-pattern? pattern-matrix rows occurrences
+         compile specialize necessary-column useful-matrix)
 
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
@@ -747,72 +734,67 @@
 (defn dim [pm]
   [(width pm) (height pm)])
 
+(defn column [{rows :rows} i]
+  (vec (map #(nth % i) rows)))
+
+(defn row [{rows :rows} j]
+  (nth rows j))
+
+(defn rows [{rows :rows}]
+  rows)
+
+(defn pattern-at [{rows :rows} i j]
+  ((rows j) i))
+
+(defn action-for-row [{rows :rows} j]
+  (:action (rows j)))
+
+(defn occurrences [pm] (:ocrs pm))
+
+(defn select [pm]
+  (swap pm (necessary-column pm)))
+
+(defn specialize [pm p rows* ocrs*]
+  (if (satisfies? ISpecializeMatrix p)
+    (specialize-matrix p rows* ocrs*)
+    (default-specialize-matrix p rows* ocrs*)))
+
+(defn compile [{:keys [rows ocrs] :as pm}]
+  (cond
+    (empty? rows)
+    (empty-rows-case)
+
+    (empty-row? (first rows))
+    (first-row-empty-case rows (first ocrs))
+
+    (all-wildcards? (first rows))
+    (first-row-wildcards-case rows ocrs)
+
+    :else
+    (let [col (choose-column pm)]
+      (if (first-column? col)
+        (first-column-chosen-case pm col ocrs)
+        (other-column-chosen-case pm col)))))
+
+(defn necessary-column [pm]
+  (->> (apply map vector (useful-matrix pm))
+    (map-indexed score-column)
+    (reduce
+      (fn [[col score :as curr]
+           [ocol oscore :as cand]]
+        (if (> oscore score) cand curr))
+      [0 0])
+    first))
+
+(defn useful-matrix [pm]
+  (->> (for [j (range (height pm))
+             i (range (width pm))]
+         (useful-p? pm i j))
+    (partition (width pm))
+    (map vec)
+    vec))
+
 (defrecord PatternMatrix [rows ocrs]
-  IPatternMatrix
-  (specialize [this p rows* ocrs*]
-    (if (satisfies? ISpecializeMatrix p)
-     (specialize-matrix p rows* ocrs*)
-     (default-specialize-matrix p rows* ocrs*)))
-
-  (column [_ i] (vec (map #(nth % i) rows)))
-
-  (compile [this]
-    (cond
-      (empty? rows)
-      (empty-rows-case)
-
-      (empty-row? (first rows))
-      (first-row-empty-case rows (first ocrs))
-
-      (all-wildcards? (first rows))
-      (first-row-wildcards-case rows ocrs)
-
-      :else
-      (let [col (choose-column this)]
-        (if (first-column? col)
-          (first-column-chosen-case this col ocrs)
-          (other-column-chosen-case this col)))))
-
-  (pattern-at [_ i j] ((rows j) i))
-
-  (row [_ j] (nth rows j))
-
-  (necessary-column [this]
-    (first
-      (->> (apply map vector (useful-matrix this))
-        (map-indexed score-column)
-        (reduce
-          (fn [[col score :as curr]
-               [ocol oscore :as cand]]
-            (if (> oscore score) cand curr))
-          [0 0]))))
-
-  (useful-matrix [this]
-    (vec
-      (->> (for [j (range (height this))
-                 i (range (width this))]
-             (useful-p? this i j))
-        (partition (width this))
-        (map vec))))
-
-  (select [this]
-    (swap this (necessary-column this)))
-
-  (rows [_] rows)
-
-  (insert-row [_ i row]
-    (let [nrows (into (conj (subvec rows 0 i) row) (subvec rows i))]
-      (PatternMatrix. nrows ocrs)))
-
-  (insert-rows [_ i rows]
-    (let [nrows (into (into (subvec rows 0 i) rows) (subvec rows i))]
-      (PatternMatrix. nrows ocrs)))
-
-  (occurrences [_] ocrs)
-
-  (action-for-row [_ j]
-    (:action (rows j)))
-
   IVecMod
   (drop-nth [_ i]
     (let [nrows (vec (map #(drop-nth % i) rows))]
