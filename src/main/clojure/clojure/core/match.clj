@@ -291,40 +291,9 @@
 ;; in the user's original pattern. patterns, action, bindings are accessors.
 ;; 
 
-(defprotocol IPatternRow
-  (update-pattern [this i p])
-  (all-wildcards? [this])
-  (drop-nth-bind [this n bind-expr])) ;; TODO: needs better name - David
-
 (declare leaf-bind-expr named-wildcard-pattern? sym)
 
 (deftype PatternRow [ps action bindings]
-  clojure.lang.ILookup
-  (valAt [this k]
-    (.valAt this k nil))
-  (valAt [this k not-found]
-    (case k
-      :ps ps
-      :action action
-      :bindings bindings
-      not-found))
-  IPatternRow
-  (update-pattern [_ i p]
-    (PatternRow. (assoc ps i p) action bindings))
-  (all-wildcards? [this]
-    (every? wildcard-pattern? ps))
-  (drop-nth-bind [this n ocr]
-    (let [p (ps n)
-          bind-expr (leaf-bind-expr ocr)
-          bindings (or bindings [])
-          bindings (if-let [sym (-> p meta :as)]
-                     (conj bindings [sym bind-expr])
-                     bindings)
-          bindings (if (named-wildcard-pattern? p)
-                       (conj bindings [(:sym p) bind-expr])
-                       bindings)]
-      (PatternRow. (drop-nth ps n) action
-                   bindings)))
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action bindings))
@@ -378,6 +347,30 @@
   ([ps action bindings]
    {:pre [(vector? ps)]} ;; TODO: what can we expect bindings? (or (nil? bindings) (list? bindings))  ? - Ambrose
    (PatternRow. ps action bindings)))
+
+;; NOTE: we don't use map destructuring here because PatternRow is both
+;; ISeq and ILookup, but in map destructuring seq? is tested first - David
+
+(defn update-pattern [prow i p]
+  (pattern-row (assoc (:ps prow) i p) (:action prow) (:bindings prow)))
+
+(defn all-wildcards? [prow]
+  (every? wildcard-pattern? (:ps prow)))
+
+(defn drop-nth-bind [prow n ocr]
+  (let [ps        (:ps prow)
+        bindings  (:bindings prow)
+        action    (:action prow)
+        p         (ps n)
+        bind-expr (leaf-bind-expr ocr)
+        bindings  (or bindings [])
+        bindings  (if-let [sym (-> p meta :as)]
+                    (conj bindings [sym bind-expr])
+                    bindings)
+        bindings  (if (named-wildcard-pattern? p)
+                    (conj bindings [(:sym p) bind-expr])
+                    bindings)]
+    (pattern-row (drop-nth ps n) action bindings)))
 
 ;; =============================================================================
 ;; # Compilation Nodes
