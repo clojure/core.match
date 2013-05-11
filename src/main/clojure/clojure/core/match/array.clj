@@ -70,32 +70,9 @@
            [([1 1 3] ::ints :offset o)] :a1
            [([1 2 3] ::ints :offset o)] :a2)))))
 
-  ;; 200ms
-  (let [^objects t (object-array [:black
-                     (object-array [:red
-                       (object-array [:red nil nil nil]) nil nil]) nil nil])]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e7]
-        (matchv ::objects [t]
-                [([:black [:red [:red _ _ _] _ _] _ _] |
-                  [:black [:red _ _ [:red _ _ _]] _ _] |
-                  [:black _ _ [:red [:red _ _ _] _ _]])] :valid
-            :else :invalid)))))
-
   ;; this more complicated because we actually need to look at the values
   (do
     (set! *warn-on-reflection* true)
-
-    (defn balance-array [^objects node]
-      (matchv ::objects [node]
-        [([:black [:red [:red a x b] y c] z d] |
-          [:black [:red a x [:red b y c]] z d] |
-          [:black a x [:red [:red b y c] z d]] |
-          [:black a x [:red b y [:red c z d]]])]
-        (object-array [:red
-          (object-array [:black a x b]) y
-             (object-array [:black c z d])])))
 
     ;; 360ms
     (let [^objects node (object-array [:black
@@ -110,24 +87,6 @@
     (let [^objects node (object-array [:black
                             nil nil (object-array [:red nil nil
                               (object-array [:red nil nil nil])])])]
-      (dotimes [_ 10]
-        (time
-         (dotimes [_ 1e5]
-           (balance-array node)))))
-    )
-
-  (do
-    (defn balance-array [^objects node]
-      (matchv ::objects [node]
-         [[:black [:red [:red a x b] y c] z d]]
-              (object-array [:red
-                (object-array [:black a x b]) y
-                  (object-array [:black c z d])])))
-
-    ;; 90ms
-    (let [^objects node (object-array [:black
-                          (object-array [:red
-                            (object-array [:red nil nil nil]) nil nil]) nil nil])]
       (dotimes [_ 10]
         (time
          (dotimes [_ 1e5]
