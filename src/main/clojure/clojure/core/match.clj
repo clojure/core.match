@@ -1608,12 +1608,15 @@
        v
        (let [p (first ps)]
          (cond
-          (= p '&) (let [p (second ps)
-                         rp (if (and (vector? p) (= t :seq))
-                              (seq-pattern (emit-patterns p t))
-                              (emit-pattern p))]
-                     (recur (nnext ps) t (conj v (rest-pattern rp)))) 
-          :else (recur (next ps) t (conj v (emit-pattern (first ps)))))))))
+          (= p '&)
+          (let [p (second ps)
+                rp (if (and (vector? p) (= t :seq))
+                     (seq-pattern (emit-patterns p t))
+                     (emit-pattern p))]
+            (recur (nnext ps) t (conj v (rest-pattern rp)))) 
+
+          :else
+          (recur (next ps) t (conj v (emit-pattern (first ps)))))))))
 
 (defmethod emit-pattern clojure.lang.IPersistentVector
   [pat]
@@ -1687,19 +1690,22 @@
       (seq-pattern (emit-patterns p :seq)))))
 
 (defmethod emit-pattern-for-syntax [Object ::vector]
-  [[p t offset-key offset]] (let [ps (emit-patterns p :vector)]
-                              (vector-pattern ps t offset (some rest-pattern? ps))))
+  [[p t offset-key offset]]
+  (let [ps (emit-patterns p :vector)]
+    (vector-pattern ps t offset (some rest-pattern? ps))))
 
 (defmethod emit-pattern-for-syntax [Object :only]
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))
 
 (defmethod emit-pattern-for-syntax :default
   [[_ s :as l]]
-  (throw (AssertionError.
-          (str "Invalid list syntax " s " in " l ". "
-               "Valid syntax: "
-               (vec (remove #(= % :default)
-                            (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
+  (throw
+    (AssertionError.
+      (str "Invalid list syntax " s " in " l ". "
+        "Valid syntax: "
+        (vec
+          (remove #(= % :default)
+            (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
 
 
 (let [void (Object.)
@@ -1708,17 +1714,23 @@
   ;; void is a unique placeholder for nothing -- we can't use nil
   ;; because that's a legal symbol in a pattern row
   (defn regroup-keywords [pattern]
-    (cond (vector? pattern)
-          (first (reduce (fn [[result p q] r]
-                           (cond
-                            (void? p) [result q r]
-                            (and (not (void? r)) (infix-keyword? q))
-                              [(conj result (list (regroup-keywords p) q r)) void void]
-                            :else [(conj result (regroup-keywords p)) q r]))
-                         [[] void void]
-                         (conj pattern void void)))
-          (seq? pattern) (cons (regroup-keywords (first pattern)) (rest pattern))
-          :else pattern)))
+    (cond
+      (vector? pattern)
+      (first
+        (reduce
+          (fn [[result p q] r]
+            (cond
+              (void? p) [result q r]
+              (and (not (void? r)) (infix-keyword? q))
+              [(conj result (list (regroup-keywords p) q r)) void void]
+              :else [(conj result (regroup-keywords p)) q r]))
+          [[] void void]
+          (conj pattern void void)))
+
+      (seq? pattern)
+      (cons (regroup-keywords (first pattern)) (rest pattern))
+
+      :else pattern)))
 
  (defn group-keywords 
    "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  
@@ -1740,24 +1752,42 @@
     (if-let [patterns (seq remaining)]
       (let [pat (first patterns)
             pats (rest patterns)]
-        (cond (or (= pat '_) (= pat '&)) (recur pats seen dups)
-              (symbol? pat) (if (contains? seen pat)
-                              (recur pats seen (conj dups pat))
-                              (recur pats (conj seen pat) dups))
-              (vector? pat) (recur (concat pats pat) seen dups)
-              (map? pat) (recur (concat pats (vals pat)) seen dups)
-              (seq? pat) (cond
-                          (= (first pat) 'quote) (recur pats seen dups)
-                          (= (first pat) :or) (let [wds (map wildcards-and-duplicates
-                                                             (map list (take-nth 2 pat)))
-                                                    mseen (apply set/union (map first wds))]
-                                                (recur pats (set/union seen mseen)
-                                                       (apply set/union dups
-                                                              (set/intersection seen mseen)
-                                                              (map second wds))))
-                          (= (second pat) :as) (recur (concat pats (take-nth 2 pat)) seen dups)
-                          :else (recur (conj pats (first pat)) seen dups))
-              :else (recur pats seen dups)))
+        (cond
+          (or (= pat '_) (= pat '&))
+          (recur pats seen dups)
+
+          (symbol? pat)
+          (if (contains? seen pat)
+            (recur pats seen (conj dups pat))
+            (recur pats (conj seen pat) dups))
+          
+          (vector? pat)
+          (recur (concat pats pat) seen dups)
+
+          (map? pat)
+          (recur (concat pats (vals pat)) seen dups)
+
+          (seq? pat)
+          (cond
+            (= (first pat) 'quote)
+            (recur pats seen dups)
+
+            (= (first pat) :or)
+            (let [wds (map wildcards-and-duplicates
+                        (map list (take-nth 2 pat)))
+                   mseen (apply set/union (map first wds))]
+              (recur pats (set/union seen mseen)
+                (apply set/union dups
+                  (set/intersection seen mseen)
+                  (map second wds))))
+            
+            (= (second pat) :as)
+            (recur (concat pats (take-nth 2 pat)) seen dups)
+
+            :else
+            (recur (conj pats (first pat)) seen dups))
+          :else
+          (recur pats seen dups)))
       [seen dups])))
 
 (defn find-duplicate-wildcards [pattern]
@@ -1877,12 +1907,13 @@
       [1 2 3] :answer1
       :else :default-answer))"
   [vars & clauses]
-  (let [[vars clauses] (if (vector? vars)
-                         [vars clauses]
-                         [(vector vars)
-                          (mapcat (fn [[c a]]
-                                    [(if (not= c :else) (vector c) c) a])
-                                  (partition 2 clauses))])]
+  (let [[vars clauses]
+        (if (vector? vars)
+          [vars clauses]
+          [(vector vars)
+            (mapcat (fn [[c a]]
+                      [(if (not= c :else) (vector c) c) a])
+              (partition 2 clauses))])]
    (binding [*line* (-> &form meta :line)
              *locals* (dissoc &env '_)
              *warned* (atom false)]
