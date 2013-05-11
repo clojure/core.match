@@ -513,9 +513,6 @@
   (= (-> ocr meta :occurrence-type) :map))
 
 (defprotocol IPatternMatrix
-  (width [this])
-  (height [this])
-  (dim [this])
   (specialize [this c rows ocrs])
   (compile [this])
   (pattern-at [this i j])
@@ -739,17 +736,19 @@
            score))
        0 col)])
 
+(defn width [{rows :rows}]
+  (if (not (empty? rows))
+    (count (rows 0))
+    0))
+
+(defn height [{rows :rows}]
+  (count rows))
+
+(defn dim [pm]
+  [(width pm) (height pm)])
+
 (defrecord PatternMatrix [rows ocrs]
   IPatternMatrix
-  (width [_]
-    (if (not (empty? rows))
-      (count (rows 0))
-      0))
-
-  (height [_] (count rows))
-
-  (dim [this] [(width this) (height this)])
-
   (specialize [this p rows* ocrs*]
     (if (satisfies? ISpecializeMatrix p)
      (specialize-matrix p rows* ocrs*)
