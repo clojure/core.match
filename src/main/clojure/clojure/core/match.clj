@@ -400,7 +400,7 @@
           ~value))
       value)))
 
-(defn ^LeafNode leaf-node
+(defn leaf-node
   ([value] (LeafNode. value []))
   ([value bindings] (LeafNode. value bindings))) ;; TODO precondition on bindings? see above - Ambrose
 
@@ -438,7 +438,7 @@
         `(throw (error (str "No match found."))))
       (backtrack-expr))))
 
-(defn ^FailNode fail-node []
+(defn fail-node []
   (FailNode.))
 
 ;; -----------------------------------------------------------------------------
@@ -450,7 +450,7 @@
     `(let [~@bindings]
        ~(n-to-clj node))))
 
-(defn ^BindNode bind-node [bindings node]
+(defn bind-node [bindings node]
   (BindNode. bindings node))
 
 ;; -----------------------------------------------------------------------------
@@ -510,7 +510,7 @@
              ~cond-expr
              ~(catch-error (n-to-clj default))))))))
 
-(defn ^SwitchNode switch-node
+(defn switch-node
   ([occurrence cases default]
    {:pre [(sequential? cases)]}
    (SwitchNode. occurrence cases default)))
@@ -912,6 +912,14 @@
   (withMeta [_ new-meta]
     (LiteralPattern. l new-meta))
 
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :l l
+      not-found))
+
   IPatternCompile
   (to-source* [this ocr]
     (cond
@@ -919,13 +927,13 @@
      (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
      :else `(= ~ocr ~l))))
 
-(defn ^LiteralPattern literal-pattern [l] 
+(defn literal-pattern [l] 
   (LiteralPattern. l (meta l)))
 
 (defn literal-pattern? [x]
   (instance? LiteralPattern x))
 
-(defmethod print-method LiteralPattern [^LiteralPattern p ^Writer writer]
+(defmethod print-method LiteralPattern [p ^Writer writer]
   (.write writer (str "<LiteralPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
@@ -1007,7 +1015,7 @@
 (defn seq-pattern? [x]
   (instance? SeqPattern x))
 
-(defmethod print-method SeqPattern [^SeqPattern p ^Writer writer]
+(defmethod print-method SeqPattern [p ^Writer writer]
   (.write writer (str "<SeqPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
@@ -1276,7 +1284,7 @@
           rv (subvec v n)
           pl (VectorPattern. lv t n offset false _meta)
           pr (if (rest-pattern? (first rv))
-               (let [^RestPattern p (first rv)] (.p p))
+               (:p (first rv))
                (let [rest? (some rest-pattern? rv)
                      rvc (count rv)
                      size (if rest? (dec rvc) rvc)]
@@ -1345,15 +1353,15 @@
           _     (trace-dag "OrPattern specialization")]
       (pattern-matrix nrows ocrs))))
 
-(defn ^OrPattern or-pattern [p]
+(defn or-pattern [p]
   {:pre [(vector? p)]}
   (OrPattern. p nil))
 
 (defn or-pattern? [x]
   (instance? OrPattern x))
 
-(defmethod print-method OrPattern [^OrPattern p ^Writer writer]
-  (.write writer (str "<OrPattern: " (.ps p) ">")))
+(defmethod print-method OrPattern [p ^Writer writer]
+  (.write writer (str "<OrPattern: " (:ps p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; Pseudo-patterns
@@ -1418,15 +1426,15 @@
           _ (trace-dag "GuardPattern specialization")]
       (pattern-matrix nrows ocrs))))
 
-(defn ^GuardPattern guard-pattern [p gs]
+(defn guard-pattern [p gs]
   {:pre [(set? gs)]}
   (GuardPattern. p gs nil))
 
 (defn guard-pattern? [x]
   (instance? GuardPattern x))
 
-(defmethod print-method GuardPattern [^GuardPattern p ^Writer writer]
-  (.write writer (str "<GuardPattern " (.p p) " :guard " (.gs p) ">")))
+(defmethod print-method GuardPattern [p ^Writer writer]
+  (.write writer (str "<GuardPattern " (:p p) " :guard " (:gs p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; ## Predicate Patterns
@@ -1493,26 +1501,24 @@
           _ (trace-dag "PredicatePattern specialization")]
       (pattern-matrix nrows ocrs))))
 
-(defn ^PredicatePattern predicate-pattern [p gs]
+(defn predicate-pattern [p gs]
   {:pre [(set? gs)]}
   (PredicatePattern. p gs nil))
 
 (defn predicate-pattern? [x]
   (instance? PredicatePattern x))
 
-(defmethod print-method PredicatePattern [^PredicatePattern p ^Writer writer]
-  (.write writer (str "<PredicatePattern " (.p p) " :when " (.gs p) ">")))
+(defmethod print-method PredicatePattern [p ^Writer writer]
+  (.write writer (str "<PredicatePattern " (:p p) " :when " (:gs p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
 
 (defmethod pattern-compare [WildcardPattern WildcardPattern]
-  [a b]
-  1)
+  [a b] 1)
 
 (defmethod comparable? WildcardPattern
-  [x]
-  false)
+  [x] false)
 
 ;; NOTE: if recur is present we want all objects to equal wildcards, this is
 ;; because we push the wildcard matches along as well in the matrix specialization
@@ -1533,43 +1539,41 @@
   [a b] 1)
 
 (defmethod pattern-compare [LiteralPattern LiteralPattern]
-  [^LiteralPattern a ^LiteralPattern b]
-  (let [la (.l a)
-        lb (.l b)]
-    (cond
-     (= la lb) 0
-     :else 1)))
+  [a b]
+  (cond
+    (= (:l a) (:l b)) 0
+    :else 1))
 
 (defmethod comparable? LiteralPattern
   [x]
   (not (-> x meta :local)))
 
 (defmethod pattern-compare [GuardPattern GuardPattern]
-  [^GuardPattern a ^GuardPattern b] (if (= (.gs a) (.gs b)) 0 1))
+  [a b] (if (= (:gs a) (:gs b)) 0 1))
 
 (defmethod comparable? GuardPattern
   [x]
   false)
 
 (defmethod pattern-compare [GuardPattern WildcardPattern]
-  [^GuardPattern a ^WildcardPattern b]
-  (let [p (.p a)]
+  [a b]
+  (let [p (:p a)]
     (if (wildcard-pattern? p)
       (pattern-compare p b) 1)))
 
 (defmethod pattern-compare [PredicatePattern PredicatePattern]
-  [^PredicatePattern a ^PredicatePattern b] (if (= (.gs a) (.gs b)) 0 1))
+  [a b] (if (= (:gs a) (:gs b)) 0 1))
 
 (defmethod pattern-compare [PredicatePattern WildcardPattern]
-  [^PredicatePattern a ^WildcardPattern b]
-  (let [p (.p a)]
+  [a b]
+  (let [p (:p a)]
     (if (wildcard-pattern? p)
       (pattern-compare p b) 1)))
 
 (defmethod pattern-compare [OrPattern OrPattern]
-  [^OrPattern a ^OrPattern b]
-  (let [as (.ps a)
-        bs (.ps b)]
+  [a b]
+  (let [as (:ps a)
+        bs (:ps b)]
     (if (and (= (count as) (count bs))
              (every? identity (map pattern-equals as bs)))
       0 1)))
