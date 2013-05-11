@@ -1763,54 +1763,63 @@
 (defn find-duplicate-wildcards [pattern]
   (second (wildcards-and-duplicates pattern)))
 
+(defn check-pattern [pat vars nvars rownum]
+  (let [pat (group-keywords pat)]
+    (when (not (vector? pat))
+      (throw
+        (AssertionError. 
+          (str "Pattern row " rownum
+            ": Pattern rows must be wrapped in []."
+            " Try changing " pat " to [" pat "]." 
+            (when (list? pat)
+              (str " Note: pattern rows are not patterns."
+                " They cannot be wrapped in a :when guard, for example"))))))
+    (when (not= (count pat) nvars)
+      (throw
+        (AssertionError.
+          (str "Pattern row " rownum
+            ": Pattern row has differing number of patterns. "
+            pat " has " (count pat) " pattern/s, expecting "
+            nvars " for occurrences " vars))))
+    (when-let [duplicates (seq (find-duplicate-wildcards pat))]
+      (throw
+        (AssertionError.
+          (str "Pattern row " rownum
+            ": Pattern row reuses wildcards in " pat
+            ".  The following wildcards are ambiguous: " (apply str (interpose ", " duplicates))
+            ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."))))))
+
 ;; This could be scattered around in other functions to be more efficient
 ;; Turn off *syntax-check* to disable
+
 (defn check-matrix-args [vars clauses]
-  (cond
-   (symbol? vars) (throw (AssertionError.
-                          (str "Occurrences must be in a vector."
-                               " Try changing " vars " to [" vars "]")))
-   (not (vector? vars)) (throw (AssertionError.
-                                (str "Occurrences must be in a vector. "
-                                     vars " is not a vector"))))
-
-  (letfn [(check-pattern [pat nvars rownum]
-           (let [pat (group-keywords pat)]
-            (cond 
-             (not (vector? pat)) (throw (AssertionError. 
-                                         (str "Pattern row " rownum
-                                              ": Pattern rows must be wrapped in []."
-                                              " Try changing " pat " to [" pat "]." 
-                                              (when (list? pat)
-                                                (str " Note: pattern rows are not patterns."
-                                                     " They cannot be wrapped in a :when guard, for example")))))
-             (not= (count pat) nvars)
-             (throw (AssertionError.
-                     (str "Pattern row " rownum
-                          ": Pattern row has differing number of patterns. "
-                          pat " has " (count pat) " pattern/s, expecting "
-                          nvars " for occurrences " vars))))
-            (when-let [duplicates (seq (find-duplicate-wildcards pat))]
-              (throw (AssertionError.
-                     (str "Pattern row " rownum
-                          ": Pattern row reuses wildcards in " pat
-                          ".  The following wildcards are ambiguous: " (apply str (interpose ", " duplicates))
-                          ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."))))))]
-    (let [nvars (count vars)
-          cls (partition 2 clauses)]
-      (doseq [[[pat _] rownum] (map vector (butlast cls) (rest (range)))]
-        (cond
-         (= :else pat) (throw (AssertionError.
-                               (str "Pattern row " rownum
-                                    ": :else form only allowed on final pattern row")))
-         :else (check-pattern pat nvars rownum)))
-      (when-let [[pat _] (last cls)]
-        (when-not (= :else pat)
-          (check-pattern pat nvars (count cls))))))
-
+  (when (symbol? vars)
+    (throw
+      (AssertionError.
+        (str "Occurrences must be in a vector."
+          " Try changing " vars " to [" vars "]"))))
+  (when (not (vector? vars))
+    (throw
+      (AssertionError.
+        (str "Occurrences must be in a vector. "
+          vars " is not a vector"))))
+  (let [nvars (count vars)
+        cls   (partition 2 clauses)]
+    (doseq [[[pat _] rownum] (map vector (butlast cls) (rest (range)))]
+      (when (= :else pat)
+        (throw
+          (AssertionError.
+            (str "Pattern row " rownum
+              ": :else form only allowed on final pattern row"))))
+      (check-pattern pat vars nvars rownum))
+    (when-let [[pat _] (last cls)]
+      (when-not (= :else pat)
+        (check-pattern pat vars nvars (count cls)))))
   (when (odd? (count clauses)) 
-    (throw (AssertionError. (str "Uneven number of Pattern Rows. The last form `"
-                                 (last clauses) "` seems out of place.")))))
+    (throw
+      (AssertionError.
+        (str "Uneven number of Pattern Rows. The last form `"
+          (last clauses) "` seems out of place.")))))
 
 ;; TODO: more sophisticated analysis that actually checks that recur is
 ;; not being used as a local binding when it occurs - David
