@@ -111,9 +111,6 @@
 (defprotocol ISpecializeMatrix
   (specialize-matrix [this rows ocrs]))
 
-(defprotocol IPatternContainer
-  (pattern [this]))
-
 (defprotocol IContainsRestPattern
   (contains-rest-pattern? [this]))
 
@@ -949,7 +946,7 @@
                 (let [[h & t] (:s p)
                       t (cond
                           (empty? t) (literal-pattern ())
-                          (rest-pattern? (first t)) (pattern (first t))
+                          (rest-pattern? (first t)) (:p (first t))
                           :else (seq-pattern t))]
                   [h t])
                 [(wildcard-pattern) (wildcard-pattern)])]
@@ -1018,25 +1015,16 @@
 ;;
 ;; It is an implementation detail of other patterns, like SeqPattern.
 
-(deftype RestPattern [p _meta]
-  IPatternContainer
-  (pattern [_] p)
-  clojure.lang.IObj
-  (meta [_] _meta)
-  (withMeta [_ new-meta]
-    (RestPattern. p new-meta))
-  Object
-  (toString [_]
-    p))
+(defrecord RestPattern [p])
 
-(defn ^RestPattern rest-pattern [p]
-  (RestPattern. p nil))
+(defn rest-pattern [p]
+  (RestPattern. p))
 
 (defn rest-pattern? [x]
   (instance? RestPattern x))
 
-(defmethod print-method RestPattern [^RestPattern p ^Writer writer]
-  (.write writer (str "<RestPattern: " (.p p) ">")))
+(defmethod print-method RestPattern [p ^Writer writer]
+  (.write writer (str "<RestPattern: " (:p p) ">")))
 
 ;; -----------------------------------------------------------------------------
 ;; # Map Pattern
