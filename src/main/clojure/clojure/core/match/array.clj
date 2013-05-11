@@ -2,6 +2,8 @@
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match :as m]))
 
+(set! *warn-on-reflection* true)
+
 ;; =============================================================================
 ;; Shared
 
@@ -19,18 +21,16 @@
 ;; =============================================================================
 ;; ints
 
-(def IntArray (class (int-array [])))
 (derive ::ints ::array)
 (defmethod tag ::ints
-  [_] IntArray)
+  [_] "[I")
 
 ;; =============================================================================
 ;; objects
 
-(def ObjectArray (class (object-array [])))
 (derive ::objects ::array)
 (defmethod tag ::objects
-  [_] ObjectArray)
+  [_] "[Ljava.lang.Object;")
 
 (comment
   (let [x (int-array [1 2 3])]
@@ -42,13 +42,13 @@
   
  ;; 60ms
   (let [x (int-array [1 2 3])]
-   (dotimes [_ 10]
-     (time
-      (dotimes [_ 1e7]
-        (match [x]
-          [([_ _ 2] ::ints)] :a0
-          [([1 1 3] ::ints)] :a1
-          [([1 2 3] ::ints)] :a2)))))
+    (dotimes [_ 10]
+      (time
+        (dotimes [_ 1e6]
+          (match [x]
+            [([_ _ 2] ::ints)] :a0
+            [([1 1 3] ::ints)] :a1
+            [([1 2 3] ::ints)] :a2)))))
 
   ;; offsets
   ;; FIXME: needs to account for offset - David

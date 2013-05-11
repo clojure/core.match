@@ -178,15 +178,23 @@
 
 (defn with-tag [t ocr]
   (let [the-tag (tag t)
-        the-tag (if (.isArray ^Class the-tag)
+        the-tag (if (and (class? the-tag)
+                         (.isArray ^Class the-tag))
                   (.getName ^Class the-tag)
                   the-tag)]
     (with-meta ocr (assoc (ocr meta) :tag the-tag))))
 
 (defmethod test-inline ::vector
-  [t ocr] (if (= t ::vector)
-           `(vector? ~ocr)
-           `(instance? ~(tag t) ~ocr)))
+  [t ocr]
+  (let [the-tag (tag t)
+        c (cond
+            (class? the-tag) the-tag
+            (string? the-tag) (Class/forName the-tag)
+            (symbol? the-tag) (Class/forName (str the-tag))
+            :else (throw (Error. (str "Unsupported tag type" the-tag))))]
+    (if (= t ::vector)
+      `(vector? ~ocr)
+      `(instance? ~c ~ocr))))
 
 (defmethod test-with-size-inline ::vector
   [t ocr size] `(and ~(test-inline t ocr) (== ~(count-inline t (with-tag t ocr)) ~size)))
