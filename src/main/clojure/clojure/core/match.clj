@@ -140,7 +140,7 @@
       (let [[m k] args]
         `(let [val# (get ~m ~k ::not-found)]
            (if (= val# ::not-found)
-             (throw 0)
+             (throw clojure.core.match/backtrack)
              val#))))
     ;;If not ClojureScript, defer to val-at*
     `(val-at* ~@args)))
