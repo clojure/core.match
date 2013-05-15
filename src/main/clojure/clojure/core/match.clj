@@ -82,9 +82,7 @@
   backtrack (Exception. "Could not find match."))
 
 (defn backtrack-expr []
-  (if *clojurescript*
-    `(throw clojure.core.match/backtrack)
-    `(throw clojure.core.match/backtrack)))
+  `(throw clojure.core.match/backtrack))
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -476,13 +474,8 @@
       [test (n-to-clj action)])))
 
 (defn catch-error [& body]
-  (if *clojurescript*
-    `(catch js/Error e#
-       (if (identical? e# clojure.core.match/backtrack)
-         (do
-           ~@body)
-         (throw e#)))
-    `(catch Exception e#
+  (let [err-sym (if *clojurescript* 'js/Error 'Exception)]
+    `(catch ~err-sym e#
        (if (identical? e# clojure.core.match/backtrack)
          (do
            ~@body)
