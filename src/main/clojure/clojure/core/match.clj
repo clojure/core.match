@@ -3,6 +3,7 @@
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
+;; =============================================================================
 ;; # Introduction
 ;;
 ;; This namespace contains an implementation of closed pattern matching. It uses
@@ -297,7 +298,7 @@
 ;; in the user's original pattern. patterns, action, bindings are accessors.
 ;; 
 
-(declare leaf-bind-expr named-wildcard-pattern? sym)
+(declare leaf-bind-expr named-wildcard-pattern?)
 
 (deftype PatternRow [ps action bindings]
   IVecMod
@@ -519,39 +520,56 @@
 ;; =============================================================================
 ;; # Pattern Matrix
 
+(defn first-column? [i] (zero? i))
+
+(defn empty-row? [row]
+  (let [ps (:ps row)]
+    (and (not (nil? ps))
+         (empty? ps))))
+
+(defn score-column [i col]
+  [i (reduce
+       (fn [score useful]
+         (if useful
+           (clojure.core/inc score)
+           score))
+       0 col)])
+
+(defn width [{rows :rows}]
+  (if (not (empty? rows))
+    (count (rows 0))
+    0))
+
+(defn height [{rows :rows}]
+  (count rows))
+
+(defn dim [pm]
+  [(width pm) (height pm)])
+
+(defn empty-matrix? [pm]
+  (= (dim pm) [0 0]))
+
+(defn column [{rows :rows} i]
+  (vec (map #(nth % i) rows)))
+
+(defn row [{rows :rows} j]
+  (nth rows j))
+
+(defn rows [{rows :rows}] rows)
+
+(defn pattern-at [{rows :rows} i j]
+  ((rows j) i))
+
+(defn action-for-row [{rows :rows} j]
+  (:action (rows j)))
+
+(defn occurrences [pm] (:ocrs pm))
+
 (defn seq-occurrence? [ocr]
   (= (-> ocr meta :occurrence-type) :seq))
 
 (defn map-occurrence? [ocr]
   (= (-> ocr meta :occurrence-type) :map))
-
-(declare empty-matrix? useful-p? useful?)
-
-;; # Compilation Cases
-;;
-;; These are analogous to Maranget's Compilation Scheme on page 4, respectively
-;; case 1, 2, 2 (also), 3a and 3b.
-;;
-
-(defn empty-rows-case 
-  "Case 1: If there are no pattern rows to match, then matching always fails"
-  []
-  (let [_ (trace-dag "No rows left, add fail-node")]
-    (fail-node)))
-
-(defn first-row-empty-case 
-  "Case 2: If the first row is empty then matching always succeeds 
-  and yields the first action."
-  [rows ocr]
-  (let [f (first rows)
-        a (:action f)
-        bs (:bindings f)
-        _ (trace-dag "Empty row, add leaf-node."
-                     "Could not find match for: " ocr
-                     "Action:" a
-                     "Bindings:" bs)]
-    ;; FIXME: wtf f, the first row is an infinite list of nil - David
-    (leaf-node a bs)))
 
 ;; Returns bindings usable by leaf-node
 (defn row-bindings [f ocrs]
@@ -561,19 +579,48 @@
                       (map leaf-bind-expr ocrs))]
     (concat (:bindings f) wc-bindings)))
 
-(defn first-row-wildcards-case 
-  "Case 2: If the first row is constituted by wildcards then matching
-  matching always succeeds and yields the first action."
-  [rows ocrs]
-  (let [f (first rows)
-        a (:action f)
-        bs (row-bindings f ocrs)
-        _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
-    (leaf-node a bs)))
+(defn useful-p? [pm i j]
+  (let [p (pattern-at pm i j)]
+   (cond
+    (constructor? p) (every? #(not (wildcard-pattern? %))
+                             (take j (column pm i)))
+    ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+    ;;IMPORTANT NOTE: this calculation is very very slow,
+    ;;we should look at this more closely - David
+    :else false)))
 
-(declare pseudo-pattern? wildcard-pattern column
-         vector-pattern? pattern-matrix rows occurrences
-         compile specialize necessary-column useful-matrix)
+;; DEAD CODE for now - David
+;; (defn useful? [pm j]
+;;   (some #(useful-p? pm % j)
+;;         (range (count (row pm j)))))
+
+(defn useful-matrix [pm]
+  (->> (for [j (range (height pm))
+             i (range (width pm))]
+         (useful-p? pm i j))
+    (partition (width pm))
+    (map vec)
+    vec))
+
+(defn necessary-column [pm]
+  (->> (apply map vector (useful-matrix pm))
+    (map-indexed score-column)
+    (reduce
+      (fn [[col score :as curr]
+           [ocol oscore :as cand]]
+        (if (> oscore score) cand curr))
+      [0 0])
+    first))
+
+(defn select [pm]
+  (swap pm (necessary-column pm)))
+
+(declare default-specialize-matrix pseudo-pattern?)
+
+(defn specialize [pm p rows* ocrs*]
+  (if (satisfies? ISpecializeMatrix p)
+    (specialize-matrix p rows* ocrs*)
+    (default-specialize-matrix p rows* ocrs*)))
 
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
@@ -586,6 +633,8 @@
                    (pattern-equals f %))
                 (rest rows))]
     [(cons f x) y]))
+
+(declare pattern-matrix compile)
 
 (defn default-matrix [matrix]
   (let [rs (rows matrix)
@@ -619,6 +668,8 @@
                                 rs)]
                   (concat (cons r fd) (group rd)))))]
       (into [] (concat (group l) r)))))
+
+(declare vector-pattern?)
 
 ;; analyze vector patterns, if a vector-pattern containing a rest pattern
 ;; occurs, drop all previous vector patterns that it subsumes. note this
@@ -685,6 +736,43 @@
           _ (trace-dag "Add switch-node on occurrence " o)]
       (switch-node o clauses default))))
 
+;; -----------------------------------------------------------------------------
+;; # Compilation Cases
+;;
+;; These are analogous to Maranget's Compilation Scheme on page 4, respectively
+;; case 1, 2, 2 (also), 3a and 3b.
+;;
+
+(defn empty-rows-case 
+  "Case 1: If there are no pattern rows to match, then matching always fails"
+  []
+  (let [_ (trace-dag "No rows left, add fail-node")]
+    (fail-node)))
+
+(defn first-row-empty-case 
+  "Case 2: If the first row is empty then matching always succeeds 
+  and yields the first action."
+  [rows ocr]
+  (let [f (first rows)
+        a (:action f)
+        bs (:bindings f)
+        _ (trace-dag "Empty row, add leaf-node."
+                     "Could not find match for: " ocr
+                     "Action:" a
+                     "Bindings:" bs)]
+    ;; FIXME: the first row is an infinite list of nil - David
+    (leaf-node a bs)))
+
+(defn first-row-wildcards-case 
+  "Case 2: If the first row is constituted by wildcards then matching
+  matching always succeeds and yields the first action."
+  [rows ocrs]
+  (let [f (first rows)
+        a (:action f)
+        bs (row-bindings f ocrs)
+        _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
+    (leaf-node a bs)))
+
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
@@ -710,67 +798,12 @@
   (let [_ (trace-dag "Swap column " col)]
     (compile (swap this col))))
 
-;; # Pattern Matrix definition
-
-(declare default-specialize-matrix)
-
 ;; Return a column number of a column which contains at least
 ;; one non-wildcard constructor
 (defn choose-column [this]
   (let [col (necessary-column this)
         _ (trace-dag "Pick column" col "as necessary column.")]
     col))
-
-(defn first-column? [i] (zero? i))
-
-(defn empty-row? [row]
-  (let [ps (:ps row)]
-    (and (not (nil? ps))
-         (empty? ps))))
-
-(defn score-column [i col]
-  [i (reduce
-       (fn [score useful]
-         (if useful
-           (clojure.core/inc score)
-           score))
-       0 col)])
-
-(defn width [{rows :rows}]
-  (if (not (empty? rows))
-    (count (rows 0))
-    0))
-
-(defn height [{rows :rows}]
-  (count rows))
-
-(defn dim [pm]
-  [(width pm) (height pm)])
-
-(defn column [{rows :rows} i]
-  (vec (map #(nth % i) rows)))
-
-(defn row [{rows :rows} j]
-  (nth rows j))
-
-(defn rows [{rows :rows}]
-  rows)
-
-(defn pattern-at [{rows :rows} i j]
-  ((rows j) i))
-
-(defn action-for-row [{rows :rows} j]
-  (:action (rows j)))
-
-(defn occurrences [pm] (:ocrs pm))
-
-(defn select [pm]
-  (swap pm (necessary-column pm)))
-
-(defn specialize [pm p rows* ocrs*]
-  (if (satisfies? ISpecializeMatrix p)
-    (specialize-matrix p rows* ocrs*)
-    (default-specialize-matrix p rows* ocrs*)))
 
 (defn compile [{:keys [rows ocrs] :as pm}]
   (cond
@@ -789,24 +822,6 @@
         (first-column-chosen-case pm col ocrs)
         (other-column-chosen-case pm col)))))
 
-(defn necessary-column [pm]
-  (->> (apply map vector (useful-matrix pm))
-    (map-indexed score-column)
-    (reduce
-      (fn [[col score :as curr]
-           [ocol oscore :as cand]]
-        (if (> oscore score) cand curr))
-      [0 0])
-    first))
-
-(defn useful-matrix [pm]
-  (->> (for [j (range (height pm))
-             i (range (width pm))]
-         (useful-p? pm i j))
-    (partition (width pm))
-    (map vec)
-    vec))
-
 (defrecord PatternMatrix [rows ocrs]
   IVecMod
   (drop-nth [_ i]
@@ -822,24 +837,6 @@
   {:pre [(vector rows) 
          (vector ocrs)]}
   (PatternMatrix. rows ocrs))
-
-(defn empty-matrix? [pm]
-  (= (dim pm) [0 0]))
-
-(defn useful-p? [pm i j]
-  (let [p (pattern-at pm i j)]
-   (cond
-    (constructor? p) (every? #(not (wildcard-pattern? %))
-                             (take j (column pm i)))
-    ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
-    ;;IMPORTANT NOTE: this calculation is very very slow,
-    ;;we should look at this more closely - David
-    :else false)))
-
-(defn useful? [pm j]
-  (some #(useful-p? pm % j)
-        (range (count (row pm j)))))
-
 
 ;; =============================================================================
 ;; ## Default Matrix Specialization
@@ -938,10 +935,9 @@
   (.write writer (str "<LiteralPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
-;; ## Seq Pattern
+;; # Seq Pattern
 ;;
 ;; A Seq Pattern is intended for matching `seq`s. 
-;;
 ;; They are split into multiple patterns, testing each element of the seq in order.
 ;;
 
@@ -1020,11 +1016,11 @@
   (.write writer (str "<SeqPattern: " p ">")))
 
 ;; -----------------------------------------------------------------------------
-;; ### Rest Pattern
+;; # Rest Pattern
 ;; 
 ;; A rest pattern represents the case of matching [2 3] in [1 & [2 3]]
-;;
 ;; It is an implementation detail of other patterns, like SeqPattern.
+;;
 
 (defrecord RestPattern [p])
 
@@ -1041,6 +1037,7 @@
 ;; # Map Pattern
 ;; 
 ;; Map patterns match maps, or any object that satisfies IMatchLookup.
+;;
 
 (declare map-pattern? guard-pattern)
 
@@ -1171,8 +1168,6 @@
 
 (defprotocol IVectorPattern
   (split [this n]))
-
-(declare vector-pattern?)
 
 (defn touched? [vp]
   (-> vp meta :touched))
