@@ -772,8 +772,11 @@
         bs (row-bindings f ocrs)
         _ (trace-dag
             (str "First row all wildcards, add leaf-node. action: " a
-                 " bindings: " (into [] bs)))]
-    (leaf-node a bs)))
+                 " bindings: " (into [] bs)))
+        node (leaf-node a bs)]
+    (if (some expression? ocrs)
+      (bind-node (bind-variables ocrs) node)
+      node)))
 
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
