@@ -1250,6 +1250,11 @@
     (into (into [] (map (partial vector-pattern-ocr-sym env) (range min-size)))
       (drop-nth ocrs 0))))
 
+;; v - the patterns
+;; t - the type, for optimizing via specialization
+;; size - size of the pattern if known
+;; rest? - contains a rest pattern
+
 (deftype VectorPattern [v t size offset rest? _meta]
   Object
   (toString [_]
