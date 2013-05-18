@@ -1747,8 +1747,10 @@
   [pattern]
   (if (vector? pattern) (regroup-keywords pattern) pattern))
 
-
-(defn emit-clause [[pat action]]
+(defn to-pattern-row
+  "Take an unprocessed pattern expression and an action expression and return
+   a pattern row of the processed pattern expression plus the action epxression."
+  [pat action]
   (let [p (into [] (map emit-pattern (group-keywords pat)))]
     (pattern-row p action)))
 
@@ -1869,22 +1871,36 @@
               {:recur-present true} {}))]
     (map analyze-action actions)))
 
-(defn emit-matrix [vars clauses]
+(defn process-vars
+  "Process the vars for the pattern matrix. If user provides an
+   expression, create a var and bind the expression to the var."
+  [vars]
+  (letfn [(process-var [var]
+            (if-not (symbol? var)
+              (let [nsym (gensym "ocr-")
+                     _ (trace-dag "Bind ocr" var "to" nsym)]
+                (with-meta nsym {:ocr-expr var}))
+              var))]
+    (vec (map process-var vars))))
+
+(defn emit-matrix
+  "Take the list of vars and sequence of unprocessed clauses and
+   return the pattern matrix. The pattern matrix contains the processed
+   pattern rows and the list of vars originally specified. Inserts
+   a last match - :else if provided by the user or a default match that
+   throws."
+  [vars clauses]
   (let [cs (partition 2 clauses)
-        cs (let [[p a] (last cs)]
+        cs (let [[p a] (last cs)
+                 last-match (vec (map (fn [_] '_) vars))]
              (if (= :else p)
                (do (trace-matrix "Convert :else clause to row of wildcards")
-                   (conj (vec (butlast cs)) [(->> vars (map (fn [_] '_)) vec) a]))
-               (conj (vec cs) [(->> vars (map (fn [_] '_)) vec) nil])))
-        clause-sources (into [] (map emit-clause cs))
-        vars (vec (map (fn [var]
-                         (if (not (symbol? var))
-                           (let [nsym (gensym "ocr-")
-                                 _ (trace-dag "Bind ocr" var "to" nsym)]
-                             (with-meta nsym {:ocr-expr var}))
-                           var))
-                     vars))]
-    (pattern-matrix clause-sources vars)))
+                   (conj (vec (butlast cs)) [last-match a]))
+               ;; TODO: throw an exception if :else line not provided - David
+               (conj (vec cs) [last-match nil])))]
+    (pattern-matrix
+      (vec (map #(apply to-pattern-row %) cs))
+      (process-vars vars))))
 
 (defn executable-form [node]
   (n-to-clj node))
@@ -1893,11 +1909,11 @@
   (when @*syntax-check* (check-matrix-args vars clauses))
   (let [actions (map second (partition 2 clauses))
         recur-present (some :recur-present
-                            (analyze-actions actions))]
+                        (analyze-actions actions))]
     (binding [*recur-present* recur-present]
       (-> (emit-matrix vars clauses)
-          compile
-          executable-form))))
+        compile
+        executable-form))))
 
 ;; ============================================================================
 ;; # Match macros
