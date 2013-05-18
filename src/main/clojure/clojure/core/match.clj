@@ -770,18 +770,20 @@
   (let [f (first rows)
         a (:action f)
         bs (row-bindings f ocrs)
-        _ (trace-dag (str "First row all wildcards, add leaf-node." a bs))]
+        _ (trace-dag
+            (str "First row all wildcards, add leaf-node. action: " a
+                 " bindings: " (into [] bs)))]
     (leaf-node a bs)))
 
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
-  [this col ocrs]
+  [matrix col ocrs]
   (let [exp-matrix (reduce
                      (fn [matrix p]
                        (specialize matrix p
                          (rows matrix) (occurrences matrix)))
-                     this (pseudo-patterns this col))
+                     matrix (pseudo-patterns matrix col))
         new-matrix (pattern-matrix
                      (group-rows (rows exp-matrix))
                      (occurrences exp-matrix))
@@ -794,14 +796,14 @@
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
   and compile the result"
-  [this col]
+  [matrix col]
   (let [_ (trace-dag "Swap column " col)]
-    (compile (swap this col))))
+    (compile (swap matrix col))))
 
 ;; Return a column number of a column which contains at least
 ;; one non-wildcard constructor
-(defn choose-column [this]
-  (let [col (necessary-column this)
+(defn choose-column [matrix]
+  (let [col (necessary-column matrix)
         _ (trace-dag "Pick column" col "as necessary column.")]
     col))
 
@@ -1869,7 +1871,7 @@
   (letfn [(process-var [var]
             (if-not (symbol? var)
               (let [nsym (gensym "ocr-")
-                     _ (trace-dag "Bind ocr" var "to" nsym)]
+                     _ (trace-dag "Bind expression" var "to occurrence" nsym)]
                 (with-meta nsym {:ocr-expr var}))
               var))]
     (vec (map process-var vars))))
