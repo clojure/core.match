@@ -196,7 +196,9 @@
       `(instance? ~c ~ocr))))
 
 (defmethod test-with-size-inline ::vector
-  [t ocr size] `(and ~(test-inline t ocr) (== ~(count-inline t (with-tag t ocr)) ~size)))
+  [t ocr size]
+  `(and ~(test-inline t ocr)
+         (== ~(count-inline t (with-tag t ocr)) ~size)))
 
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
@@ -1959,3 +1961,11 @@
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
+
+(comment
+  (match [[:x]]
+    [[m n & _]] 1)
+
+  (match [[:x]]
+    [[m n]] 1)
+  )
