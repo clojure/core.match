@@ -1,3 +1,5 @@
+;; WARNING: this namespace is experimental
+
 (ns clojure.core.match.array
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match :as m]))
