@@ -1861,16 +1861,6 @@
         (str "Uneven number of Pattern Rows. The last form `"
           (last clauses) "` seems out of place.")))))
 
-;; TODO: more sophisticated analysis that actually checks that recur is
-;; not being used as a local binding when it occurs - David
-
-(defn analyze-actions [actions]
-  (letfn [(analyze-action [action]
-            (if (and (sequential? action)
-                     (some '#{recur} (flatten action)))
-              {:recur-present true} {}))]
-    (map analyze-action actions)))
-
 (defn process-vars
   "Process the vars for the pattern matrix. If user provides an
    expression, create a var and annotate via metadata with the
@@ -1906,12 +1896,20 @@
 (defn executable-form [node]
   (n-to-clj node))
 
+;; TODO: more sophisticated analysis that actually checks that recur is
+;; not being used as a local binding when it occurs - David
+
+(defn recur-present? [actions]
+  (letfn [(analyze-action [action]
+            (if (and (sequential? action)
+                     (some '#{recur} (flatten action)))
+              {:recur-present true} {}))]
+    (some :recur-present (map analyze-action actions))))
+
 (defn clj-form [vars clauses]
   (when @*syntax-check* (check-matrix-args vars clauses))
-  (let [actions (map second (partition 2 clauses))
-        recur-present (some :recur-present
-                        (analyze-actions actions))]
-    (binding [*recur-present* recur-present]
+  (let [actions (map second (partition 2 clauses))]
+    (binding [*recur-present* (recur-present? actions)]
       (-> (emit-matrix vars clauses)
         compile
         executable-form))))
