@@ -1873,7 +1873,8 @@
 
 (defn process-vars
   "Process the vars for the pattern matrix. If user provides an
-   expression, create a var and bind the expression to the var."
+   expression, create a var and annotate via metadata with the
+   original expression."
   [vars]
   (letfn [(process-var [var]
             (if-not (symbol? var)
