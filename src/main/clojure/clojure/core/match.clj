@@ -1231,7 +1231,7 @@
          (nth-offset-inline tag (with-tag tag focr) i offset)
          (nth-inline tag (with-tag tag focr) i))})))
 
-(defn vector-pattern-maxtrix-ocrs
+(defn vector-pattern-matrix-ocrs
   [ocrs {:keys [focr tag min-size rest?] :as env}]
   (if rest?
     (let [ocr-meta {:occurrence-type tag
@@ -1304,7 +1304,7 @@
             env' (assoc env
                    :rest? rest? :min-size min-size :tag (:t this))
             nrows (specialize-vector-pattern-matrix rows env')
-            nocrs (vector-pattern-maxtrix-ocrs ocrs env')]
+            nocrs (vector-pattern-matrix-ocrs ocrs env')]
         (pattern-matrix nrows nocrs)))))
 
 (defn vector-pattern
