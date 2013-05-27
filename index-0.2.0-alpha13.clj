@@ -335,7 +335,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/comparable?",
    :namespace "clojure.core.match",
    :line 284,
-   :var-type "var",
+   :var-type "multimethod",
    :doc
    "Returns true if it is possible to tell at compile time whether two\ndifferent versions of the same object can never match the same\nobject.",
    :name "comparable?"}
@@ -362,7 +362,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/emit-pattern",
    :namespace "clojure.core.match",
    :line 1608,
-   :var-type "var",
+   :var-type "multimethod",
    :doc
    "Returns the corresponding pattern for the given syntax. Dispatches\non the class of its argument. For example, `[(:or 1 2) 2]` is dispatched\nas clojure.lang.IPersistentVector",
    :name "emit-pattern"}
@@ -375,7 +375,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/emit-pattern-for-syntax",
    :namespace "clojure.core.match",
    :line 1669,
-   :var-type "var",
+   :var-type "multimethod",
    :doc
    "Handles patterns wrapped in the special list syntax. Dispatches\non the first or second keyword in the list. For example, the pattern \n`(:or 1 ...) is dispatches as :or, and `(1 :as a)` is dispatched by :as.",
    :name "emit-pattern-for-syntax"}
@@ -584,7 +584,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/pattern-compare",
    :namespace "clojure.core.match",
    :line 267,
-   :var-type "var",
+   :var-type "multimethod",
    :doc "Like `clojure.core/compare` but for comparing patterns",
    :name "pattern-compare"}
   {:arglists ([vars]),
@@ -610,7 +610,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/safe-pattern-compare",
    :namespace "clojure.core.match",
    :line 277,
-   :var-type "var",
+   :var-type "multimethod",
    :doc "Like pattern-compare but not affected by *recur-present*",
    :name "safe-pattern-compare"}
   {:arglists ([pat action]),
@@ -636,7 +636,7 @@
    "http://clojure.github.com/core.match//clojure.core.match-api.html#clojure.core.match/to-source",
    :namespace "clojure.core.match",
    :line 1602,
-   :var-type "var",
+   :var-type "multimethod",
    :doc
    "Returns a Clojure form that, when executed, is truthy if the pattern matches\nthe occurrence. Dispatches on the `type` of the pattern. For instance, a literal pattern \nmight return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match.",
    :name "to-source"}
