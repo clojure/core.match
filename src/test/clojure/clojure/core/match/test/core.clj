@@ -724,3 +724,17 @@
 (deftest match-66
   (is (= (match 3 x x) 3))
   (is (= (match 'my-sym a a) 'my-sym)))
+
+(deftest match-70
+  (is (= (let [xqq {:cz 1 :dz 2}]
+           (match [xqq]
+             [{:z a :zz b}] [:a0 a b]
+             [{:cz a :dz b}] [:a2 a b]
+             :else []))
+        [:a2 1 2]))
+  (is (= (let [xmm {:bz 2}]
+           (match [xmm]
+             [{:az a}] [:a0 a]
+             [{:bz b}] [:a1 b]
+             :else []))
+        [:a1 2])))
