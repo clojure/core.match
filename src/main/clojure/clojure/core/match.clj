@@ -379,19 +379,17 @@
   (every? wildcard-pattern? (:ps prow)))
 
 (defn drop-nth-bind [prow n ocr]
-  (let [ps        (:ps prow)
-        bindings  (:bindings prow)
-        action    (:action prow)
-        p         (ps n)
+  (let [ps (:ps prow)
+        p (ps n)
+        bindings (:bindings prow)
+        action (:action prow)
         bind-expr (leaf-bind-expr ocr)
-        bindings  (or bindings [])
-        bindings  (if-let [sym (-> p meta :as)]
-                    (conj bindings [sym bind-expr])
-                    bindings)
-        bindings  (if (named-wildcard-pattern? p)
-                    (conj bindings [(:sym p) bind-expr])
-                    bindings)]
-    (pattern-row (drop-nth ps n) action bindings)))
+        as (-> p meta :as)]
+    (pattern-row (drop-nth ps n) action
+      (as-> (or bindings []) bindings
+        (cond-> bindings
+          as (conj [as bind-expr])
+          (named-wildcard-pattern? p) (conj [(:sym p) bind-expr]))))))
 
 ;; =============================================================================
 ;; # Compilation Nodes
