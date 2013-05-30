@@ -1062,15 +1062,14 @@
     (reduce concat)
     (reduce set/union #{})))
 
-(defn get-ocr-map [p {:keys [only all-keys wc-map]}]
+(defn get-ocr-map
+  [p {:keys [only all-keys wc-map]}]
   (if (map-pattern? p)
-    (let [m (:m p)
-          wcs (repeatedly wildcard-pattern)
-          not-found-map
-          (when only
-            (zipmap all-keys
-              (repeat (literal-pattern ::not-found))))]
-      (merge not-found-map wc-map m))
+    (merge
+      (when only
+        (zipmap all-keys
+          (repeat (literal-pattern ::not-found))))
+      wc-map (:m p))
     wc-map))
 
 (defn specialize-map-pattern-row [row env]
