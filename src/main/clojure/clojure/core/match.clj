@@ -1967,10 +1967,3 @@
        (match [~@bindvars#]
          ~@body))))
 
-(comment
-  (match [[:x]]
-    [[m n & _]] 1)
-
-  (match [[:x]]
-    [[m n]] 1)
-  )
