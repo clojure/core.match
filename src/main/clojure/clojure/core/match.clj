@@ -1068,9 +1068,12 @@
 (defn specialize-map-pattern-matrix [rows env]
   (vec (map #(specialize-map-pattern-row % env) rows)))
 
+(defn gen-map-pattern-ocr [ocr k]
+  (gensym (str (name ocr) "_" (name k) "__")))
+
 (defn map-pattern-matrix-ocr-sym [k env]
   (let [focr (:focr env)
-        ocr  (gensym (str (name focr) "_" (name k) "__"))]
+        ocr  (get-in env [:ocrs-map k])]
     (with-meta ocr
       {:occurrence-type :map
        :key k
@@ -1119,7 +1122,10 @@
           all-keys (get-all-keys rows env)
           env'     (assoc env
                      :all-keys all-keys
-                     :wc-map (zipmap all-keys (repeatedly wildcard-pattern)))
+                     :wc-map (zipmap all-keys (repeatedly wildcard-pattern))
+                     :ocrs-map (zipmap all-keys
+                                 (map #(gen-map-pattern-ocr focr %)
+                                   all-keys)))
           nrows    (specialize-map-pattern-matrix rows env')
           nocrs    (map-pattern-matrix-ocrs ocrs env')
          _ (trace-dag "MapPattern specialization")]
