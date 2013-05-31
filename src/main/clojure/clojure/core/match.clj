@@ -550,6 +550,7 @@
 (defn pattern-score [pm i j]
   (let [p (pattern-at pm i j)]
     (cond
+      ;; we have constructor with no wildcards above it
       (and (constructor? p)
            (every? #(not (wildcard-pattern? %))
              (take j (column pm i)))) 2
