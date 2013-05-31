@@ -1,6 +1,7 @@
 (ns clojure.core.match.perf
   (:refer-clojure :exclude [compile])
-  (:use [clojure.core.match :as m]))
+  (:use [clojure.core.match.protocols]
+        [clojure.core.match :as m]))
 
 (comment
   ;; 2-3ms, literal match

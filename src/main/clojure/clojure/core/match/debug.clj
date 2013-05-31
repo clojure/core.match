@@ -1,8 +1,9 @@
 (ns clojure.core.match.debug
   (:refer-clojure :exclude [compile])
-  (:use [clojure.core.match 
+  (:use [clojure.core.match.protocols]
+        [clojure.core.match 
          :only [emit-matrix compile occurrences
-                rows action-for-row n-to-clj clj-form]])
+                rows action-for-row clj-form]])
   (:require [clojure.pprint :as pp]))
 
 (defn source-pprint [source]

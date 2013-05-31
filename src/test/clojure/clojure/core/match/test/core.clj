@@ -1,6 +1,7 @@
 (ns clojure.core.match.test.core
   (:refer-clojure :exclude [compile])
-  (:use clojure.core.match
+  (:use clojure.core.match.protocols
+        clojure.core.match
         clojure.core.match.debug
         clojure.core.match.regex)
   (:use [clojure.test]))

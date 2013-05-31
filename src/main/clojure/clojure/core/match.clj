@@ -1,5 +1,6 @@
 (ns clojure.core.match
   (:refer-clojure :exclude [compile])
+  (:use [clojure.core.match.protocols])
   (:require [clojure.set :as set])
   (:import [java.io Writer]))
 
@@ -105,21 +106,6 @@
     (flush)))
 
 ;; =============================================================================
-;; # Protocols
-
-(defprotocol ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]))
-
-(defprotocol IContainsRestPattern
-  (contains-rest-pattern? [this]))
-
-(defprotocol IMatchLookup
-  "Allows arbitrary objects to act like a map-like object when pattern
-  matched. Avoid extending this directly for Java Beans, see
-  `match.java/bean-match`."
-  (val-at [this k not-found]))
-
-;; =============================================================================
 ;; # Map Pattern Interop
 
 (extend-type clojure.lang.ILookup
@@ -218,25 +204,12 @@
   ([_ ocr n] `(nthnext ~ocr ~n)))
 
 ;; =============================================================================
-;; # Extensions and Protocols
-
-;; TODO: consider converting to multimethods to avoid this nonsense - David
-
-(defprotocol INodeCompile
-  (n-to-clj [this]))
-
-(defprotocol IPatternCompile
-  (to-source* [this ocr]))
+;; # Extensions
 
 ;; Pattern matrices are represented with persistent vectors. Operations
 ;; on pattern matrices require us to move something from the middle of the
 ;; vector to the front - thus prepend and drop-nth. swap will swap the 0th
 ;; element with the nth element.
-
-(defprotocol IVecMod
-  (prepend [this x])
-  (drop-nth [this n])
-  (swap [this n]))
 
 (extend-type clojure.lang.IPersistentVector
   IVecMod
@@ -466,7 +439,7 @@
 (declare to-source)
 
 (defn dag-clause-to-clj [occurrence pattern action]
-  (let [test (if (instance? clojure.core.match.IPatternCompile pattern)
+  (let [test (if (instance? clojure.core.match.protocols.IPatternCompile pattern)
                (to-source* pattern occurrence) 
                (to-source pattern occurrence))]
     (if @*breadcrumbs*
@@ -1168,9 +1141,6 @@
 ;;
 ;; Vector patterns match any Sequential data structure. Note this means that
 ;; the lazy semantics may mean poorer performance for sequences.
-
-(defprotocol IVectorPattern
-  (split [this n]))
 
 (defn touched? [vp]
   (-> vp meta :touched))
