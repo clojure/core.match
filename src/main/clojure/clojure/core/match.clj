@@ -501,12 +501,7 @@
          (empty? ps))))
 
 (defn score-column [i col]
-  [i (reduce
-       (fn [score useful]
-         (if useful
-           (clojure.core/inc score)
-           score))
-       0 col)])
+  [i (reduce + 0 col)])
 
 (defn width [{rows :rows}]
   (if (not (empty? rows))
@@ -552,15 +547,16 @@
                       (map leaf-bind-expr ocrs))]
     (concat (:bindings f) wc-bindings)))
 
-(defn useful-p? [pm i j]
+(defn pattern-score [pm i j]
   (let [p (pattern-at pm i j)]
-   (cond
-    (constructor? p) (every? #(not (wildcard-pattern? %))
-                             (take j (column pm i)))
-    ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
-    ;;IMPORTANT NOTE: this calculation is very very slow,
-    ;;we should look at this more closely - David
-    :else false)))
+    (cond
+      (and (constructor? p)
+           (every? #(not (wildcard-pattern? %))
+             (take j (column pm i)))) 2
+      ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+      ;;IMPORTANT NOTE: this calculation is very very slow,
+      ;;we should look at this more closely - David
+      :else 0)))
 
 ;; DEAD CODE for now - David
 ;; (defn useful? [pm j]
@@ -570,7 +566,7 @@
 (defn useful-matrix [pm]
   (->> (for [j (range (height pm))
              i (range (width pm))]
-         (useful-p? pm i j))
+         (pattern-score pm i j))
     (partition (width pm))
     (map vec)
     vec))
