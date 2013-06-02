@@ -249,13 +249,6 @@
 (defmethod pattern-compare :default
   [a b] (if (= (class a) (class b)) 0 1))
 
-(defmulti safe-pattern-compare
-  "Like pattern-compare but not affected by *recur-present*"
-  (fn [a b] [(type a) (type b)]))
-
-(defmethod safe-pattern-compare :default
-  [a b] (pattern-compare a b))
-
 (defmulti comparable?
   "Returns true if it is possible to tell at compile time whether two
    different versions of the same object can never match the same
@@ -1556,9 +1549,6 @@
 
 (defmethod pattern-compare [Object WildcardPattern]
   [a b] (if *recur-present* 0 1))
-
-(defmethod safe-pattern-compare [Object WildcardPattern]
-  [a b] 1)
 
 (prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
 
