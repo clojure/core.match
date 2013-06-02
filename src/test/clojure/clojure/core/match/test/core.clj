@@ -79,8 +79,29 @@
              [{:a _ :b 2}] :a0
              [{:a 1 :b 1}] :a1
              [{:c 3 :d _ :e 4}] :a2
-             :else []))
-        :a1)))
+             :else nil))
+        :a1))
+  (is (= (let [x {:a 1 :b 2}]
+           (match [x]
+             [{:a _ :b 2}] :a0
+             [{:a 1 :b 1}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else nil))
+        :a0))
+  (is (= (let [x {:c 3 :d 9 :e 4}]
+           (match [x]
+             [{:a _ :b 2}] :a0
+             [{:a 1 :b 1}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else nil))
+        :a2))
+  (is (= (let [x {:c 3 :e 4}]
+           (match [x]
+             [{:a _ :b 2}] :a0
+             [{:a 1 :b 1}] :a1
+             [{:c 3 :d _ :e 4}] :a2
+             :else nil))
+        nil)))
 
 (deftest map-pattern-match-2
   (is (= (let [x {:a 1 :b 1}]

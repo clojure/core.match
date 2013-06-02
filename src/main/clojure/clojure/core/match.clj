@@ -547,13 +547,23 @@
                       (map leaf-bind-expr ocrs))]
     (concat (:bindings f) wc-bindings)))
 
+(defn existential-pattern? [x]
+  (instance? clojure.core.match.protocols.IExistentialPattern x))
+
+(defn wildcard-or-existential? [x]
+  (or (wildcard-pattern? x)
+      (existential-pattern? x)))
+
 (defn pattern-score [pm i j]
   (let [p (pattern-at pm i j)]
     (cond
-      ;; we have constructor with no wildcards above it
-      (and (constructor? p)
-           (every? #(not (wildcard-pattern? %))
-             (take j (column pm i)))) 2
+      (constructor? p)
+      (let [cs (take j (column pm i))]
+        (if (every? (comp not wildcard-or-existential?) cs)
+          (if-not (existential-pattern? p)
+            2
+            1)
+           0))
       ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
       ;;IMPORTANT NOTE: this calculation is very very slow,
       ;;we should look at this more closely - David
@@ -1014,6 +1024,34 @@
 ;; Map patterns match maps, or any object that satisfies IMatchLookup.
 ;;
 
+(defn specialize-map-key-pattern-matrix [rows]
+  (let [p (:p (ffirst rows))]
+    (->> rows
+      (map #(drop-nth % 0))
+      (map #(prepend % p))
+      vec)))
+
+(defrecord MapKeyPattern [p]
+  IExistentialPattern
+
+  IPatternCompile
+  (to-source* [this ocr]
+    `(not= ~ocr ::not-found))
+
+  ISpecializeMatrix
+  (specialize-matrix [this rows ocrs]
+    (let [nrows (specialize-map-key-pattern-matrix rows)]
+      (pattern-matrix nrows ocrs))))
+
+(defn map-key-pattern [p]
+  (MapKeyPattern. p))
+
+(defn map-key-pattern? [x]
+  (instance? MapKeyPattern x))
+
+(defmethod print-method MapKeyPattern [p ^Writer writer]
+  (.write writer (str "<MapKeyPattern: " (:p p) ">")))
+
 (declare map-pattern? guard-pattern)
 
 (defn row-keys [row env]
@@ -1032,6 +1070,13 @@
     (reduce concat)
     (reduce set/union #{})))
 
+(defn wrap-values [m]
+  (->> m
+    (map (fn [[k v]]
+           [k (if (wildcard-pattern? v)
+                (map-key-pattern v) v)]))
+    (into {})))
+
 (defn get-ocr-map
   [p {:keys [only all-keys wc-map]}]
   (if (map-pattern? p)
@@ -1039,7 +1084,7 @@
       (when only
         (zipmap all-keys
           (repeat (literal-pattern ::not-found))))
-      wc-map (:m p))
+      wc-map (wrap-values (:m p)))
     wc-map))
 
 (defn specialize-map-pattern-row
