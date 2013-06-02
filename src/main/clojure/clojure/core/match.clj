@@ -167,7 +167,7 @@
                          (.isArray ^Class the-tag))
                   (.getName ^Class the-tag)
                   the-tag)]
-    (with-meta ocr (assoc (ocr meta) :tag the-tag))))
+    (vary-meta ocr assoc :tag the-tag)))
 
 (defmethod test-inline ::vector
   [t ocr]
