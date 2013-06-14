@@ -86,3 +86,22 @@
                :else 5)]
       (is (= (swap m0 1) m1)))))
 
+(deftest test-matrix-splitter-1
+  (testing "for Maranget example, show specialized matrix and default
+            matrix are as expected"
+    (let [m1 (build-matrix [y x z]
+               [false _     true ] :a0
+               [true  false _    ] :a1
+               [_     _     false] :a2
+               [_     _     true ] :a3
+               :else 5)
+          S  (build-matrix [y x z]
+               [false _     true ] :a0)
+          D  (build-matrix [y x z]
+               [true  false _    ] :a1
+               [_     _     false] :a2
+               [_     _     true ] :a3
+               :else 5)
+          [S' D'] (matrix-splitter m1)]
+      (and (= S S) (= D D')))))
+
