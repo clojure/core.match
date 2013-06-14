@@ -815,8 +815,8 @@
       (PatternMatrix. nrows (swap ocrs idx)))))
 
 (defn pattern-matrix [rows ocrs]
-  {:pre [(vector rows) 
-         (vector ocrs)]}
+  {:pre [(vector? rows) 
+         (vector? ocrs)]}
   (PatternMatrix. rows ocrs))
 
 ;; =============================================================================
