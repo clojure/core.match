@@ -614,10 +614,9 @@
 (declare pattern-matrix compile)
 
 (defn default-matrix [matrix]
-  (let [rs (rows matrix)
+  (let [rows (rows matrix)
         m (pattern-matrix
-            (into []
-              (drop (count (first (column-splitter (map first rs)))) rs))
+            (into [] (second (matrix-splitter rows)))
             (occurrences matrix))]
     (if-not (empty-matrix? m)
       (do
