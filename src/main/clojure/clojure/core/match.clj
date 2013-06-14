@@ -596,40 +596,39 @@
         [top bottom] (split-with #(groupable? f %) (rest col))]
     [(cons f top) bottom]))
 
-(defn matrix-splitter [rows]
-  (let [n (count (first (column-splitter (map first rows))))]
-    (if-not *recur-present*
-      [(take n rows) (drop n rows)]
-      [(concat (take n rows)
-         (drop-while #(not (wildcard-pattern? (first %))) rows))
-        (drop n rows)])))
-
 (declare pattern-matrix compile)
 
-(defn default-matrix [matrix]
+(defn matrix-splitter [matrix]
   (let [rows (rows matrix)
-        m (pattern-matrix
-            (into [] (second (matrix-splitter rows)))
-            (occurrences matrix))]
-    (if-not (empty-matrix? m)
-      (do
-        (trace-dag
-          (str "Add specialized matrix on row of "
-            "wildcards as default matrix for next node"))
-        (compile m))
-      (do 
-        (trace-dag
-          (str "Add fail-node as default matrix for next "
-            "node (specialized matrix empty)"))
-        (fail-node)))))
+        n    (count (first (column-splitter (map first rows))))
+        ocrs (occurrences matrix)]
+    (if-not *recur-present*
+      [(pattern-matrix (into [] (take n rows)) ocrs)
+       (pattern-matrix (into [] (drop n rows)) ocrs)]
+      [(pattern-matrix
+         (into []
+           (concat (take n rows)
+             (drop-while #(not (wildcard-pattern? (first %))) rows)))
+         ocrs)
+       (pattern-matrix (into [] (drop n rows)) ocrs)])))
+
+(defn default-matrix [matrix]
+  (if-not (empty-matrix? matrix)
+    (do
+      (trace-dag
+        (str "Add specialized matrix on row of "
+          "wildcards as default matrix for next node"))
+      (compile matrix))
+    (do 
+      (trace-dag
+        (str "Add fail-node as default matrix for next "
+          "node (specialized matrix empty)"))
+      (fail-node))))
 
 (defn specialized-matrix [matrix]
-  (let [matrix' (pattern-matrix
-                  (into [] (first (matrix-splitter (rows matrix))))
-                  (occurrences matrix))
-        c       (ffirst (rows matrix'))]
-    [[c (-> matrix'
-          (specialize c (rows matrix') (occurrences matrix'))
+  (let [c (ffirst (rows matrix))]
+    [[c (-> matrix
+          (specialize c (rows matrix) (occurrences matrix))
           compile)]]))
 
 (defn expression? [ocr]
@@ -708,10 +707,11 @@
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
   [matrix col ocrs]
-  (let [expanded (expand-matrix matrix col)]
+  (let [expanded (expand-matrix matrix col)
+        [S D]    (matrix-splitter expanded)]
     (switch-or-bind-node col ocrs
-      (specialized-matrix expanded)
-      (default-matrix expanded))))
+      (specialized-matrix S)
+      (default-matrix D))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
