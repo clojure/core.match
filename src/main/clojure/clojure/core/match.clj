@@ -589,7 +589,11 @@
 
 (defn matrix-splitter [rows]
   (let [n (count (first (column-splitter (map first rows))))]
-    [(take n rows) (drop n rows)]))
+    (if-not *recur-present*
+      [(take n rows) (drop n rows)]
+      [(concat (take n rows)
+         (drop-while #(not (wildcard-pattern? (first %))) rows))
+        (drop n rows)])))
 
 (declare pattern-matrix compile)
 
@@ -1445,7 +1449,7 @@
   (toString [this]
     (str p " :when " gs))
   (equals [_ other]
-    (and (instance? GuardPattern other)
+    (and (instance? PredicatePattern other)
          (= p (:p other))
          (= gs (:gs other))))  
 
@@ -1488,6 +1492,9 @@
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
 
+(defmethod groupable? [Object WildcardPattern]
+  [a b] *recur-present*)
+
 (defmethod groupable? [LiteralPattern LiteralPattern]
   [a b] (= (:l a) (:l b)))
 
@@ -1512,6 +1519,8 @@
     (and (:rest? a) (<= (:size a) (:size b))) true
     (and (:rest? b) (<= (:size b) (:size a))) true
     :else false))
+
+(prefer-method groupable? [Object WildcardPattern] [LiteralPattern Object])
 
 ;; =============================================================================
 ;; # Interface
