@@ -322,11 +322,10 @@
 
 (defn pattern-row
   ([ps action] 
-   {:pre [(vector? ps)]}
-   (PatternRow. ps action nil))
+    (pattern-row ps action nil))
   ([ps action bindings]
-   {:pre [(vector? ps)]} ;; TODO: what can we expect bindings? (or (nil? bindings) (list? bindings))  ? - Ambrose
-   (PatternRow. ps action bindings)))
+    (let [ps (if (vector? ps) ps (into [] ps))]
+      (PatternRow. ps action bindings))))
 
 ;; NOTE: we don't use map destructuring here because PatternRow is both
 ;; ISeq and ILookup, but in map destructuring seq? is tested first - David
@@ -603,14 +602,13 @@
         n    (count (first (column-splitter (map first rows))))
         ocrs (occurrences matrix)]
     (if-not *recur-present*
-      [(pattern-matrix (into [] (take n rows)) ocrs)
-       (pattern-matrix (into [] (drop n rows)) ocrs)]
+      [(pattern-matrix (take n rows) ocrs)
+       (pattern-matrix (drop n rows) ocrs)]
       [(pattern-matrix
-         (into []
-           (concat (take n rows)
-             (drop-while #(not (wildcard-pattern? (first %))) rows)))
+         (concat (take n rows)
+           (drop-while #(not (wildcard-pattern? (first %))) rows))
          ocrs)
-       (pattern-matrix (into [] (drop n rows)) ocrs)])))
+       (pattern-matrix (drop n rows) ocrs)])))
 
 (defn default-matrix [matrix]
   (if-not (empty-matrix? matrix)
@@ -755,10 +753,10 @@
     (let [nrows (vec (map #(swap % idx) rows))]
       (PatternMatrix. nrows (swap ocrs idx)))))
 
-(defn pattern-matrix [rows ocrs]
-  {:pre [(vector? rows) 
-         (vector? ocrs)]}
-  (PatternMatrix. rows ocrs))
+(defn pattern-matrix [rows ocrs]  
+  (let [rows (if (vector? rows) rows (into [] rows))
+        ocrs (if (vector? ocrs) ocrs (into [] ocrs))]
+    (PatternMatrix. rows ocrs)))
 
 ;; =============================================================================
 ;; ## Default Matrix Specialization
@@ -1161,11 +1159,10 @@
 
 (defn touch-all-first [rows]
   (->> rows
-       (map (fn [[p & ps :as row]]
-              (if (not (touched? p))
-                (assoc row 0 (touch p))
-                row)))
-       (into [])))
+    (map (fn [[p & ps :as row]]
+           (if (not (touched? p))
+             (assoc row 0 (touch p))
+             row)))))
 
 (declare vector-pattern?)
 
@@ -1225,7 +1222,8 @@
                    (assoc ocr-meta :bind-expr
                      (subvec-inline tag (with-tag tag focr) min-size)))]
       (into [vl-ocr vr-ocr] (drop-nth ocrs 0)))
-    (into (into [] (map (partial vector-pattern-ocr-sym env) (range min-size)))
+    (concat
+      (map (partial vector-pattern-ocr-sym env) (range min-size))
       (drop-nth ocrs 0))))
 
 ;; v - the patterns
@@ -1633,9 +1631,9 @@
 
 (defmethod emit-pattern-for-syntax [:or Object]
   [pat] (or-pattern
-         (->> (rest pat)
-              (map emit-pattern)
-              (into []))))
+          (->> (rest pat)
+            (map emit-pattern)
+            (into []))))
 
 (defmethod emit-pattern-for-syntax [Object :as]
   [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
@@ -1712,8 +1710,8 @@
   "Take an unprocessed pattern expression and an action expression and return
    a pattern row of the processed pattern expression plus the action epxression."
   [pat action]
-  (let [p (into [] (map emit-pattern (group-keywords pat)))]
-    (pattern-row p action)))
+  (let [ps (map emit-pattern (group-keywords pat))]
+    (pattern-row ps action)))
 
 (defn wildcards-and-duplicates
   "Returns a vector of two elements: the set of all wildcards and the 
