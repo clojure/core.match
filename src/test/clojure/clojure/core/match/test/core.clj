@@ -658,7 +658,15 @@
              [([1 2] :seq) _] :a2
              [_ 2] :a3
              :else :a4))
-        :a1)))
+        :a1))
+  (is (= (let [x '(1 2) y 1]
+           (match [x y]
+             [([1] :seq) _] :a0
+             [([1 2] :seq) _] :a2
+             [_ 1] :a1
+             [_ 2] :a3
+             :else :a4))
+        :a2)))
 
 (deftest match-order-2
   (is (= (let [x '(1 2) y 3]
