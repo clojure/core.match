@@ -812,7 +812,9 @@
     (if (nil? l)
       "nil"
       (pr-str l)))
-  
+  (equals [_ other]
+    (and (instance? LiteralPattern other) (= l (:l other))))
+
   clojure.lang.IObj
   (meta [_] _meta)
 
@@ -1060,6 +1062,8 @@
   Object
   (toString [_]
     (str m " :only " (or (:only _meta) [])))
+  (equals [_ other]
+    (and (instance? MapPattern other) (= m (:m other))))
 
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1199,6 +1203,10 @@
   Object
   (toString [_]
     (str v " " t))
+  (equals [_ other]
+    (and (instance? VectorPattern other)
+         (= [v t size offset rest?]
+            (map #(% other) [:v :t :size :offset :rest?]))))
 
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1289,6 +1297,8 @@
   Object
   (toString [this]
     (str ps))
+  (equals [_ other]
+    (and (instance? OrPattern other) (= ps (:ps other))))
 
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1355,6 +1365,10 @@
   Object
   (toString [this]
     (str p " :guard " gs))
+  (equals [_ other]
+    (and (instance? GuardPattern other)
+         (= p (:p other))
+         (= gs (:gs other))))
 
   clojure.lang.IObj
   (meta [_] _meta)
@@ -1430,6 +1444,10 @@
   Object
   (toString [this]
     (str p " :when " gs))
+  (equals [_ other]
+    (and (instance? GuardPattern other)
+         (= p (:p other))
+         (= gs (:gs other))))  
 
   clojure.lang.IObj
   (meta [_] _meta)
