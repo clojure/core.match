@@ -3,8 +3,9 @@
   (:use clojure.core.match.protocols
         clojure.core.match
         clojure.core.match.debug
-        clojure.core.match.regex)
-  (:use [clojure.test]))
+        clojure.core.match.regex
+        clojure.test)
+  (:require [clojure.pprint :as pp]))
 
 (deftest pattern-equality
   (testing "wildcard patterns"
@@ -103,7 +104,7 @@
                [_     _     true ] :a3
                :else 5)
           [S' D'] (matrix-splitter m1)]
-      (and (= S S) (= D D')))))
+      (is (and (= S S') (= D D'))))))
 
 (deftest test-matrix-splitter-recur-1
   (testing "for Maranget example, show specialized matrix and default
@@ -117,12 +118,24 @@
           S  (build-matrix [y x z]
                [false _     true ] (recur x y z 1)
                [_     _     false] (recur x y z 3)
-               [_     _     true ] (recur x y z 4))
+               [_     _     true ] (recur x y z 4)
+               :else 5)
           D  (build-matrix [y x z]
                [true  false _    ] (recur x y z 2)
                [_     _     false] (recur x y z 3)
                [_     _     true ] (recur x y z 4)
                :else 5)
-          [S' D'] (matrix-splitter m1)]
-      (and (= S S) (= D D')))))
+          [S' D'] (with-recur (matrix-splitter m1))]
+      (is (and (= S S') (= D D')))
+      (let [DS (build-matrix [y x z]
+                 [true  false _    ] (recur x y z 2)
+                 [_     _     false] (recur x y z 3)
+                 [_     _     true ] (recur x y z 4)
+                 :else 5)
+            DD (build-matrix [y x z]
+                 [_     _     false] (recur x y z 3)
+                 [_     _     true ] (recur x y z 4)
+                 :else 5) 
+            [DS' DD'] (with-recur (matrix-splitter D))]
+        (is (and (= DS DS') (= DD DD')))))))
 
