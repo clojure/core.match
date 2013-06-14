@@ -1839,18 +1839,22 @@
    pattern rows and the list of vars originally specified. Inserts
    a last match - :else if provided by the user or a default match that
    throws."
-  [vars clauses]
-  (let [cs (partition 2 clauses)
-        cs (let [[p a] (last cs)
-                 last-match (vec (map (fn [_] '_) vars))]
-             (if (= :else p)
-               (do (trace-matrix "Convert :else clause to row of wildcards")
+  ([vars clauses]
+    (emit-matrix vars clauses true))
+  ([vars clauses default]
+    (let [cs (partition 2 clauses)
+          cs (let [[p a] (last cs)
+                   last-match (vec (map (fn [_] '_) vars))]
+               (if (= :else p)
+                 (do (trace-matrix "Convert :else clause to row of wildcards")
                    (conj (vec (butlast cs)) [last-match a]))
-               ;; TODO: throw an exception if :else line not provided - David
-               (conj (vec cs) [last-match nil])))]
-    (pattern-matrix
-      (vec (map #(apply to-pattern-row %) cs))
-      (process-vars vars))))
+                 ;; TODO: throw an exception if :else line not provided - David
+                 (if default
+                   (conj (vec cs) [last-match nil])
+                   cs)))]
+      (pattern-matrix
+        (vec (map #(apply to-pattern-row %) cs))
+        (process-vars vars)))))
 
 (defn executable-form [node]
   (n-to-clj node))

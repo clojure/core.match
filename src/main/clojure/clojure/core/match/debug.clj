@@ -12,7 +12,7 @@
     (pp/pprint source)))
 
 (defmacro build-matrix [vars & clauses]
-  `(emit-matrix '~vars '~clauses))
+  `(emit-matrix '~vars '~clauses false))
 
 (defmacro m-to-matrix [vars & clauses]
   `(-> (build-matrix ~vars ~@clauses)
