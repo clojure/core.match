@@ -598,13 +598,13 @@
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
 
-(defn matrix-splitter [rows]
-  (let [f (first rows)
+(defn column-splitter [col]
+  (let [f (first col)
         [x y] (split-with
                 #(if (comparable? f)
                    (comparable? %)
                    (pattern-equals f %))
-                (rest rows))]
+                (rest col))]
     [(cons f x) y]))
 
 (declare pattern-matrix compile)
@@ -613,7 +613,7 @@
   (let [rs (rows matrix)
         m (pattern-matrix
             (into []
-              (drop (count (first (matrix-splitter (map first rs)))) rs))
+              (drop (count (first (column-splitter (map first rs)))) rs))
             (occurrences matrix))]
     (if-not (empty-matrix? m)
       (do
@@ -632,7 +632,7 @@
 ;; column. everything including and after a wildcard pattern is always
 ;; the default matrix
 (defn group-rows [rows]
-  (let [[s-m-1 s-m-2] (map count (matrix-splitter (map first rows)))
+  (let [[s-m-1 s-m-2] (map count (column-splitter (map first rows)))
         [l r] [(take s-m-1 rows) (drop s-m-1 rows)]]
     (letfn [(group [[r & rs :as rows]]
               (if (seq rows)
@@ -669,7 +669,7 @@
 ;; Returns a vector of relevant constructors in column i of matrix
 (defn column-constructors [matrix i]
   (let [cs (group-vector-patterns (column matrix i))]
-    (collapse (first (matrix-splitter cs)))))
+    (collapse (first (column-splitter cs)))))
 
 ;; Compile a decision trees for each constructor cs and returns a clause list
 ;; usable by a switch node
