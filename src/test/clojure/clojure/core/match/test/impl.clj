@@ -108,7 +108,7 @@
 
 (deftest test-matrix-splitter-recur-1
   (testing "for Maranget example, show specialized matrix and default
-            matrix are as expected in the presence of recur."
+matrix are as expected in the presence of recur."
     (let [m1 (build-matrix [y x z]
                [false _     true ] (recur x y z 1)
                [true  false _    ] (recur x y z 2)
@@ -117,6 +117,7 @@
                :else 5)
           S  (build-matrix [y x z]
                [false _     true ] (recur x y z 1)
+               [true  false _    ] (recur x y z 2)
                [_     _     false] (recur x y z 3)
                [_     _     true ] (recur x y z 4)
                :else 5)

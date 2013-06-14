@@ -604,10 +604,7 @@
     (if-not *recur-present*
       [(pattern-matrix (take n rows) ocrs)
        (pattern-matrix (drop n rows) ocrs)]
-      [(pattern-matrix
-         (concat (take n rows)
-           (drop-while #(not (wildcard-pattern? (first %))) rows))
-         ocrs)
+      [(pattern-matrix rows ocrs)
        (pattern-matrix (drop n rows) ocrs)])))
 
 (defn default-matrix [matrix]
