@@ -231,33 +231,17 @@
   (not (wildcard-pattern? p)))
 
 ;; =============================================================================
-;; # Pattern Comparison
+;; # Pattern Grouping
 ;;
-;; Used to determine the set of constructors presents in a column and the
-;; order which they should be considered
+;; Used to determine the groupable constructors in a column
 
-;; FIXME: we use 1 instead of -1, this means we probably have a reverse
-;; somehwere - David
-
-(defmulti pattern-compare
-  "Like `clojure.core/compare` but for comparing patterns"
+(defmulti groupable?
+  "Determine if two patterns may be grouped together for simultaneous
+   testing."
   (fn [a b] [(type a) (type b)]))
 
-(defn pattern-equals [a b]
-  (zero? (pattern-compare a b)))
-
-(defmethod pattern-compare :default
-  [a b] (if (= (class a) (class b)) 0 1))
-
-(defmulti comparable?
-  "Returns true if it is possible to tell at compile time whether two
-   different versions of the same object can never match the same
-   object."
-  type)
-
-(defmethod comparable? :default
-  [x]
-  true)
+(defmethod groupable? :default
+  [a b] (= a b))
 
 ;; =============================================================================
 ;; # Pattern Rows
@@ -600,11 +584,7 @@
 
 (defn column-splitter [col]
   (let [f (first col)
-        [top bottom] (split-with
-                #(if (comparable? f)
-                   (comparable? %)
-                   (pattern-equals f %))
-                (rest col))]
+        [top bottom] (split-with #(groupable? f %) (rest col))]
     [(cons f top) bottom]))
 
 (defn matrix-splitter [rows]
@@ -639,7 +619,7 @@
     (letfn [(group [[r & rs :as rows]]
               (if (seq rows)
                 (let [[fd rd] ((juxt filter remove)
-                                #(pattern-equals (first r) (first %))
+                                #(groupable? (first r) (first %))
                                 rs)]
                   (concat (cons r fd) (group rd)))))]
       (into [] (concat (group top) bottom)))))
@@ -656,14 +636,14 @@
       (fn [ps p]
         (if (and (vector-pattern? p)
               (contains-rest-pattern? p))
-          (conj (drop-while #(pattern-equals p %) ps) p)
+          (conj (drop-while #(groupable? p %) ps) p)
           (conj ps p)))
       () ps)))
 
 (defn collapse [ps]
   (reduce
     (fn [a b]
-      (if (pattern-equals (first (rseq a)) b)
+      (if (groupable? (first (rseq a)) b)
         a
         (conj a b)))
     [] ps))
@@ -685,7 +665,7 @@
       cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
            (if (nil? cs)
              grouped
-             (let [[top bottom] (split-with #(pattern-equals c (first %)) rows)]
+             (let [[top bottom] (split-with #(groupable? c (first %)) rows)]
                (recur (next cs) (conj grouped top) bottom)))))))
 
 (defn expression? [ocr]
@@ -821,12 +801,12 @@
 ;; =============================================================================
 ;; ## Default Matrix Specialization
 
-;; NOTE: not sure why we need pattern-equals here for this to work - David
+;; NOTE: not sure why we need groupable? here for this to work - David
 
 (defn default-specialize-matrix [p rows ocrs]
   (let [focr (first ocrs)
         nrows (->> rows
-                (filter #(pattern-equals p (first %)))
+                (filter #(groupable? p (first %)))
                 (map #(drop-nth-bind % 0 focr))
                 vec)
         nocrs (drop-nth ocrs 0)
@@ -1346,7 +1326,7 @@
 (defn specialize-or-pattern-row [row pat ps]
   (let [p (first row)]
     ;; NOTE: hmm why can't we remove this - David
-    (if (and (pattern-equals pat p)
+    (if (and (groupable? pat p)
              (not (wildcard-pattern? p)))
       (map (fn [p] (update-pattern row 0 p)) ps) [row])))
 
@@ -1539,75 +1519,39 @@
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
 
-(defmethod pattern-compare [WildcardPattern WildcardPattern]
-  [a b] 1)
-
-(defmethod comparable? WildcardPattern
-  [x] false)
-
 ;; NOTE: if recur is present we want all objects to equal wildcards, this is
 ;; because we push the wildcard matches along as well in the matrix specialization
 ;; since we don't have backtracking in this case - David
 
-(defmethod pattern-compare [Object WildcardPattern]
-  [a b] (if *recur-present* 0 1))
+(defmethod groupable? [Object WildcardPattern]
+  [a b] *recur-present*)
 
-(prefer-method pattern-compare [Object WildcardPattern] [LiteralPattern Object])
+(defmethod groupable? [LiteralPattern LiteralPattern]
+  [a b] (= (:l a) (:l b)))
 
-(defmethod pattern-compare [LiteralPattern Object]
-  [a b] 1)
+(defmethod groupable? [GuardPattern GuardPattern]
+  [a b] (= (:gs a) (:gs b)))
 
-(defmethod pattern-compare [Object LiteralPattern]
-  [a b] 1)
+(defmethod groupable? [PredicatePattern PredicatePattern]
+  [a b] (= (:gs a) (:gs b)))
 
-(defmethod pattern-compare [LiteralPattern LiteralPattern]
-  [a b]
-  (cond
-    (= (:l a) (:l b)) 0
-    :else 1))
-
-(defmethod comparable? LiteralPattern
-  [x]
-  (not (-> x meta :local)))
-
-(defmethod pattern-compare [GuardPattern GuardPattern]
-  [a b] (if (= (:gs a) (:gs b)) 0 1))
-
-(defmethod comparable? GuardPattern
-  [x]
-  false)
-
-(defmethod pattern-compare [GuardPattern WildcardPattern]
-  [a b]
-  (let [p (:p a)]
-    (if (wildcard-pattern? p)
-      (pattern-compare p b) 1)))
-
-(defmethod pattern-compare [PredicatePattern PredicatePattern]
-  [a b] (if (= (:gs a) (:gs b)) 0 1))
-
-(defmethod pattern-compare [PredicatePattern WildcardPattern]
-  [a b]
-  (let [p (:p a)]
-    (if (wildcard-pattern? p)
-      (pattern-compare p b) 1)))
-
-(defmethod pattern-compare [OrPattern OrPattern]
+(defmethod groupable? [OrPattern OrPattern]
   [a b]
   (let [as (:ps a)
         bs (:ps b)]
-    (if (and (= (count as) (count bs))
-             (every? identity (map pattern-equals as bs)))
-      0 1)))
+    (and (= (count as) (count bs))
+         (every? identity (map groupable? as bs)))))
 
-(defmethod pattern-compare [VectorPattern VectorPattern]
+(defmethod groupable? [VectorPattern VectorPattern]
   [a b]
   (cond
-    (not (touched? b)) 0
-    (= (:size a) (:size b)) 0
-    (and (:rest? a) (<= (:size a) (:size b))) 0
-    (and (:rest? b) (<= (:size b) (:size a))) 0
-    :else 1))
+    (not (touched? b)) true
+    (= (:size a) (:size b)) true
+    (and (:rest? a) (<= (:size a) (:size b))) true
+    (and (:rest? b) (<= (:size b) (:size a))) true
+    :else false))
+
+(prefer-method groupable? [Object WildcardPattern] [LiteralPattern Object])
 
 ;; =============================================================================
 ;; # Interface

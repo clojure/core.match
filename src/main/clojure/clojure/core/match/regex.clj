@@ -1,7 +1,6 @@
 (ns clojure.core.match.regex
   (:use [clojure.core.match
-         :only [emit-pattern to-source pattern-equals
-                pattern-compare comparable?]])
+         :only [emit-pattern to-source groupable?]])
   (:import java.util.regex.Pattern))
 
 ;; # Regular Expression Extension
@@ -25,17 +24,14 @@
   [pat ocr]
   `(re-matches ~(:regex pat) ~ocr))
 
-
 ;; `java.util.regex.Pattern` doesn't override `equals`, so we reinvent it here.
 ;;
 ;; Two `Pattern`s are equal if they have the same pattern and the same flags.
 
-(defmethod pattern-compare [RegexPattern RegexPattern]
-  [a b] (if (and (= (.pattern ^Pattern (:regex a)) (.pattern ^Pattern (:regex b)))
-                 (= (.flags ^Pattern (:regex a)) (.flags ^Pattern (:regex b))))
-          0
-          -1))
+(defmethod groupable? [RegexPattern RegexPattern]
+  [a b]
+  (let [^Pattern ra (:regex a)
+        ^Pattern rb (:regex b)]
+    (and (= (.pattern ra) (.pattern rb))
+         (= (.flags ra) (.flags rb)))))
 
-(defmethod comparable? RegexPattern
-  [x]
-  false)
