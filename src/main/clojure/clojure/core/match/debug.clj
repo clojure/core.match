@@ -11,6 +11,10 @@
             pp/*print-suppress-namespaces* true]
     (pp/pprint source)))
 
+(defmacro with-recur [form]
+  `(binding [clojure.core.match/*recur-present* true]
+     ~form))
+
 (defmacro build-matrix [vars & clauses]
   `(emit-matrix '~vars '~clauses false))
 
