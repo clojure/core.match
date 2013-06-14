@@ -253,6 +253,13 @@
 (declare leaf-bind-expr named-wildcard-pattern?)
 
 (deftype PatternRow [ps action bindings]
+  Object
+  (equals [_ other]
+    (and (instance? PatternRow other)
+         (= ps (:ps other))
+         (= action (:action other))
+         (= bindings (:bindings other))))
+  
   IVecMod
   (drop-nth [_ n]
     (PatternRow. (drop-nth ps n) action bindings))
@@ -309,7 +316,9 @@
 
   clojure.lang.IPersistentCollection
   (cons [_ x]
-    (PatternRow. (conj ps x) action bindings)))
+    (PatternRow. (conj ps x) action bindings))
+  (equiv [this other]
+    (.equals this other)))
 
 (defn pattern-row
   ([ps action] 
