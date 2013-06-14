@@ -1470,13 +1470,6 @@
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
 
-;; NOTE: if recur is present we want all objects to equal wildcards, this is
-;; because we push the wildcard matches along as well in the matrix specialization
-;; since we don't have backtracking in this case - David
-
-(defmethod groupable? [Object WildcardPattern]
-  [a b] *recur-present*)
-
 (defmethod groupable? [LiteralPattern LiteralPattern]
   [a b] (= (:l a) (:l b)))
 
@@ -1501,8 +1494,6 @@
     (and (:rest? a) (<= (:size a) (:size b))) true
     (and (:rest? b) (<= (:size b) (:size a))) true
     :else false))
-
-(prefer-method groupable? [Object WildcardPattern] [LiteralPattern Object])
 
 ;; =============================================================================
 ;; # Interface
