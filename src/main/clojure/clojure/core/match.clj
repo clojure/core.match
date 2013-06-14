@@ -600,12 +600,16 @@
 
 (defn column-splitter [col]
   (let [f (first col)
-        [x y] (split-with
+        [top bottom] (split-with
                 #(if (comparable? f)
                    (comparable? %)
                    (pattern-equals f %))
                 (rest col))]
-    [(cons f x) y]))
+    [(cons f top) bottom]))
+
+(defn matrix-splitter [rows]
+  (let [n (count (first (column-splitter (map first rows))))]
+    [(take n rows) (drop n rows)]))
 
 (declare pattern-matrix compile)
 
@@ -632,15 +636,14 @@
 ;; column. everything including and after a wildcard pattern is always
 ;; the default matrix
 (defn group-rows [rows]
-  (let [[s-m-1 s-m-2] (map count (column-splitter (map first rows)))
-        [l r] [(take s-m-1 rows) (drop s-m-1 rows)]]
+  (let [[top bottom] (matrix-splitter rows)]
     (letfn [(group [[r & rs :as rows]]
               (if (seq rows)
                 (let [[fd rd] ((juxt filter remove)
                                 #(pattern-equals (first r) (first %))
                                 rs)]
                   (concat (cons r fd) (group rd)))))]
-      (into [] (concat (group l) r)))))
+      (into [] (concat (group top) bottom)))))
 
 (declare vector-pattern?)
 
@@ -683,8 +686,8 @@
       cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
            (if (nil? cs)
              grouped
-             (let [[l r] (split-with #(pattern-equals c (first %)) rows)]
-               (recur (next cs) (conj grouped l) r)))))))
+             (let [[top bottom] (split-with #(pattern-equals c (first %)) rows)]
+               (recur (next cs) (conj grouped top) bottom)))))))
 
 (defn expression? [ocr]
   (contains? (meta ocr) :ocr-expr))
