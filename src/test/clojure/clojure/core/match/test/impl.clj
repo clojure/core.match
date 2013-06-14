@@ -45,3 +45,18 @@
   (is (false? (= (pattern-row [(literal-pattern 1) (literal-pattern 2)] :a0)
                  (pattern-row [(literal-pattern 1) (literal-pattern 3)] :a0)))))
 
+(deftest pattern-matrix-equality
+  (let [m0 (build-matrix [x y z]
+             [_     false true ] (recur x y z 1)
+             [false true  _    ] (recur x y z 2)
+             [_     _     false] (recur x y z 3)
+             [_     _     true ] (recur x y z 4)
+             :else 5)
+        m1 (build-matrix [x y z]
+             [_     false true ] (recur x y z 1)
+             [false true  _    ] (recur x y z 2)
+             [_     _     false] (recur x y z 3)
+             [_     _     true ] (recur x y z 4)
+             :else 5)]
+    (is (true? (= m0 m1)))))
+
