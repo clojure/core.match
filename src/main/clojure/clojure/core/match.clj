@@ -766,7 +766,6 @@
 (defn default-specialize-matrix [p rows ocrs]
   (let [focr (first ocrs)
         nrows (->> rows
-                (filter #(groupable? p (first %)))
                 (map #(drop-nth-bind % 0 focr))
                 vec)
         nocrs (drop-nth ocrs 0)
