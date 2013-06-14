@@ -610,63 +610,14 @@
             "node (specialized matrix empty)"))
         (fail-node)))))
 
-;; if the user interleaves patterns we want to make them adjacent
-;; up until the point that the first wildcard pattern appears in a
-;; column. everything including and after a wildcard pattern is always
-;; the default matrix
-(defn group-rows [rows]
-  (let [[top bottom] (matrix-splitter rows)]
-    (letfn [(group [[r & rs :as rows]]
-              (if (seq rows)
-                (let [[fd rd] ((juxt filter remove)
-                                #(groupable? (first r) (first %))
-                                rs)]
-                  (concat (cons r fd) (group rd)))))]
-      (into [] (concat (group top) bottom)))))
-
-(declare vector-pattern?)
-
-;; analyze vector patterns, if a vector-pattern containing a rest pattern
-;; occurs, drop all previous vector patterns that it subsumes. note this
-;; is a bit hard coding that should be removed when get a better sense
-;; how to abstract a protocol for this.
-(defn group-vector-patterns [ps]
-  (reverse
-    (reduce
-      (fn [ps p]
-        (if (and (vector-pattern? p)
-              (contains-rest-pattern? p))
-          (conj (drop-while #(groupable? p %) ps) p)
-          (conj ps p)))
-      () ps)))
-
-(defn collapse [ps]
-  (reduce
-    (fn [a b]
-      (if (groupable? (first (rseq a)) b)
-        a
-        (conj a b)))
-    [] ps))
-
-;; Returns a vector of relevant constructors in column i of matrix
-(defn column-constructors [matrix i]
-  (let [cs (group-vector-patterns (column matrix i))]
-    (collapse (first (column-splitter cs)))))
-
-;; Compile a decision trees for each constructor cs and returns a clause list
-;; usable by a switch node
-(defn switch-clauses [matrix cs]
-  (into []
-    (map (fn [c rows]
-           (let [s (-> matrix
-                     (specialize c rows (occurrences matrix)) 
-                     compile)]
-             [c s]))
-      cs (loop [[c :as cs] (seq cs) grouped [] rows (rows matrix)]
-           (if (nil? cs)
-             grouped
-             (let [[top bottom] (split-with #(groupable? c (first %)) rows)]
-               (recur (next cs) (conj grouped top) bottom)))))))
+(defn specialized-matrix [matrix]
+  (let [matrix' (pattern-matrix
+                  (into [] (first (matrix-splitter (rows matrix))))
+                  (occurrences matrix))
+        c       (ffirst (rows matrix'))]
+    [[c (-> matrix'
+          (specialize c (rows matrix') (occurrences matrix'))
+          compile)]]))
 
 (defn expression? [ocr]
   (contains? (meta ocr) :ocr-expr))
@@ -682,14 +633,14 @@
 
 (defn switch-or-bind-node [col ocrs clauses default]
   (if (some expression? ocrs)
-    (let [b (bind-variables ocrs)
-          o (ocrs col)
-          n (switch-node o clauses default)
-          _ (trace-dag "Add bind-node on occurrence " o ", bindings" b)]
-      (bind-node b n))
-    (let [o (ocrs col)
-          _ (trace-dag "Add switch-node on occurrence " o)]
-      (switch-node o clauses default))))
+    (let [bs   (bind-variables ocrs)
+          ocr  (ocrs col)
+          node (switch-node ocr clauses default)
+          _    (trace-dag "Add bind-node on occurrence " ocr ", bindings" bs)]
+      (bind-node bs node))
+    (let [ocr (ocrs col)
+          _   (trace-dag "Add switch-node on occurrence " ocr)]
+      (switch-node ocr clauses default))))
 
 ;; -----------------------------------------------------------------------------
 ;; # Compilation Cases
@@ -733,23 +684,21 @@
       (bind-node (bind-variables ocrs) node)
       node)))
 
+(defn expand-matrix [matrix col]
+  (reduce
+    (fn [matrix p]
+      (specialize matrix p
+        (rows matrix) (occurrences matrix)))
+    matrix (pseudo-patterns matrix col)))
+
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a switch/bind node
   with a default matrix case"
   [matrix col ocrs]
-  (let [exp-matrix (reduce
-                     (fn [matrix p]
-                       (specialize matrix p
-                         (rows matrix) (occurrences matrix)))
-                     matrix (pseudo-patterns matrix col))
-        new-matrix (pattern-matrix
-                     (group-rows (rows exp-matrix))
-                     (occurrences exp-matrix))
-        constrs (column-constructors new-matrix col)
-        clauses (switch-clauses new-matrix constrs)
-        default (default-matrix new-matrix)
-        _       (trace-dag "Column" col ":" constrs)]
-    (switch-or-bind-node col ocrs clauses default)))
+  (let [expanded (expand-matrix matrix col)]
+    (switch-or-bind-node col ocrs
+      (specialized-matrix expanded)
+      (default-matrix expanded))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
@@ -1179,6 +1128,8 @@
                 (assoc row 0 (touch p))
                 row)))
        (into [])))
+
+(declare vector-pattern?)
 
 (defn calc-rest?-and-min-size [rows env]
   (reduce
