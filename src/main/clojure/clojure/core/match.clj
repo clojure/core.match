@@ -788,15 +788,36 @@
 ;;
 ;; In practice, the DAG compilation eliminates any wildcard patterns.
 
-(defrecord WildcardPattern [sym])
+(deftype WildcardPattern [sym named _meta]
+  Object
+  (equals [_ other]
+    (and (instance? WildcardPattern other)
+         (if named
+           (= sym (:sym other))
+           (not (:named other)))))
+
+  clojure.lang.IObj
+  (withMeta [_ new-meta]
+    (WildcardPattern. sym named new-meta))
+  (meta [_]
+    _meta)
+
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :sym sym
+      :named named
+      not-found)))
 
 (defn wildcard-pattern
-  ([] (WildcardPattern. '_))
+  ([] (wildcard-pattern '_))
   ([sym] 
     {:pre [(symbol? sym)]}
     (if (= sym '_)
-      (WildcardPattern. (gensym))
-      (WildcardPattern. sym))))
+      (WildcardPattern. (gensym) false nil)
+      (WildcardPattern. sym true nil))))
 
 (defn wildcard-pattern? [x]
   (instance? WildcardPattern x))

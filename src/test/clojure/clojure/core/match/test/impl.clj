@@ -7,6 +7,10 @@
   (:use [clojure.test]))
 
 (deftest pattern-equality
+  (testing "wildcard patterns"
+    (is (true? (= (wildcard-pattern) (wildcard-pattern))))
+    (is (true? (= (wildcard-pattern 'a) (wildcard-pattern 'a))))
+    (is (false? (= (wildcard-pattern 'a) (wildcard-pattern 'b)))))
   (testing "literal patterns"
     (is (true? (= (literal-pattern 1) (literal-pattern 1))))
     (is (false? (= (literal-pattern 1) (literal-pattern 2)))))
