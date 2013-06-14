@@ -60,3 +60,29 @@
              :else 5)]
     (is (true? (= m0 m1)))))
 
+(deftest test-choose-column
+  (testing "for Maranget example, column 1 should be chosen"
+    (let [m0 (build-matrix [x y z]
+               [_     false true ] (recur x y z 1)
+               [false true  _    ] (recur x y z 2)
+               [_     _     false] (recur x y z 3)
+               [_     _     true ] (recur x y z 4)
+               :else 5)]
+      (is (= (choose-column m0) 1)))))
+
+(deftest test-swap
+  (testing "for Maranget example, show that swap works"
+    (let [m0 (build-matrix [x y z]
+               [_     false true ] (recur x y z 1)
+               [false true  _    ] (recur x y z 2)
+               [_     _     false] (recur x y z 3)
+               [_     _     true ] (recur x y z 4)
+               :else 5)
+          m1 (build-matrix [y x z]
+               [false _     true ] (recur x y z 1)
+               [true  false _    ] (recur x y z 2)
+               [_     _     false] (recur x y z 3)
+               [_     _     true ] (recur x y z 4)
+               :else 5)]
+      (is (= (swap m0 1) m1)))))
+
