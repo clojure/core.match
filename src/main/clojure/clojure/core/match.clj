@@ -49,10 +49,6 @@
   *breadcrumbs* (atom true))
 
 (def ^{:dynamic true
-       :doc "Enable pattern compile time tracing"} 
-  *trace* (atom false))
-
-(def ^{:dynamic true
        :doc "Enable backtracking diagnostics"}
   *backtrack-with-errors* (atom false))
 
@@ -74,9 +70,6 @@
        :doc "In the presence of recur we cannot apply code size optimizations"}
   *recur-present* false)
 
-(defn set-trace! [b]
-  (reset! *trace* b))
-
 (defn set-breadcrumbs! [b]
   (reset! *breadcrumbs* b))
 
@@ -94,16 +87,6 @@
                  (str *ns* ", line " *line* ":") 
                  msg))
       (reset! *warned* true))))
-
-(defn trace-matrix [& p]
-  (when @*trace*
-    (apply println "TRACE: MATRIX:" p)
-    (flush)))
-
-(defn trace-dag [& p]
-  (when @*trace*
-    (apply println "TRACE: DAG:" p)
-    (flush)))
 
 ;; =============================================================================
 ;; # Map Pattern Interop
@@ -609,16 +592,8 @@
 
 (defn default-matrix [matrix]
   (if-not (empty-matrix? matrix)
-    (do
-      (trace-dag
-        (str "Add specialized matrix on row of "
-          "wildcards as default matrix for next node"))
-      (compile matrix))
-    (do 
-      (trace-dag
-        (str "Add fail-node as default matrix for next "
-          "node (specialized matrix empty)"))
-      (fail-node))))
+    (compile matrix)
+    (fail-node)))
 
 (defn specialized-matrix [matrix]
   (let [c (ffirst (rows matrix))]
@@ -642,11 +617,9 @@
   (if (some expression? ocrs)
     (let [bs   (bind-variables ocrs)
           ocr  (ocrs col)
-          node (switch-node ocr clauses default)
-          _    (trace-dag "Add bind-node on occurrence " ocr ", bindings" bs)]
+          node (switch-node ocr clauses default)]
       (bind-node bs node))
-    (let [ocr (ocrs col)
-          _   (trace-dag "Add switch-node on occurrence " ocr)]
+    (let [ocr (ocrs col)]
       (switch-node ocr clauses default))))
 
 ;; -----------------------------------------------------------------------------
@@ -659,8 +632,7 @@
 (defn empty-rows-case 
   "Case 1: If there are no pattern rows to match, then matching always fails"
   []
-  (let [_ (trace-dag "No rows left, add fail-node")]
-    (fail-node)))
+  (fail-node))
 
 (defn first-row-empty-case 
   "Case 2: If the first row is empty then matching always succeeds 
@@ -668,11 +640,7 @@
   [rows ocr]
   (let [f (first rows)
         a (:action f)
-        bs (:bindings f)
-        _ (trace-dag "Empty row, add leaf-node."
-                     "Could not find match for: " ocr
-                     "Action:" a
-                     "Bindings:" bs)]
+        bs (:bindings f)]
     ;; FIXME: the first row is an infinite list of nil - David
     (leaf-node a bs)))
 
@@ -683,9 +651,6 @@
   (let [f (first rows)
         a (:action f)
         bs (row-bindings f ocrs)
-        _ (trace-dag
-            (str "First row all wildcards, add leaf-node. action: " a
-                 " bindings: " (into [] bs)))
         node (leaf-node a bs)]
     (if (some expression? ocrs)
       (bind-node (bind-variables ocrs) node)
@@ -712,15 +677,12 @@
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
   and compile the result"
   [matrix col]
-  (let [_ (trace-dag "Swap column " col)]
-    (compile (swap matrix col))))
+  (compile (swap matrix col)))
 
 ;; Return a column number of a column which contains at least
 ;; one non-wildcard constructor
 (defn choose-column [matrix]
-  (let [col (necessary-column matrix)
-        _ (trace-dag "Pick column" col "as necessary column.")]
-    col))
+  (necessary-column matrix))
 
 (defn compile [{:keys [rows ocrs] :as pm}]
   (cond
@@ -765,10 +727,7 @@
         nrows (->> rows
                 (map #(drop-nth-bind % 0 focr))
                 vec)
-        nocrs (drop-nth ocrs 0)
-        _ (trace-dag "Perform default matrix specialization on ocr" focr
-                     ", new num ocrs: " 
-                     (count ocrs) "->" (count nocrs))]
+        nocrs (drop-nth ocrs 0)]
     (pattern-matrix nrows nocrs)))
 
 ;; =============================================================================
@@ -937,10 +896,7 @@
   (specialize-matrix [this rows ocrs]
     (let [focr (first ocrs)
           nrows (specialize-seq-pattern-matrix rows focr)
-          nocrs (seq-pattern-matrix-ocrs ocrs focr)
-          _ (trace-dag "SeqPattern specialization on ocr " focr
-                       ", new num ocrs" 
-                       (count ocrs) "->" (count nocrs))]
+          nocrs (seq-pattern-matrix-ocrs ocrs focr)]
       (pattern-matrix nrows nocrs))))
 
 (defn ^SeqPattern seq-pattern [s]
@@ -1125,8 +1081,7 @@
                                  (map #(gen-map-pattern-ocr focr %)
                                    all-keys)))
           nrows    (specialize-map-pattern-matrix rows env')
-          nocrs    (map-pattern-matrix-ocrs ocrs env')
-         _ (trace-dag "MapPattern specialization")]
+          nocrs    (map-pattern-matrix-ocrs ocrs env')]
       (pattern-matrix nrows nocrs))))
 
 (defn map-pattern
@@ -1343,8 +1298,7 @@
 
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-or-pattern-matrix rows this ps)
-          _     (trace-dag "OrPattern specialization")]
+    (let [nrows (specialize-or-pattern-matrix rows this ps)]
       (pattern-matrix nrows ocrs))))
 
 (defn or-pattern [p]
@@ -1420,8 +1374,7 @@
 
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-guard-pattern-matrix rows)
-          _ (trace-dag "GuardPattern specialization")]
+    (let [nrows (specialize-guard-pattern-matrix rows)]
       (pattern-matrix nrows ocrs))))
 
 (defn guard-pattern [p gs]
@@ -1499,8 +1452,7 @@
 
   ISpecializeMatrix
   (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-predicate-pattern-matrix rows) 
-          _ (trace-dag "PredicatePattern specialization")]
+    (let [nrows (specialize-predicate-pattern-matrix rows)]
       (pattern-matrix nrows ocrs))))
 
 (defn predicate-pattern [p gs]
@@ -1818,8 +1770,7 @@
   [vars]
   (letfn [(process-var [var]
             (if-not (symbol? var)
-              (let [nsym (gensym "ocr-")
-                     _ (trace-dag "Bind expression" var "to occurrence" nsym)]
+              (let [nsym (gensym "ocr-")]
                 (with-meta nsym {:ocr-expr var}))
               var))]
     (vec (map process-var vars))))
@@ -1837,8 +1788,7 @@
           cs (let [[p a] (last cs)
                    last-match (vec (map (fn [_] '_) vars))]
                (if (= :else p)
-                 (do (trace-matrix "Convert :else clause to row of wildcards")
-                   (conj (vec (butlast cs)) [last-match a]))
+                 (conj (vec (butlast cs)) [last-match a])
                  ;; TODO: throw an exception if :else line not provided - David
                  (if default
                    (conj (vec cs) [last-match nil])
@@ -1908,4 +1858,3 @@
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
-
