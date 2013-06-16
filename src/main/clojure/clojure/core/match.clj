@@ -307,7 +307,7 @@
 
 (defn pattern-row
   ([ps action] 
-    (pattern-row ps action nil))
+    (pattern-row ps action []))
   ([ps action bindings]
     (let [ps (if (vector? ps) ps (into [] ps))]
       (PatternRow. ps action bindings))))
@@ -855,6 +855,20 @@
 
 (declare seq-pattern? rest-pattern? seq-pattern)
 
+(defn specialize-seq-pattern-rest-row [focr row]
+  (let [p (first row)
+        p (if (seq-pattern? p)
+            (:p (first (:s p))) ;; unwrap rest pattern
+            (wildcard-pattern))]
+    (prepend (drop-nth-bind row 0 focr) p)))
+
+(defn specialize-seq-pattern-rest-matrix [rows focr]
+  (->> rows
+    (map (partial specialize-seq-pattern-rest-row focr))
+    vec))
+
+(defn seq-pattern-matrix-rest-ocrs [ocrs focr] ocrs)
+
 (defn specialize-seq-pattern-row [focr row]
   (let [p (first row)
         [h t] (if (seq-pattern? p)
@@ -910,10 +924,14 @@
   (specialize-matrix [this matrix]
     (let [rows  (rows matrix)
           ocrs  (occurrences matrix)
-          focr  (first ocrs)
-          nrows (specialize-seq-pattern-matrix rows focr)
-          nocrs (seq-pattern-matrix-ocrs ocrs focr)]
-      (pattern-matrix nrows nocrs))))
+          focr  (first ocrs)]
+      (if-not (rest-pattern? (first s))
+        (let [nrows (specialize-seq-pattern-matrix rows focr)
+              nocrs (seq-pattern-matrix-ocrs ocrs focr)]
+          (pattern-matrix nrows nocrs))
+        (let [nrows (specialize-seq-pattern-rest-matrix rows focr)
+              nocrs (seq-pattern-matrix-rest-ocrs ocrs focr)]
+          (pattern-matrix nrows nocrs))))))
 
 (defn ^SeqPattern seq-pattern [s]
   {:pre [(sequential? s)

@@ -106,3 +106,11 @@
           [S' D'] (matrix-splitter m1)]
       (is (and (= S S') (= D D'))))))
 
+(deftest test-rest-pattern-1
+  (let [M   (build-matrix [x]
+              [([& _] :seq)] true)
+        M'  (build-matrix [x]
+              [_] true)
+        M'' (specialize M)]
+    (is (= M' M''))))
+

@@ -785,3 +785,7 @@
            ([(re :guard string?)] :seq) 4
            [] 6)
          6)))
+
+(deftest match-55
+  (is (= (match [ [1 2] ] [([& _] :seq)] true)
+         true)))
