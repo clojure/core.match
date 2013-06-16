@@ -4,7 +4,7 @@
 ;; # Protocols
 
 (defprotocol ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]))
+  (specialize-matrix [this matrix]))
 
 (defprotocol IContainsRestPattern
   (contains-rest-pattern? [this]))

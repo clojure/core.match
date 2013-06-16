@@ -567,10 +567,10 @@
 
 (declare default-specialize-matrix pseudo-pattern?)
 
-(defn specialize [pm p rows* ocrs*]
+(defn specialize [matrix p]
   (if (satisfies? ISpecializeMatrix p)
-    (specialize-matrix p rows* ocrs*)
-    (default-specialize-matrix p rows* ocrs*)))
+    (specialize-matrix p matrix)
+    (default-specialize-matrix p matrix)))
 
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
@@ -602,7 +602,7 @@
 (defn specialized-matrix [matrix]
   (let [c (ffirst (rows matrix))]
     [[c (-> matrix
-          (specialize c (rows matrix) (occurrences matrix))
+          (specialize c)
           compile)]]))
 
 (defn expression? [ocr]
@@ -663,8 +663,7 @@
 (defn expand-matrix [matrix col]
   (reduce
     (fn [matrix p]
-      (specialize matrix p
-        (rows matrix) (occurrences matrix)))
+      (specialize matrix p))
     matrix (pseudo-patterns matrix col)))
 
 (defn first-column-chosen-case 
@@ -732,8 +731,10 @@
 
 ;; NOTE: not sure why we need groupable? here for this to work - David
 
-(defn default-specialize-matrix [p rows ocrs]
-  (let [focr (first ocrs)
+(defn default-specialize-matrix [p matrix]
+  (let [rows (rows matrix)
+        ocrs (occurrences matrix)
+        focr (first ocrs)
         nrows (->> rows
                 (map #(drop-nth-bind % 0 focr))
                 vec)
@@ -903,8 +904,10 @@
     `(or (seq? ~ocr) (sequential? ~ocr)))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [focr (first ocrs)
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          focr  (first ocrs)
           nrows (specialize-seq-pattern-matrix rows focr)
           nocrs (seq-pattern-matrix-ocrs ocrs focr)]
       (pattern-matrix nrows nocrs))))
@@ -959,8 +962,10 @@
     `(not= ~ocr ::not-found))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-map-key-pattern-matrix rows)]
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          nrows (specialize-map-key-pattern-matrix rows)]
       (pattern-matrix nrows ocrs))))
 
 (defn map-key-pattern [p]
@@ -1079,8 +1084,10 @@
       `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [focr     (first ocrs)
+  (specialize-matrix [this matrix]
+    (let [rows     (rows matrix)
+          ocrs     (occurrences matrix)
+          focr     (first ocrs)
           env      {:focr focr
                     :only? (atom false)}
           all-keys (get-all-keys rows env)
@@ -1241,19 +1248,21 @@
       [pl pr]))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (if (not (touched? (ffirst rows)))
-      (pattern-matrix (touch-all-first rows) ocrs)
-      (let [focr (first ocrs)
-            env {:focr focr
-                 :fp   (ffirst rows)
-                 :pat  this}
-            [rest? min-size] (calc-rest?-and-min-size rows env)
-            env' (assoc env
-                   :rest? rest? :min-size min-size :tag (:t this))
-            nrows (specialize-vector-pattern-matrix rows env')
-            nocrs (vector-pattern-matrix-ocrs ocrs env')]
-        (pattern-matrix nrows nocrs)))))
+  (specialize-matrix [this matrix]
+    (let [rows (rows matrix)
+          ocrs (occurrences matrix)]
+      (if (not (touched? (ffirst rows)))
+        (pattern-matrix (touch-all-first rows) ocrs)
+        (let [focr (first ocrs)
+              env {:focr focr
+                    :fp   (ffirst rows)
+                    :pat  this}
+              [rest? min-size] (calc-rest?-and-min-size rows env)
+              env' (assoc env
+                     :rest? rest? :min-size min-size :tag (:t this))
+              nrows (specialize-vector-pattern-matrix rows env')
+              nocrs (vector-pattern-matrix-ocrs ocrs env')]
+          (pattern-matrix nrows nocrs))))))
 
 (defn vector-pattern
   ([] (vector-pattern [] ::vector nil nil))
@@ -1307,8 +1316,10 @@
       not-found))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-or-pattern-matrix rows this ps)]
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          nrows (specialize-or-pattern-matrix rows this ps)]
       (pattern-matrix nrows ocrs))))
 
 (defn or-pattern [p]
@@ -1383,8 +1394,10 @@
                  gs (repeat ocr))))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-guard-pattern-matrix rows)]
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          nrows (specialize-guard-pattern-matrix rows)]
       (pattern-matrix nrows ocrs))))
 
 (defn guard-pattern [p gs]
@@ -1461,8 +1474,10 @@
                  gs (repeat ocr))))
 
   ISpecializeMatrix
-  (specialize-matrix [this rows ocrs]
-    (let [nrows (specialize-predicate-pattern-matrix rows)]
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          nrows (specialize-predicate-pattern-matrix rows)]
       (pattern-matrix nrows ocrs))))
 
 (defn predicate-pattern [p gs]
