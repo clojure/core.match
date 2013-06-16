@@ -726,7 +726,19 @@
                 [[2]] (recur x :a2)
                 [2] (recur x :a3)
                 :else :a4))) [2] false)
-        :a2)))
+        :a2))
+  (is (= ((fn [x done]
+            (if done
+              done
+              (match [x]
+                [[1]] (recur x :a0)
+                [1] (recur x :a1)
+                [[2]] (recur x :a2)
+                [2] (recur x :a3)
+                [3] (recur x :a4)
+                [[3]] (recur x :a4)
+                :else :a5))) [3] false)
+        :a4)))
 
 (deftest match-order-7
   (is (= (match [[2]]

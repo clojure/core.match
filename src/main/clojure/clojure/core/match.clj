@@ -79,6 +79,8 @@
 (defn backtrack-expr []
   `(throw clojure.core.match/backtrack))
 
+(def ^{:dynamic true} *recur-backtrack* nil)
+
 (defn warn [msg]
   (if (not @*warned*)
     (do
@@ -583,12 +585,14 @@
 (defn matrix-splitter [matrix]
   (let [rows (rows matrix)
         n    (count (first (column-splitter (map first rows))))
-        ocrs (occurrences matrix)]
-    (if-not *recur-present*
-      [(pattern-matrix (take n rows) ocrs)
-       (pattern-matrix (drop n rows) ocrs)]
-      [(pattern-matrix rows ocrs)
-       (pattern-matrix (drop n rows) ocrs)])))
+        ocrs (occurrences matrix)
+        S    (pattern-matrix (take n rows) ocrs)
+        D    (pattern-matrix (drop n rows) ocrs)]
+    (if *recur-present*
+      (if (and (empty-matrix? D) *recur-backtrack*)
+        [S *recur-backtrack* *recur-backtrack*]
+        [S D D])
+      [S D])))
 
 (defn default-matrix [matrix]
   (if-not (empty-matrix? matrix)
@@ -668,10 +672,14 @@
   with a default matrix case"
   [matrix col ocrs]
   (let [expanded (expand-matrix matrix col)
-        [S D]    (matrix-splitter expanded)]
+        [S D U]  (matrix-splitter expanded)]
     (switch-or-bind-node col ocrs
-      (specialized-matrix S)
-      (default-matrix D))))
+      (if *recur-present*
+        (binding [*recur-backtrack* U]
+          (specialized-matrix S))
+        (specialized-matrix S))
+      (binding [*recur-backtrack* nil]
+        (default-matrix D)))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column

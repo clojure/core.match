@@ -106,37 +106,3 @@
           [S' D'] (matrix-splitter m1)]
       (is (and (= S S') (= D D'))))))
 
-(deftest test-matrix-splitter-recur-1
-  (testing "for Maranget example, show specialized matrix and default
-matrix are as expected in the presence of recur."
-    (let [m1 (build-matrix [y x z]
-               [false _     true ] (recur x y z 1)
-               [true  false _    ] (recur x y z 2)
-               [_     _     false] (recur x y z 3)
-               [_     _     true ] (recur x y z 4)
-               :else 5)
-          S  (build-matrix [y x z]
-               [false _     true ] (recur x y z 1)
-               [true  false _    ] (recur x y z 2)
-               [_     _     false] (recur x y z 3)
-               [_     _     true ] (recur x y z 4)
-               :else 5)
-          D  (build-matrix [y x z]
-               [true  false _    ] (recur x y z 2)
-               [_     _     false] (recur x y z 3)
-               [_     _     true ] (recur x y z 4)
-               :else 5)
-          [S' D'] (with-recur (matrix-splitter m1))]
-      (is (and (= S S') (= D D')))
-      (let [DS (build-matrix [y x z]
-                 [true  false _    ] (recur x y z 2)
-                 [_     _     false] (recur x y z 3)
-                 [_     _     true ] (recur x y z 4)
-                 :else 5)
-            DD (build-matrix [y x z]
-                 [_     _     false] (recur x y z 3)
-                 [_     _     true ] (recur x y z 4)
-                 :else 5) 
-            [DS' DD'] (with-recur (matrix-splitter D))]
-        (is (and (= DS DS') (= DD DD')))))))
-
