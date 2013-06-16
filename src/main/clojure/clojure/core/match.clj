@@ -672,13 +672,13 @@
   with a default matrix case"
   [matrix col ocrs]
   (let [expanded (expand-matrix matrix col)
-        [S D U]  (matrix-splitter expanded)]
+        [S D B]  (matrix-splitter expanded)]
     (if-not *recur-present*
       (switch-or-bind-node col ocrs
         (specialized-matrix S)
         (default-matrix D))
       (switch-or-bind-node col ocrs
-        (binding [*recur-backtrack* U]
+        (binding [*recur-backtrack* B]
           (specialized-matrix S))
         (binding [*recur-backtrack* nil]
           (default-matrix D))))))
