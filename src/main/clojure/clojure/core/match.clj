@@ -567,10 +567,13 @@
 
 (declare default-specialize-matrix pseudo-pattern?)
 
-(defn specialize [matrix p]
-  (if (satisfies? ISpecializeMatrix p)
-    (specialize-matrix p matrix)
-    (default-specialize-matrix p matrix)))
+(defn specialize
+  ([matrix]
+    (specialize matrix (ffirst (rows matrix))))
+  ([matrix p]
+    (if (satisfies? ISpecializeMatrix p)
+      (specialize-matrix p matrix)
+      (default-specialize-matrix p matrix))))
 
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
