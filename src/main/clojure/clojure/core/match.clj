@@ -673,13 +673,15 @@
   [matrix col ocrs]
   (let [expanded (expand-matrix matrix col)
         [S D U]  (matrix-splitter expanded)]
-    (switch-or-bind-node col ocrs
-      (if *recur-present*
+    (if-not *recur-present*
+      (switch-or-bind-node col ocrs
+        (specialized-matrix S)
+        (default-matrix D))
+      (switch-or-bind-node col ocrs
         (binding [*recur-backtrack* U]
           (specialized-matrix S))
-        (specialized-matrix S))
-      (binding [*recur-backtrack* nil]
-        (default-matrix D)))))
+        (binding [*recur-backtrack* nil]
+          (default-matrix D))))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
