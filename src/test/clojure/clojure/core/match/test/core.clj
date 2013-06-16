@@ -767,3 +767,9 @@
              [{:bz b}] [:a1 b]
              :else []))
         [:a1 2])))
+
+(deftest match-51
+  (is (= (match (vector)
+           ([(re :guard string?)] :seq) 4
+           [] 6)
+         6)))
