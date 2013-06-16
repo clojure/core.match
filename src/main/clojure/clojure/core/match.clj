@@ -1791,7 +1791,7 @@
                  (conj (vec (butlast cs)) [last-match a])
                  ;; TODO: throw an exception if :else line not provided - David
                  (if default
-                   (conj (vec cs) [last-match nil])
+                   (conj (vec cs) [last-match `(throw (IllegalArgumentException. (str "No matching clause: " ~@(interpose " " vars))))])
                    cs)))]
       (pattern-matrix
         (vec (map #(apply to-pattern-row %) cs))
