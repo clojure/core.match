@@ -801,3 +801,9 @@
              [[h & t]] [h t]
              :else :nomatch))
           [1 []])))
+
+(deftest match-68
+  (is (= (match [[:x]]
+           [[m n & _]] 1
+           :else nil)
+          nil)))
