@@ -1,3 +1,22 @@
+From 0.2.0-alpha12 to 0.2.0-beta1
+====
+
+AOT issues should be addressed across the board.
+
+Fixes
+---
+* MATCH-70 map pattern matching behavior is now more logical,
+  specifying a key means it must at least be present even if a
+  wildcard
+* MATCH-66: cannot match whole value
+* MATCH-51: fail to match empty vector after guard
+* MATCH-36: no match now throws an exception if no default provided a
+  la case
+* MATCH-55: seq pattern with just rest pattern fails
+* MATCH-56: exception when matching empty vector
+* MATCH-68: variant of 55
+* MATCH-35: seq pattern matching needed to test `seq`
+
 From 0.2.0-alpha11 to 0.2.0-alpha12
 ====
 
