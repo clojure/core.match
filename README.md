@@ -5,21 +5,17 @@ An optimized pattern match and predicate dispatch library for Clojure. Currently
 
 You can find more detailed information [here](https://github.com/clojure/core.match/wiki/Overview).
 
-Alpha Status
-----
-It's important to note that core.match is alpha quality software. There are many known issues. In particular if your project depends on AOT do not use core.match at this time. Patches for any and all issues welcome!
-
 Releases and dependency information
 ----
 
-Latest alpha: 0.2.0-alpha12
+Latest beta: 0.2.0-beta1
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [Leiningen](http://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "0.2.0-alpha12"]
+[org.clojure/core.match "0.2.0-beta1"]
 ```
 
 [Maven](http://maven.apache.org) dependency information:
@@ -28,7 +24,7 @@ Latest alpha: 0.2.0-alpha12
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>0.2.0-alpha12</version>
+  <version>0.2.0-beta1</version>
 </dependency>
 ```
 

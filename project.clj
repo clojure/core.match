@@ -1,4 +1,4 @@
-(defproject org.clojure/core.match "0.2.0-alpha11-SNAPSHOT"
+(defproject org.clojure/core.match "0.2.0-beta1"
   :description "Optimized pattern matching and predicate dispatch for Clojure"
 
   :test-paths ["src/test/clojure"]
