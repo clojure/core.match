@@ -512,12 +512,6 @@
 
 (defn occurrences [pm] (:ocrs pm))
 
-(defn seq-occurrence? [ocr]
-  (= (-> ocr meta :occurrence-type) :seq))
-
-(defn map-occurrence? [ocr]
-  (= (-> ocr meta :occurrence-type) :map))
-
 ;; Returns bindings usable by leaf-node
 (defn row-bindings [f ocrs]
   (let [ps (:ps f)
@@ -1770,8 +1764,10 @@
         (AssertionError.
           (str "Pattern row " rownum
             ": Pattern row reuses wildcards in " pat
-            ".  The following wildcards are ambiguous: " (apply str (interpose ", " duplicates))
-            ".  There's no guarantee that the matched values will be same.  Rename the occurrences uniquely."))))))
+            ".  The following wildcards are ambiguous: "
+            (apply str (interpose ", " duplicates))
+            ".  There's no guarantee that the matched values will be same."
+            "  Rename the occurrences uniquely."))))))
 
 ;; This could be scattered around in other functions to be more efficient
 ;; Turn off *syntax-check* to disable
