@@ -789,3 +789,15 @@
 (deftest match-55
   (is (= (match [ [1 2] ] [([& _] :seq)] true)
          true)))
+
+(deftest match-56
+  (is (= (let [x []]
+           (match [x]
+             [[h & t]] [h t]
+             :else :nomatch))
+        :nomatch))
+  (is (= (let [x [1]]
+           (match [x]
+             [[h & t]] [h t]
+             :else :nomatch))
+          [1 []])))

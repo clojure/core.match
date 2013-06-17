@@ -131,6 +131,7 @@
 (defmulti tag (fn [t] t))
 (defmulti test-inline vector-type)
 (defmulti test-with-size-inline vector-type)
+(defmulti test-with-min-size-inline vector-type)
 (defmulti count-inline vector-type)
 (defmulti nth-inline vector-type)
 (defmulti nth-offset-inline vector-type)
@@ -170,6 +171,11 @@
   [t ocr size]
   `(and ~(test-inline t ocr)
          (== ~(count-inline t (with-tag t ocr)) ~size)))
+
+(defmethod test-with-min-size-inline ::vector
+  [t ocr size]
+  `(and ~(test-inline t ocr)
+         (>= ~(count-inline t (with-tag t ocr)) ~size)))
 
 (defmethod count-inline ::vector
   [_ ocr] `(count ~ocr))
@@ -1139,20 +1145,6 @@
 ;; Vector patterns match any Sequential data structure. Note this means that
 ;; the lazy semantics may mean poorer performance for sequences.
 
-(defn touched? [vp]
-  (-> vp meta :touched))
-
-(defn touch [vp]
-  (let [meta (meta vp)]
-    (with-meta vp (assoc meta :touched true))))
-
-(defn touch-all-first [rows]
-  (->> rows
-    (map (fn [[p & ps :as row]]
-           (if (not (touched? p))
-             (assoc row 0 (touch p))
-             row)))))
-
 (declare vector-pattern?)
 
 (defn calc-rest?-and-min-size [rows env]
@@ -1248,8 +1240,10 @@
 
   IPatternCompile
   (to-source* [this ocr]
-    (if (and (touched? this) (not rest?) size (check-size? t))
-      (test-with-size-inline t ocr size)
+    (if (check-size? t)
+      (if rest?
+        (test-with-min-size-inline t ocr size)
+        (test-with-size-inline t ocr size))
       (test-inline t ocr)))
 
   IContainsRestPattern
@@ -1271,19 +1265,17 @@
   ISpecializeMatrix
   (specialize-matrix [this matrix]
     (let [rows (rows matrix)
-          ocrs (occurrences matrix)]
-      (if (not (touched? (ffirst rows)))
-        (pattern-matrix (touch-all-first rows) ocrs)
-        (let [focr (first ocrs)
-              env {:focr focr
-                    :fp   (ffirst rows)
-                    :pat  this}
-              [rest? min-size] (calc-rest?-and-min-size rows env)
-              env' (assoc env
-                     :rest? rest? :min-size min-size :tag (:t this))
-              nrows (specialize-vector-pattern-matrix rows env')
-              nocrs (vector-pattern-matrix-ocrs ocrs env')]
-          (pattern-matrix nrows nocrs))))))
+          ocrs (occurrences matrix)
+          focr (first ocrs)
+          env  {:focr focr
+                :fp   (ffirst rows)
+                :pat  this}
+          [rest? min-size] (calc-rest?-and-min-size rows env)
+          env' (assoc env
+                 :rest? rest? :min-size min-size :tag (:t this))
+          nrows (specialize-vector-pattern-matrix rows env')
+          nocrs (vector-pattern-matrix-ocrs ocrs env')]
+      (pattern-matrix nrows nocrs))))
 
 (defn vector-pattern
   ([] (vector-pattern [] ::vector nil nil))
@@ -1533,7 +1525,6 @@
 (defmethod groupable? [VectorPattern VectorPattern]
   [a b]
   (cond
-    (not (touched? b)) true
     (= (:size a) (:size b)) true
     (and (:rest? a) (<= (:size a) (:size b))) true
     (and (:rest? b) (<= (:size b) (:size a))) true
