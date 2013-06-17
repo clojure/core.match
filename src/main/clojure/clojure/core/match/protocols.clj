@@ -32,4 +32,4 @@
   (split [this n]))
 
 ;; marker
-(defprotocol IExistentialPattern)
+(definterface IExistentialPattern)

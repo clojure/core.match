@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match.protocols])
   (:require [clojure.set :as set])
-  (:import [java.io Writer]))
+  (:import [java.io Writer]
+           [clojure.core.match.protocols IExistentialPattern]))
 
 ;; =============================================================================
 ;; # Introduction
@@ -328,17 +329,19 @@
   (every? wildcard-pattern? (:ps prow)))
 
 (defn drop-nth-bind [prow n ocr]
-  (let [ps (:ps prow)
-        p (ps n)
-        bindings (:bindings prow)
-        action (:action prow)
+  (let [ps        (:ps prow)
+        p         (ps n)
+        action    (:action prow)
         bind-expr (leaf-bind-expr ocr)
-        as (-> p meta :as)]
-    (pattern-row (drop-nth ps n) action
-      (as-> (or bindings []) bindings
-        (cond-> bindings
-          as (conj [as bind-expr])
-          (named-wildcard-pattern? p) (conj [(:sym p) bind-expr]))))))
+        as        (-> p meta :as)
+        bindings  (or (:bindings prow) [])
+        bindings  (if as
+                    (conj bindings [as bind-expr])
+                    bindings)
+        bindings  (if (named-wildcard-pattern? p)
+                    (conj bindings [(:sym p) bind-expr])
+                    bindings)]
+    (pattern-row (drop-nth ps n) action bindings)))
 
 ;; =============================================================================
 ;; # Compilation Nodes
@@ -524,7 +527,7 @@
     (concat (:bindings f) wc-bindings)))
 
 (defn existential-pattern? [x]
-  (instance? clojure.core.match.protocols.IExistentialPattern x))
+  (instance? IExistentialPattern x))
 
 (defn wildcard-or-existential? [x]
   (or (wildcard-pattern? x)
@@ -1046,21 +1049,20 @@
   [row {:keys [all-keys only? focr] :as env}]
   (let [p       (first row)
         only    (seq (-> p meta :only))
-        ocr-map (get-ocr-map p (assoc env :only only))]
-    (reduce prepend (drop-nth-bind row 0 focr)
-      (reverse
-        (as-> (doall (map ocr-map all-keys)) ps
-          (if @only?
-            (if only
-              (let [a (with-meta (gensym) {:tag 'java.util.Map})]
-                (cons
-                  (guard-pattern (wildcard-pattern)
-                    (set [(if *clojurescript*
-                            `(fn [~a] (= (set (keys ~a)) #{~@only}))
-                            `(fn [~a] (= (.keySet ~a) #{~@only})))]))
-                  ps))
-              (cons (wildcard-pattern) ps))
-            ps))))))
+        ocr-map (get-ocr-map p (assoc env :only only))
+        ps      (doall (map ocr-map all-keys))
+        ps      (if @only?
+                  (if only
+                    (let [a (with-meta (gensym) {:tag 'java.util.Map})]
+                      (cons
+                        (guard-pattern (wildcard-pattern)
+                          (set [(if *clojurescript*
+                                  `(fn [~a] (= (set (keys ~a)) #{~@only}))
+                                  `(fn [~a] (= (.keySet ~a) #{~@only})))]))
+                        ps))
+                    (cons (wildcard-pattern) ps))
+                  ps)]
+    (reduce prepend (drop-nth-bind row 0 focr) (reverse ps))))
 
 (defn specialize-map-pattern-matrix [rows env]
   (vec (map #(specialize-map-pattern-row % env) rows)))
