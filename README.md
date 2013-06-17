@@ -1,7 +1,7 @@
 match
 ====
 
-An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.2.0 and later as well as ClojureScript.
+An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.3.0 and later as well as ClojureScript.
 
 You can find more detailed information [here](https://github.com/clojure/core.match/wiki/Overview).
 
