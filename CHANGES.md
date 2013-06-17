@@ -1,3 +1,10 @@
+From 0.2.0-beta1 to 0.2.0-beta2
+====
+
+Fixes
+---
+* Bring CLJS support closer to CLJ
+
 From 0.2.0-alpha12 to 0.2.0-beta1
 ====
 
