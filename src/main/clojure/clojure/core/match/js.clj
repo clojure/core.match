@@ -4,8 +4,15 @@
 
 (defmacro match 
   [vars & clauses]
-  (binding [*clojurescript* true
-            *line* (-> &form meta :line)
-            *locals* (dissoc &env '_)
-            *warned* (atom false)]
-    `~(clj-form vars clauses)))
+  (let [[vars clauses]
+        (if (vector? vars)
+          [vars clauses]
+          [(vector vars)
+            (mapcat (fn [[c a]]
+                      [(if (not= c :else) (vector c) c) a])
+              (partition 2 clauses))])]
+   (binding [*clojurescript* true
+             *line* (-> &form meta :line)
+             *locals* (dissoc &env '_)
+             *warned* (atom false)]
+     `~(clj-form vars clauses))))
