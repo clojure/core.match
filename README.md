@@ -61,7 +61,8 @@ From ClojureScript:
       :else n)))
 ```
 
-For more detailed description of usage please refer to the [wiki](http://github.com/clojure/core.match/wiki).
+For more detailed descriptions of usage please refer to the
+[wiki](http://github.com/clojure/core.match/wiki).
 
 Developer information
 ----
