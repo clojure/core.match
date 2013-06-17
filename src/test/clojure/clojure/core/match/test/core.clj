@@ -815,3 +815,15 @@
            [[m n & _]] 1
            :else nil)
           nil)))
+
+(deftest match-35
+  (is (= (let [l '(1 2 3)]
+           (match [l]
+             [([a & [b & [c d]]] :seq)] :a0
+             :else :a1))
+         :a1))
+  (is (= (let [x ()]
+           (match [x]
+             [([h & t] :seq)] [h t]
+             [_] :a1))
+         :a1)))

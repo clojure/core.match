@@ -924,7 +924,10 @@
   
   IPatternCompile
   (to-source* [this ocr]
-    `(or (seq? ~ocr) (sequential? ~ocr)))
+    (if (and (>= (count s) 1)
+             (not (rest-pattern? (first s))))
+      `(and (or (seq? ~ocr) (sequential? ~ocr)) (seq ~ocr))
+      `(or (seq? ~ocr) (sequential? ~ocr))))
 
   ISpecializeMatrix
   (specialize-matrix [this matrix]
