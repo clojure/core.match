@@ -712,6 +712,27 @@
     :a3))
 
 ;; =============================================================================
+;; Extending objects to pattern matching
+
+(extend-type js/Date
+  ILookup
+  (-lookup [this k]
+    (-lookup this k nil))
+  (-lookup [this k not-found]
+    (case k
+      :day (.getDay this)
+      :month (.getMonth this)
+      :year (.getFullYear this)
+      not-found)))
+
+(assert
+  (= (match [(js/Date. 2010 10 1 12 30)]
+       [{:year 2009 :month a}] a
+       [{:year (:or 2010 2011) :month b}] b
+       :else :wrong)
+    10))
+
+;; =============================================================================
 ;; Tickets
 
 (assert (= (match 3 x x) 3))
