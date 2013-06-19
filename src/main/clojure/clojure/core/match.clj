@@ -8,8 +8,9 @@
 ;; =============================================================================
 ;; # Introduction
 ;;
-;; This namespace contains an implementation of closed pattern matching. It uses
-;; an algorithm based on Luc Maranget's paper "Compiling Pattern Matching to Good Decision Trees".
+;; This namespace contains an implementation of closed pattern
+;; matching. It uses an algorithm based on Luc Maranget's paper
+;; "Compiling Pattern Matching to Good Decision Trees".
 ;;
 ;; There are three main steps to this implementation:
 ;;
@@ -61,9 +62,9 @@
 (def ^{:dynamic true} *warned*)
 
 (def ^{:dynamic true
-       :doc "Default vector type. Can be rebound allowing emission of custom
-             inline code for vector patterns, for example type-hinted primitive 
-             array operations"}
+       :doc "Default vector type. Can be rebound allowing emission of
+             custom inline code for vector patterns, for example
+             type-hinted primitive array operations"}
   *vector-type* ::vector)
 
 (def ^{:dynamic true} *match-breadcrumbs* [])
@@ -121,10 +122,11 @@
 ;; =============================================================================
 ;; # Vector Pattern Interop
 ;;
-;; Vectors patterns can generate code specialized on type. This is useful for
-;; generating optimal code for data like primitive arrays and bytes. Defaults for
-;; vector are provided, see clojure.core.match.array and clojure.core.match.bits
-;; for experiments involving these types.
+;; Vectors patterns can generate code specialized on type. This is
+;; useful for generating optimal code for data like primitive arrays
+;; and bytes. Defaults for vector are provided, see
+;; clojure.core.match.array and clojure.core.match.bits for
+;; experiments involving these types.
 
 (defn vector-type [t & r] t)
 
@@ -198,10 +200,10 @@
 ;; =============================================================================
 ;; # Extensions
 
-;; Pattern matrices are represented with persistent vectors. Operations
-;; on pattern matrices require us to move something from the middle of the
-;; vector to the front - thus prepend and drop-nth. swap will swap the 0th
-;; element with the nth element.
+;; Pattern matrices are represented with persistent
+;; vectors. Operations on pattern matrices require us to move
+;; something from the middle of the vector to the front - thus prepend
+;; and drop-nth. swap will swap the 0th element with the nth element.
 
 (extend-type clojure.lang.IPersistentVector
   IVecMod
@@ -238,8 +240,9 @@
 ;; =============================================================================
 ;; # Pattern Rows
 ;;
-;; Pattern rows are one line of a matrix. They correspond to one clause in the
-;; in the user's original pattern. patterns, action, bindings are accessors.
+;; Pattern rows are one line of a matrix. They correspond to one
+;; clause in the in the user's original pattern. patterns, action,
+;; bindings are accessors.
 ;; 
 
 (declare leaf-bind-expr named-wildcard-pattern?)
@@ -319,8 +322,9 @@
     (let [ps (if (vector? ps) ps (into [] ps))]
       (PatternRow. ps action bindings))))
 
-;; NOTE: we don't use map destructuring here because PatternRow is both
-;; ISeq and ILookup, but in map destructuring seq? is tested first - David
+;; NOTE: we don't use map destructuring here because PatternRow is
+;; both ISeq and ILookup, but in map destructuring seq? is tested
+;; first - David
 
 (defn update-pattern [prow i p]
   (pattern-row (assoc (:ps prow) i p) (:action prow) (:bindings prow)))
@@ -359,9 +363,10 @@
           ~value))
       value)))
 
+;; TODO precondition on bindings? see above - Ambrose
 (defn leaf-node
   ([value] (LeafNode. value []))
-  ([value bindings] (LeafNode. value bindings))) ;; TODO precondition on bindings? see above - Ambrose
+  ([value bindings] (LeafNode. value bindings))) 
 
 (defmulti leaf-bind-expr (fn [ocr] (-> ocr meta :occurrence-type)))
 
@@ -391,10 +396,12 @@
   (n-to-clj [this]
     (if *recur-present*
       (if @*breadcrumbs*
-        `(throw (error (str "No match found. " 
-                            "Followed " ~(count *match-breadcrumbs*)  " branches."
-                            " Breadcrumbs: " '~*match-breadcrumbs*)))
-        `(throw (error (str "No match found."))))
+        `(throw
+           (error (str "No match found. " 
+                    "Followed " ~(count *match-breadcrumbs*)  " branches."
+                    " Breadcrumbs: " '~*match-breadcrumbs*)))
+        `(throw
+           (error (str "No match found."))))
       (backtrack-expr))))
 
 (defn fail-node []
@@ -437,28 +444,37 @@
 (defrecord SwitchNode [occurrence cases default]
   INodeCompile
   (n-to-clj [this]
-    (let [clauses (doall (mapcat (partial apply dag-clause-to-clj occurrence) cases))
+    (let [clauses (doall
+                    (mapcat (partial apply dag-clause-to-clj occurrence)
+                      cases))
           bind-expr (-> occurrence meta :bind-expr)
-          cond-expr (if *recur-present*
-                      (doall
-                        (concat
-                          `(cond ~@clauses)
-                          `(:else ~(n-to-clj default))))
-                      (doall
-                        (concat
-                          `(cond ~@clauses)
-                          `(:else
-                             ~(if @*backtrack-with-errors*
-                                `(throw
-                                   (Exception. (str "Could not match" ~occurrence)))
-                                (backtrack-expr))))))]
+          cond-expr
+          (if *recur-present*
+            (doall
+              (concat
+                `(cond ~@clauses)
+                `(:else ~(n-to-clj default))))
+            (doall
+              (concat
+                `(cond ~@clauses)
+                `(:else
+                   ~(if @*backtrack-with-errors*
+                      `(throw
+                         (Exception. (str "Could not match" ~occurrence)))
+                      (backtrack-expr))))))]
       (if *recur-present*
         (if bind-expr
-          `~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+          `~(doall
+              (concat
+                `(let [~occurrence ~bind-expr])
+                (list cond-expr)))
           `~cond-expr)
         (if bind-expr
           `(try
-             ~(doall (concat `(let [~occurrence ~bind-expr]) (list cond-expr)))
+             ~(doall
+                (concat
+                  `(let [~occurrence ~bind-expr])
+                  (list cond-expr)))
              ~(catch-error (n-to-clj default)))
           `(try
              ~cond-expr
@@ -635,8 +651,8 @@
 ;; -----------------------------------------------------------------------------
 ;; # Compilation Cases
 ;;
-;; These are analogous to Maranget's Compilation Scheme on page 4, respectively
-;; case 1, 2, 2 (also), 3a and 3b.
+;; These are analogous to Maranget's Compilation Scheme on page 4,
+;; respectively case 1, 2, 2 (also), 3a and 3b.
 ;;
 
 (defn empty-rows-case 
@@ -673,8 +689,8 @@
     matrix (pseudo-patterns matrix col)))
 
 (defn first-column-chosen-case 
-  "Case 3a: The first column is chosen. Compute and return a switch/bind node
-  with a default matrix case"
+  "Case 3a: The first column is chosen. Compute and return a
+  switch/bind node with a default matrix case"
   [matrix col ocrs]
   (let [expanded (expand-matrix matrix col)
         [S D B]  (matrix-splitter expanded)]
@@ -689,8 +705,8 @@
           (default-case D))))))
 
 (defn other-column-chosen-case 
-  "Case 3b: A column other than the first is chosen. Swap column col with the first column
-  and compile the result"
+  "Case 3b: A column other than the first is chosen. Swap column 
+col with the first column and compile the result"
   [matrix col]
   (compile (swap matrix col)))
 
@@ -852,9 +868,8 @@
 ;; -----------------------------------------------------------------------------
 ;; # Seq Pattern
 ;;
-;; A Seq Pattern is intended for matching `seq`s. 
-;; They are split into multiple patterns, testing each element of the seq in order.
-;;
+;; A Seq Pattern is intended for matching `seq`s.  They are split into
+;; multiple patterns, testing each element of the seq in order.
 
 (declare seq-pattern? rest-pattern? seq-pattern)
 
@@ -1347,9 +1362,9 @@
 ;; -----------------------------------------------------------------------------
 ;; Pseudo-patterns
 ;;
-;; Pseudo-patterns like OrPatterns are not real patterns. OrPatterns are much
-;; like a macro, they just expands into a simpler form. This expansion is
-;; dealt with specially in first-column-chosen-case.
+;; Pseudo-patterns like OrPatterns are not real patterns. OrPatterns
+;; are much like a macro, they just expands into a simpler form. This
+;; expansion is dealt with specially in first-column-chosen-case.
 
 (defmulti pseudo-pattern? type)
 
@@ -1533,9 +1548,10 @@
 ;; # Interface
 
 (defmulti to-source 
-  "Returns a Clojure form that, when executed, is truthy if the pattern matches
-  the occurrence. Dispatches on the `type` of the pattern. For instance, a literal pattern 
-  might return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match."
+  "Returns a Clojure form that, when executed, is truthy if the
+  pattern matches the occurrence. Dispatches on the `type` of the
+  pattern. For instance, a literal pattern might return `(= ~(:pattern
+  pattern) ~ocr)`, using `=` to test for a match."
   (fn [pattern ocr] (type pattern)))
 
 (defmulti emit-pattern 
@@ -1651,7 +1667,9 @@
         "Valid syntax: "
         (vec
           (remove #(= % :default)
-            (keys (.getMethodTable ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
+            (keys
+              (.getMethodTable
+                ^clojure.lang.MultiFn emit-pattern-for-syntax))))))))
 
 
 (let [void (Object.)
@@ -1679,9 +1697,10 @@
       :else pattern)))
 
  (defn group-keywords 
-   "Returns a pattern with pattern-keywords (:when and :as) properly grouped.  
-    The original pattern may use the 'flattened' syntax.  For example, a 'flattened' 
-    pattern row like [a b :when even?] is grouped as [a (b :when even?)]."
+   "Returns a pattern with pattern-keywords (:when and :as) properly
+    grouped.  The original pattern may use the 'flattened' syntax.
+    For example, a 'flattened' pattern row like [a b :when even?] is
+    grouped as [a (b :when even?)]."
   [pattern]
   (if (vector? pattern) (regroup-keywords pattern) pattern))
 
@@ -1829,7 +1848,11 @@
                  (conj (vec (butlast cs)) [last-match a])
                  ;; TODO: throw an exception if :else line not provided - David
                  (if default
-                   (conj (vec cs) [last-match `(throw (IllegalArgumentException. (str "No matching clause: " ~@(interpose " " vars))))])
+                   (conj (vec cs)
+                     [last-match
+                      `(throw
+                         (IllegalArgumentException.
+                           (str "No matching clause: " ~@(interpose " " vars))))])
                    cs)))]
       (pattern-matrix
         (vec (map #(apply to-pattern-row %) cs))
