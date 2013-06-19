@@ -1,3 +1,16 @@
+From 0.2.0-beta2 to 0.2.0-beta3
+
+Fixes
+---
+* MATCH-73: irrelevant bindings at leaf nodes
+* MATCH-71: non-optimal decision trees for map patterns
+
+Enhancements
+---
+* Optimize literal matching, don't backtrack just test
+
+====
+
 From 0.2.0-beta1 to 0.2.0-beta2
 ====
 
