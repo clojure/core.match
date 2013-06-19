@@ -101,10 +101,7 @@
     (.valAt this k not-found)))
 
 (defn val-at*
-  ([m k] (let [val (val-at m k ::not-found)]
-           (if (= val ::not-found)
-             (throw backtrack)
-             val)))
+  ([m k] (val-at m k ::not-found))
   ([m k not-found] (val-at m k not-found)))
 
 (defn val-at-expr [& args]
@@ -1575,6 +1572,10 @@ col with the first column and compile the result"
 
 (defmethod groupable? [PredicatePattern PredicatePattern]
   [a b] (= (:gs a) (:gs b)))
+
+(defmethod groupable? [MapPattern MapPattern]
+  [a b]
+  (= (-> a meta :only) (-> b meta :only)))
 
 (defmethod groupable? [OrPattern OrPattern]
   [a b]
