@@ -616,16 +616,56 @@
         [S D D])
       [S D])))
 
+(defn group-rows [cs rows]
+  (reduce
+    (fn [res row]
+      (let [[c rows] (peek res)
+             c'       (first row)]
+        (if (groupable? c c')
+          (conj (pop res) [c (conj rows row)])
+          (conj res [c' [row]]))))
+    [[(first cs) [(first rows)]]] (rest rows)))
+
+(declare literal-pattern?)
+
+(defn non-local-literal-pattern? [p]
+  (and (literal-pattern? p)
+       (not (-> p :l meta :local))))
+
+(defn literal-case-matrix-splitter [matrix]
+  (let [ocrs  (occurrences matrix)
+        rows  (rows matrix)
+        lrows (take-while
+                #(non-local-literal-pattern? (first %))
+                rows)
+        S     (->> lrows
+                (group-rows (map first lrows))
+                (map (fn [[c rows]]
+                       [c (pattern-matrix rows ocrs)]))
+                vec)
+        D     (pattern-matrix (drop (count lrows) rows) ocrs)]
+    (if *recur-present*
+      (if (and (empty-matrix? D) *recur-backtrack*)
+        [S *recur-backtrack* *recur-backtrack*]
+        [S D D])
+      [S D])))
+
 (defn default-case [matrix]
   (if-not (empty-matrix? matrix)
     (compile matrix)
     (fail-node)))
 
 (defn cases [matrix]
-  (let [c (ffirst (rows matrix))]
-    [[c (-> matrix
-          (specialize c)
-          compile)]]))
+  (if (vector? matrix)
+    ;; grouped literal case
+    (->> matrix
+      (map (fn [[c m]]
+             [c (-> m (specialize c) compile)]))
+      vec)
+    ;; normal case
+    (let [rows (rows matrix)
+          c    (ffirst rows)]
+      [[c (-> matrix (specialize c) compile)]])))
 
 (defn expression? [ocr]
   (contains? (meta ocr) :ocr-expr))
@@ -688,12 +728,19 @@
       (specialize matrix p))
     matrix (pseudo-patterns matrix col)))
 
+(defn split-matrix [matrix]
+  (if (non-local-literal-pattern? (ffirst (rows matrix)))
+    ;; literal testing based on equality can do w/o
+    ;; backtracking for all adjacent literal ctors in a column
+    (literal-case-matrix-splitter matrix)
+    (matrix-splitter matrix)))
+
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a
   switch/bind node with a default matrix case"
   [matrix col ocrs]
   (let [expanded (expand-matrix matrix col)
-        [S D B]  (matrix-splitter expanded)]
+        [S D B]  (split-matrix expanded)]
     (if-not *recur-present*
       (switch-or-bind-node col ocrs
         (cases S)
@@ -1596,7 +1643,7 @@ col with the first column and compile the result"
 
 (defmethod emit-pattern clojure.lang.Symbol
   [pat]
-  (if (get *locals* pat)
+  (if (not= (get *locals* pat ::not-found) ::not-found)
     (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
     (wildcard-pattern pat)))
 
