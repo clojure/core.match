@@ -620,7 +620,7 @@
   (reduce
     (fn [res row]
       (let [[c rows] (peek res)
-             c'       (first row)]
+             c'      (first row)]
         (if (groupable? c c')
           (conj (pop res) [c (conj rows row)])
           (conj res [c' [row]]))))
