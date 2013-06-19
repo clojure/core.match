@@ -600,12 +600,12 @@
         [S D D])
       [S D])))
 
-(defn default-matrix [matrix]
+(defn default-case [matrix]
   (if-not (empty-matrix? matrix)
     (compile matrix)
     (fail-node)))
 
-(defn specialized-matrix [matrix]
+(defn cases [matrix]
   (let [c (ffirst (rows matrix))]
     [[c (-> matrix
           (specialize c)
@@ -680,13 +680,13 @@
         [S D B]  (matrix-splitter expanded)]
     (if-not *recur-present*
       (switch-or-bind-node col ocrs
-        (specialized-matrix S)
-        (default-matrix D))
+        (cases S)
+        (default-case D))
       (switch-or-bind-node col ocrs
         (binding [*recur-backtrack* B]
-          (specialized-matrix S))
+          (cases S))
         (binding [*recur-backtrack* nil]
-          (default-matrix D))))))
+          (default-case D))))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column col with the first column
