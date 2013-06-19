@@ -114,3 +114,10 @@
         M'' (specialize M)]
     (is (= M' M''))))
 
+(deftest test-local-pattern-1
+  (let [M  (binding [*locals* '{a nil}]
+             (build-matrix [1 2]
+               [1 3] :a0
+               [a 2] :a1
+               :else :a2))]
+    (is (= (first (nth (rows M) 1)) (literal-pattern 'a)))))
