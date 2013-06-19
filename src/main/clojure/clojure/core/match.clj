@@ -527,11 +527,10 @@
 
 ;; Returns bindings usable by leaf-node
 (defn row-bindings [f ocrs]
-  (let [ps (:ps f)
-        wc-syms (map :sym ps)
-        wc-bindings (map vector wc-syms
-                      (map leaf-bind-expr ocrs))]
-    (concat (:bindings f) wc-bindings)))
+  (concat (:bindings f)
+    (->> (map vector (:ps f) ocrs)
+      (filter (fn [[p ocr]] (named-wildcard-pattern? p)))
+      (map (fn [[p ocr]] [(:sym p) (leaf-bind-expr ocr)])))))
 
 (defn existential-pattern? [x]
   (instance? IExistentialPattern x))
@@ -856,8 +855,7 @@ col with the first column and compile the result"
 ;; See clojure.lang.Symbol dispatch for `emit-pattern` 
 
 (defn named-wildcard-pattern? [x]
-  (when (instance? WildcardPattern x)
-    (not= (:sym x) '_)))
+  (and (instance? WildcardPattern x) (:named x)))
 
 (defmethod print-method WildcardPattern [p ^Writer writer]
   (.write writer (str "<WildcardPattern: " (:sym p) ">")))
