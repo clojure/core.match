@@ -1,6 +1,8 @@
 (defproject org.clojure/core.match "0.2.0-beta3"
   :description "Optimized pattern matching and predicate dispatch for Clojure"
 
+  :jvm-opts ^:replace ["-Xmx512m" "-server"]
+
   :test-paths ["src/test/clojure"]
   :source-paths ["src/main/clojure"]
 
