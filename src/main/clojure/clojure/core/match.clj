@@ -535,20 +535,23 @@
   (or (wildcard-pattern? x)
       (existential-pattern? x)))
 
+(defn constructors-above? [pm i j]
+  (every?
+    (comp not wildcard-or-existential?)
+    (take j (column pm i))))
+
+;; based on paper we used to check the following
+;; (wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
+;; IMPORTANT NOTE: this calculation is very very slow,
+;; we should look at this more closely - David
+
 (defn pattern-score [pm i j]
   (let [p (pattern-at pm i j)]
     (cond
-      (constructor? p)
-      (let [cs (take j (column pm i))]
-        (if (every? (comp not wildcard-or-existential?) cs)
-          (if-not (existential-pattern? p)
-            2
-            1)
-           0))
-      ;;(wildcard-pattern? p) (not (useful? (drop-nth pm i) j))
-      ;;IMPORTANT NOTE: this calculation is very very slow,
-      ;;we should look at this more closely - David
-      :else 0)))
+      (or (wildcard-pattern? p)
+          (not (constructors-above? pm i j))) 0
+      (existential-pattern? p) 1
+      :else 2)))
 
 ;; DEAD CODE for now - David
 ;; (defn useful? [pm j]
