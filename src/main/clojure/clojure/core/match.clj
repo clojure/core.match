@@ -1865,7 +1865,7 @@ col with the first column and compile the result"
   ([vars clauses default]
     (let [cs (partition 2 clauses)
           cs (let [[p a] (last cs)
-                   last-match (vec (map (fn [_] '_) vars))]
+                   last-match (vec (repeat (count vars) '_))]
                (if (= :else p)
                  (conj (vec (butlast cs)) [last-match a])
                  ;; TODO: throw an exception if :else line not provided - David
