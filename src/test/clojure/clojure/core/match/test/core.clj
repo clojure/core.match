@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [compile])
   (:use clojure.core.match.protocols
         clojure.core.match
+        clojure.core.match.array
         clojure.core.match.debug
         clojure.core.match.regex)
   (:use [clojure.test]))
@@ -538,6 +539,15 @@
                    [:black a x [:red b y [:red c z d]]])] :balance
              :else :valid))
         :balance)))
+
+(deftest vector-pattern-int-array-1
+  (is (= (let [x (int-array [1 2 3])]
+           (match [^ints x]
+             [[_ _ 2]] :a0
+             [[1 1 3]] :a1
+             [[1 2 3]] :a2
+             :else :a3))
+          :a2)))
 
 (deftest vector-pattern-rest-1
   (is (= (let [v [1 2 3 4]]
