@@ -70,6 +70,7 @@
   `(throw clojure.core.match/backtrack))
 
 (def ^{:dynamic true} *recur-backtrack* nil)
+(def ^{:dynamic true} *root* true)
 
 (defn warn [msg]
   (if (not @*warned*)
@@ -651,14 +652,12 @@
           [ocr ocr])))
     ocrs))
 
-(defn switch-or-bind-node [col ocrs clauses default]
-  (if (some expression? ocrs)
-    (let [bs   (bind-variables ocrs)
-          ocr  (ocrs col)
-          node (switch-node ocr clauses default)]
-      (bind-node bs node))
-    (let [ocr (ocrs col)]
-      (switch-node ocr clauses default))))
+(defn root-bind-node [matrix]
+  (let [ocrs (occurrences matrix)
+        node (compile matrix)]
+    (if (some expression? ocrs)
+      (bind-node (bind-variables ocrs) node)
+      node)))
 
 ;; -----------------------------------------------------------------------------
 ;; # Compilation Cases
@@ -688,11 +687,8 @@
   [rows ocrs]
   (let [f (first rows)
         a (:action f)
-        bs (row-bindings f ocrs)
-        node (leaf-node a bs)]
-    (if (some expression? ocrs)
-      (bind-node (bind-variables ocrs) node)
-      node)))
+        bs (row-bindings f ocrs)]
+    (leaf-node a bs)))
 
 (defn expand-matrix [matrix col]
   (reduce
@@ -714,10 +710,10 @@
   (let [expanded (expand-matrix matrix col)
         [S D B]  (split-matrix expanded)]
     (if-not *recur-present*
-      (switch-or-bind-node col ocrs
+      (switch-node (ocrs col)
         (cases S)
         (default-case D))
-      (switch-or-bind-node col ocrs
+      (switch-node (ocrs col)
         (binding [*recur-backtrack* B]
           (cases S))
         (binding [*recur-backtrack* nil]
@@ -736,6 +732,10 @@ col with the first column and compile the result"
 
 (defn compile [{:keys [rows ocrs] :as pm}]
   (cond
+    *root*
+    (binding [*root* false]
+      (root-bind-node pm))
+
     (empty? rows)
     (empty-rows-case)
 

@@ -827,3 +827,11 @@
              [([h & t] :seq)] [h t]
              [_] :a1))
          :a1)))
+
+(deftest match-61
+  (is (= (let [q '(a) y '(b) z '(c)]
+           (match [q (seq y) z]
+             [([_] :seq) _ _] 'a
+             [_ _ _] 'b))
+         'a)))
+
