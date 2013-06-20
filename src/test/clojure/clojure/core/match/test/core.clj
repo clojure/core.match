@@ -537,8 +537,40 @@
                    [:black [:red a x [:red b y c]] z d]
                    [:black a x [:red [:red b y c] z d]]
                    [:black a x [:red b y [:red c z d]]])] :balance
-             :else :valid))
-        :balance)))
+             :else :balanced))
+        :balance))
+  (is (= (let [n [:black [:red 1 2 [:red 3 4 5]] 6 7]]
+           (match [n]
+             [(:or [:black [:red [:red a x b] y c] z d]
+                   [:black [:red a x [:red b y c]] z d]
+                   [:black a x [:red [:red b y c] z d]]
+                   [:black a x [:red b y [:red c z d]]])] :balance
+             :else :balanced))
+        :balance))
+  (is (= (let [n [:black 1 2 [:red [:red 3 4 5] 6 7]]]
+           (match [n]
+             [(:or [:black [:red [:red a x b] y c] z d]
+                   [:black [:red a x [:red b y c]] z d]
+                   [:black a x [:red [:red b y c] z d]]
+                   [:black a x [:red b y [:red c z d]]])] :balance
+             :else :balanced))
+        :balance))
+  (is (= (let [n [:black 1 2 [:red 3 4 [:red 5 6 7]]]]
+           (match [n]
+             [(:or [:black [:red [:red a x b] y c] z d]
+                   [:black [:red a x [:red b y c]] z d]
+                   [:black a x [:red [:red b y c] z d]]
+                   [:black a x [:red b y [:red c z d]]])] :balance
+             :else :balanced))
+        :balance))
+  (is (= (let [n [:black 1 [:red 2 3 [:red 4 5 6]] 7]]
+           (match [n]
+             [(:or [:black [:red [:red a x b] y c] z d]
+                   [:black [:red a x [:red b y c]] z d]
+                   [:black a x [:red [:red b y c] z d]]
+                   [:black a x [:red b y [:red c z d]]])] :balance
+             :else :balanced))
+        :balanced)))
 
 (deftest vector-pattern-int-array-1
   (is (= (let [x (int-array [1 2 3])]
