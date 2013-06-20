@@ -46,14 +46,6 @@
        :doc "Enable syntax check of match macros"} 
   *syntax-check* (atom true))
 
-(def ^{:dynamic true
-       :doc "Enable breadcrumb diagnostics with fail nodes"} 
-  *breadcrumbs* (atom true))
-
-(def ^{:dynamic true
-       :doc "Enable backtracking diagnostics"}
-  *backtrack-with-errors* (atom false))
-
 (def ^{:dynamic true}
   *clojurescript* false)
 
@@ -67,13 +59,9 @@
              type-hinted primitive array operations"}
   *vector-type* ::vector)
 
-(def ^{:dynamic true} *match-breadcrumbs* [])
 (def ^{:dynamic true
        :doc "In the presence of recur we cannot apply code size optimizations"}
   *recur-present* false)
-
-(defn set-breadcrumbs! [b]
-  (reset! *breadcrumbs* b))
 
 (def ^{:doc "Pre-allocated exception used for backtracing"}
   backtrack (Exception. "Could not find match."))
@@ -388,13 +376,8 @@
   INodeCompile
   (n-to-clj [this]
     (if *recur-present*
-      (if @*breadcrumbs*
-        `(throw
-           (error (str "No match found. " 
-                    "Followed " ~(count *match-breadcrumbs*)  " branches."
-                    " Breadcrumbs: " '~*match-breadcrumbs*)))
-        `(throw
-           (error (str "No match found."))))
+      `(throw
+         (error (str "No match found.")))
       (backtrack-expr))))
 
 (defn fail-node []
@@ -421,10 +404,7 @@
   (let [test (if (instance? clojure.core.match.protocols.IPatternCompile pattern)
                (to-source* pattern occurrence) 
                (to-source pattern occurrence))]
-    (if @*breadcrumbs*
-      (binding [*match-breadcrumbs* (conj *match-breadcrumbs* test)]
-        [test (n-to-clj action)])
-      [test (n-to-clj action)])))
+    [test (n-to-clj action)]))
 
 (defn catch-error [& body]
   (let [err-sym (if *clojurescript* 'js/Error 'Exception)]
@@ -451,10 +431,7 @@
               (concat
                 `(cond ~@clauses)
                 `(:else
-                   ~(if @*backtrack-with-errors*
-                      `(throw
-                         (Exception. (str "Could not match" ~occurrence)))
-                      (backtrack-expr))))))]
+                   ~(backtrack-expr)))))]
       (if *recur-present*
         (if bind-expr
           `~(doall
