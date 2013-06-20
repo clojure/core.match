@@ -1239,6 +1239,15 @@ col with the first column and compile the result"
       (map (partial vector-pattern-ocr-sym env) (range min-size))
       (drop-nth ocrs 0))))
 
+(defn array-tag [x]
+  (get '{bytes   ::array
+         shorts  ::shorts
+         ints    ::ints
+         longs   ::longs
+         doubles ::doubles
+         objects ::objects}
+    (-> x meta :tag)))
+
 ;; v - the patterns
 ;; t - the type, for optimizing via specialization
 ;; size - size of the pattern if known
@@ -1272,11 +1281,12 @@ col with the first column and compile the result"
 
   IPatternCompile
   (to-source* [this ocr]
-    (if (check-size? t)
-      (if rest?
-        (test-with-min-size-inline t ocr size)
-        (test-with-size-inline t ocr size))
-      (test-inline t ocr)))
+    (let [t (or (array-tag ocr) t)]
+      (if (check-size? t)
+        (if rest?
+          (test-with-min-size-inline t ocr size)
+          (test-with-size-inline t ocr size))
+        (test-inline t ocr))))
 
   IContainsRestPattern
   (contains-rest-pattern? [_] rest?)
@@ -1304,7 +1314,8 @@ col with the first column and compile the result"
                 :pat  this}
           [rest? min-size] (calc-rest?-and-min-size rows env)
           env' (assoc env
-                 :rest? rest? :min-size min-size :tag (:t this))
+                 :rest? rest? :min-size min-size
+                 :tag (or (array-tag focr) (:t this)))
           nrows (specialize-vector-pattern-matrix rows env')
           nocrs (vector-pattern-matrix-ocrs ocrs env')]
       (pattern-matrix nrows nocrs))))

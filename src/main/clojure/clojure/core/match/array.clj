@@ -9,29 +9,29 @@
 ;; =============================================================================
 ;; Shared
 
-(derive ::array ::clojure.core.match/vector)
-(defmethod nth-inline ::array
+(derive ::m/array ::m/vector)
+(defmethod nth-inline ::m/array
   [t ocr i]
   `(aget ~ocr ~i))
-(defmethod count-inline ::array
+(defmethod count-inline ::m/array
   [t ocr]
   `(alength ~ocr))
-(defmethod subvec-inline ::array
+(defmethod subvec-inline ::m/array
   ([_ ocr start] ocr)
   ([_ ocr start end] ocr))
 
 ;; =============================================================================
 ;; ints
 
-(derive ::ints ::array)
-(defmethod tag ::ints
+(derive ::m/ints ::m/array)
+(defmethod tag ::m/ints
   [_] "[I")
 
 ;; =============================================================================
 ;; objects
 
-(derive ::objects ::array)
-(defmethod tag ::objects
+(derive ::m/objects ::m/array)
+(defmethod tag ::m/objects
   [_] "[Ljava.lang.Object;")
 
 (comment
@@ -42,32 +42,40 @@
       [[1 1 3]] :a1
       [[1 2 3]] :a2
       :else :a3))
+
+  ;; FIXME
+  (let [x (int-array [1 2 3 4])]
+    (match [^ints x]
+      [[_ _ 2 & _]] :a0
+      [[1 1 3 & _]] :a1
+      [[1 2 3 & _]] :a2
+      :else :a3))
   
   (let [x (int-array [1 2 3])]
     (match [x]
-      [([_ _ 2] ::ints)] :a0
-      [([1 1 3] ::ints)] :a1
-      [([1 2 3] ::ints)] :a2
+      [([_ _ 2] ::m/ints)] :a0
+      [([1 1 3] ::m/ints)] :a1
+      [([1 2 3] ::m/ints)] :a2
       :else :a3))
   
-  ;; 60ms
+  ;; ~100ms
   (let [x (int-array [1 2 3])]
-    (dotimes [_ 10]
+    (dotimes [_ 5]
       (time
-        (dotimes [_ 1e6]
-          (match [x]
-            [([_ _ 2] ::ints)] :a0
-            [([1 1 3] ::ints)] :a1
-            [([1 2 3] ::ints)] :a2)))))
+        (dotimes [_ 1e7]
+          (match [^ints x]
+            [[_ _ 2]] :a0
+            [[1 1 3]] :a1
+            [[1 2 3]] :a2)))))
 
   ;; offsets
   ;; FIXME: needs to account for offset - David
   (let [x (int-array [1 1 2 3])
         o 1]
     (match [x]
-      [([_ _ 2] ::ints :offset o)] :a0
-      [([1 1 3] ::ints :offset o)] :a1
-      [([1 2 3] ::ints :offset o)] :a2))
+      [([_ _ 2] ::m/ints :offset o)] :a0
+      [([1 1 3] ::m/ints :offset o)] :a1
+      [([1 2 3] ::m/ints :offset o)] :a2))
 
   ;; 80ms
   (let [x (int-array [1 1 2 3])
@@ -76,9 +84,9 @@
       (time
        (dotimes [_ 1e7]
          (match [x]
-           [([_ _ 2] ::ints :offset o)] :a0
-           [([1 1 3] ::ints :offset o)] :a1
-           [([1 2 3] ::ints :offset o)] :a2)))))
+           [([_ _ 2] ::m/ints :offset o)] :a0
+           [([1 1 3] ::m/ints :offset o)] :a1
+           [([1 2 3] ::m/ints :offset o)] :a2)))))
 
   (do
     (set! *warn-on-reflection* true)
@@ -89,16 +97,16 @@
                 (repeat `(aset ~a)) (range (count vs)) vs)
          ~a))
     
-    (defn B ^objects [l v r]
+    (defn B [l v r]
       (let [^objects o (make-array Object 4)]
         (asets o [:black l v r])))
 
-    (defn R ^objects [l v r]
+    (defn R [l v r]
       (let [^objects o (make-array Object 4)]
         (asets o [:red l v r])))
     
     (defn balance-array [^objects node]
-      (matchv ::objects [node]
+      (match [node]
          [(:or [:black [:red [:red a x b] y c] z d]
                [:black [:red a x [:red b y c]] z d]
                [:black a x [:red [:red b y c] z d]]
@@ -106,13 +114,13 @@
          :else :balanced))
 
     ;; 200ms
-    (let [^objects node (B nil nil (R nil nil (R nil nil nil)))]
+    (let [node (B nil nil (R nil nil (R nil nil nil)))]
       (dotimes [_ 10]
         (time
          (dotimes [_ 1e7]
            (balance-array node)))))
 
-    #_(let [^objects node (B nil nil (R nil nil (B nil nil nil)))]
+    #_(let [node (B nil nil (R nil nil (B nil nil nil)))]
       (balance-array node))
     )
  )

@@ -1,25 +1,25 @@
 ;; WARNING: this namespace is experimental
 
-(ns clojure.core.match.bits
+(ns clojure.core.match.binary
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match :as m]))
 
-(derive ::bits ::clojure.core.match/vector)
+(derive ::m/binary ::m/vector)
 
-(defmethod check-size? ::bits
+(defmethod check-size? ::m/binary
   [_] false)
 
-(defmethod test-inline ::bits
+(defmethod test-inline ::m/binary
   [_ ocr] `(instance? Long ~ocr))
 
-(defmethod nth-inline ::bits
+(defmethod nth-inline ::m/binary
   [_ ocr i] `(bit-shift-right (bit-and ~ocr (bit-shift-left 1 ~i)) ~i))
 
 (comment
   (let [x 5]
     (match [x]
-      [([_ _ 1 1] ::bits)] :a0
-      [([1 0 1 _] ::bits)] :a1
+      [([_ _ 1 1] ::m/binary)] :a0
+      [([1 0 1 _] ::m/binary)] :a1
       :else :a2))
   
   (let [x 5]
@@ -27,8 +27,8 @@
       (time
        (dotimes [_ 1e7]
          (match [x]
-           [([_ _ 1 1] ::bits)] :a0
-           [([1 0 1 _] ::bits)] :a1
+           [([_ _ 1 1] ::m/binary)] :a0
+           [([1 0 1 _] ::m/binary)] :a1
            :else :a2)))))
   )
 
@@ -46,7 +46,7 @@
        (hdrchksum 16)
        (srcip 32)
        (destip 32)
-       & restdgram] ::bits)])
+       & restdgram] ::m/binary)])
   )
 
 ;; Erlang
