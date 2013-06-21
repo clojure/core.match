@@ -583,6 +583,15 @@
              :else :a3))
           :a2)))
 
+(deftest vector-pattern-object-array-1
+  (is (= (let [x (object-array [:foo :bar :baz])]
+           (match [^objects x]
+             [[_ _ :bar]] :a0
+             [[:foo :foo :bar]] :a1
+             [[:foo :bar :baz]] :a2
+             :else :a3))
+          :a2)))
+
 (deftest vector-pattern-rest-1
   (is (= (let [v [1 2 3 4]]
            (match [v]
