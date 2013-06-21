@@ -7,6 +7,8 @@
         clojure.core.match.regex)
   (:use [clojure.test]))
 
+(set! *warn-on-reflection* true)
+
 (deftest pattern-match-1
   (is (= (let [x true
                y true
