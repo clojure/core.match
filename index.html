@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
-    <title>clojure.core.match - Pattern match and predicate dispatch 0.2.0-alpha13 API documentation</title>
+    <title>clojure.core.match - Pattern match and predicate dispatch 0.2.0-beta4 API documentation</title>
     <link href="static/favicon.png" rel="icon" />
     <link href="static/favicon.png" rel="shortcut icon" />
     <link media="all" type="text/css" href="static/clojure.css" rel="stylesheet" />
@@ -25,7 +25,7 @@ namespace.
       <div id="leftcolumn"><div style="text-align: center;"></div>
 <div class="menu">
   <div class="WikiCustomNav WikiElement wiki">
-    <span class="toc-header"><span id="project-name">Pattern match and predicate dispatch</span> <span id="version">0.2.0-alpha13</span> API</span><br />
+    <span class="toc-header"><span id="project-name">Pattern match and predicate dispatch</span> <span id="version">0.2.0-beta4</span> API</span><br />
     <ul>
       <li><a class="wiki_link" href="index.html">Overview</a></li>
       <li><a class="wiki_link" href="api-index.html">API Index</a></li>
@@ -102,19 +102,10 @@ namespace.
   </div><div style="margin-left: 1em;" class="toc-section">
     <a href="#var-section" style="margin-top: 3px;">Vars and Functions</a>
     <div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/*backtrack-with-errors*">*backtrack-with-errors*</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/*breadcrumbs*">*breadcrumbs*</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/*recur-present*">*recur-present*</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/*syntax-check*">*syntax-check*</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/*trace*">*trace*</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/*vector-type*">*vector-type*</a>
@@ -171,9 +162,6 @@ namespace.
       <a class="toc-entry-anchor" href="#clojure.core.match/backtrack">backtrack</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/comparable?">comparable?</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/emit-matrix">emit-matrix</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
@@ -198,6 +186,9 @@ namespace.
       <a class="toc-entry-anchor" href="#clojure.core.match/group-keywords">group-keywords</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
+      <a class="toc-entry-anchor" href="#clojure.core.match/groupable?">groupable?</a>
+      
+    </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/map-&gt;BindNode">map-&gt;BindNode</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
@@ -219,16 +210,10 @@ namespace.
       <a class="toc-entry-anchor" href="#clojure.core.match/map-&gt;SwitchNode">map-&gt;SwitchNode</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/map-&gt;WildcardPattern">map-&gt;WildcardPattern</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/match">match</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/other-column-chosen-case">other-column-chosen-case</a>
-      
-    </div><div style="margin-left: 1em;" class="toc-entry">
-      <a class="toc-entry-anchor" href="#clojure.core.match/pattern-compare">pattern-compare</a>
       
     </div><div style="margin-left: 1em;" class="toc-entry">
       <a class="toc-entry-anchor" href="#clojure.core.match/process-vars">process-vars</a>
@@ -285,7 +270,7 @@ namespace.
 </div>
 </div>
                 <div id="content-tag"><h1 id="overview">API for <span id="clojure.core.match">clojure.core.match</span>
-  - <span id="header-project">Pattern match and predicate dispatch</span> <span id="header-version">0.2.0-alpha13</span><span id="header-status-block"> (<span id="header-status">in development</span>)</span>
+  - <span id="header-project">Pattern match and predicate dispatch</span> <span id="header-version">0.2.0-beta4</span><span id="header-status-block"> (<span id="header-status">in development</span>)</span>
   </h1>
 
 <br />Full namespace name: <span id="long-name">clojure.core.match</span>
@@ -440,11 +425,11 @@ namespace.
     <br />
     <hr />
     <h2 id="clojure.core.match/WildcardPattern">WildcardPattern</h2>
-    <span id="type-type">record</span><br />
+    <span id="type-type">type</span><br />
     <pre id="type-docstr"></pre>
-    Fields: <span id="type-fields">[sym]</span><br />
+    Fields: <span id="type-fields">[sym named _meta]</span><br />
     Protocols: <span id="type-protocols"></span><br />
-    Interfaces: <span id="type-interfaces">clojure.lang.IHashEq, clojure.lang.IKeywordLookup, clojure.lang.ILookup, clojure.lang.IObj, clojure.lang.IPersistentMap, java.io.Serializable, java.util.Map</span><br />
+    Interfaces: <span id="type-interfaces">clojure.lang.ILookup, clojure.lang.IObj</span><br />
   </div>
 </div>
 <div id="var-section">
@@ -453,33 +438,13 @@ namespace.
   <div id="var-entry">
     <br />
     <hr />
-    <h2 id="clojure.core.match/*backtrack-with-errors*">*backtrack-with-errors*</h2>
-    <span id="var-type">var</span><br />
-    <pre id="var-usage"></pre>
-    <pre id="var-docstr">Enable backtracking diagnostics</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L55" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
-    <h2 id="clojure.core.match/*breadcrumbs*">*breadcrumbs*</h2>
-    <span id="var-type">var</span><br />
-    <pre id="var-usage"></pre>
-    <pre id="var-docstr">Enable breadcrumb diagnostics with fail nodes</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L47" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
     <h2 id="clojure.core.match/*recur-present*">*recur-present*</h2>
     <span id="var-type">var</span><br />
     <pre id="var-usage"></pre>
     <pre id="var-docstr">In the presence of recur we cannot apply code size optimizations</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L73" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L62" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -489,29 +454,19 @@ namespace.
     <pre id="var-docstr">Enable syntax check of match macros</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L43" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
-    <h2 id="clojure.core.match/*trace*">*trace*</h2>
-    <span id="var-type">var</span><br />
-    <pre id="var-usage"></pre>
-    <pre id="var-docstr">Enable pattern compile time tracing</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L51" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L45" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
     <h2 id="clojure.core.match/*vector-type*">*vector-type*</h2>
     <span id="var-type">var</span><br />
     <pre id="var-usage"></pre>
-    <pre id="var-docstr">Default vector type. Can be rebound allowing emission of custom
-inline code for vector patterns, for example type-hinted primitive 
-array operations</pre>
+    <pre id="var-docstr">Default vector type. Can be rebound allowing emission of
+custom inline code for vector patterns, for example
+type-hinted primitive array operations</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L66" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L56" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -522,7 +477,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.BindNode.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L420" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L391" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -533,7 +488,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.FailNode.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L403" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L377" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -544,7 +499,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.GuardPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1421" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1424" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -555,7 +510,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.LeafNode.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L366" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L339" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -566,7 +521,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.LiteralPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L878" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L848" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -577,7 +532,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.MapKeyPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1027" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1018" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -588,7 +543,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.MapPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1128" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1120" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -599,7 +554,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.OrPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1355" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1355" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -610,7 +565,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.PatternMatrix.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L803" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L755" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -621,7 +576,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.PatternRow.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L271" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L233" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -632,7 +587,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.PredicatePattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1496" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1504" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -643,7 +598,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.RestPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1003" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L994" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -654,7 +609,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.SeqPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L953" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L938" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -665,7 +620,7 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.SwitchNode.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L451" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L419" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -676,18 +631,18 @@ array operations</pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.VectorPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1265" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1257" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
     <h2 id="clojure.core.match/-&gt;WildcardPattern">-&gt;WildcardPattern</h2>
     <span id="var-type">function</span><br />
-    <pre id="var-usage">Usage: (-&gt;WildcardPattern sym)
+    <pre id="var-usage">Usage: (-&gt;WildcardPattern sym named _meta)
 </pre>
     <pre id="var-docstr">Positional factory function for class clojure.core.match.WildcardPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L847" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L797" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -697,25 +652,14 @@ array operations</pre>
     <pre id="var-docstr">Pre-allocated exception used for backtracing</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L83" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
-    <h2 id="clojure.core.match/comparable?">comparable?</h2>
-    <span id="var-type">multimethod</span><br />
-    <pre id="var-usage">No usage documentation available</pre>
-    <pre id="var-docstr">Returns true if it is possible to tell at compile time whether two
-different versions of the same object can never match the same
-object.</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L252" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L66" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
     <h2 id="clojure.core.match/emit-matrix">emit-matrix</h2>
     <span id="var-type">function</span><br />
     <pre id="var-usage">Usage: (emit-matrix vars clauses)
+       (emit-matrix vars clauses default)
 </pre>
     <pre id="var-docstr">Take the list of vars and sequence of unprocessed clauses and
 return the pattern matrix. The pattern matrix contains the processed
@@ -724,7 +668,7 @@ a last match - :else if provided by the user or a default match that
 throws.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1893" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1869" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -736,7 +680,7 @@ on the class of its argument. For example, `[(:or 1 2) 2]` is dispatched
 as clojure.lang.IPersistentVector</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1619" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1591" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -748,7 +692,7 @@ on the first or second keyword in the list. For example, the pattern
 `(:or 1 ...) is dispatches as :or, and `(1 :as a)` is dispatched by :as.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1680" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1652" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -759,7 +703,7 @@ on the first or second keyword in the list. For example, the pattern
     <pre id="var-docstr">Case 1: If there are no pattern rows to match, then matching always fails</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L719" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L670" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -767,11 +711,11 @@ on the first or second keyword in the list. For example, the pattern
     <span id="var-type">function</span><br />
     <pre id="var-usage">Usage: (first-column-chosen-case matrix col ocrs)
 </pre>
-    <pre id="var-docstr">Case 3a: The first column is chosen. Compute and return a switch/bind node
-with a default matrix case</pre>
+    <pre id="var-docstr">Case 3a: The first column is chosen. Compute and return a
+switch/bind node with a default matrix case</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L754" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L707" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -783,7 +727,7 @@ with a default matrix case</pre>
 and yields the first action.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L725" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L675" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -795,7 +739,7 @@ and yields the first action.</pre>
 matching always succeeds and yields the first action.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L739" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L685" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -803,12 +747,24 @@ matching always succeeds and yields the first action.</pre>
     <span id="var-type">function</span><br />
     <pre id="var-usage">Usage: (group-keywords pattern)
 </pre>
-    <pre id="var-docstr">Returns a pattern with pattern-keywords (:when and :as) properly grouped.  
-The original pattern may use the 'flattened' syntax.  For example, a 'flattened' 
-pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
+    <pre id="var-docstr">Returns a pattern with pattern-keywords (:when and :as) properly
+grouped.  The original pattern may use the 'flattened' syntax.
+For example, a 'flattened' pattern row like [a b :when even?] is
+grouped as [a (b :when even?)].</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1759" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1733" id="var-source">Source</a>
+  </div><div id="var-entry">
+    <br />
+    <hr />
+    <h2 id="clojure.core.match/groupable?">groupable?</h2>
+    <span id="var-type">multimethod</span><br />
+    <pre id="var-usage">No usage documentation available</pre>
+    <pre id="var-docstr">Determine if two patterns may be grouped together for simultaneous
+testing.</pre>
+    
+    
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L215" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -819,7 +775,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.BindNode, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L420" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L391" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -830,7 +786,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.FailNode, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L403" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L377" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -841,7 +797,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.LeafNode, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L366" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L339" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -852,7 +808,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.MapKeyPattern, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1027" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1018" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -863,7 +819,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.PatternMatrix, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L803" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L755" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -874,7 +830,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.RestPattern, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1003" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L994" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -885,18 +841,7 @@ pattern row like [a b :when even?] is grouped as [a (b :when even?)].</pre>
     <pre id="var-docstr">Factory function for class clojure.core.match.SwitchNode, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L451" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
-    <h2 id="clojure.core.match/map-&gt;WildcardPattern">map-&gt;WildcardPattern</h2>
-    <span id="var-type">function</span><br />
-    <pre id="var-usage">Usage: (map-&gt;WildcardPattern m#)
-</pre>
-    <pre id="var-docstr">Factory function for class clojure.core.match.WildcardPattern, taking a map of keywords to field values.</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L847" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L419" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -917,7 +862,7 @@ Example:
     :else :default-answer))</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1936" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1919" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -925,21 +870,11 @@ Example:
     <span id="var-type">function</span><br />
     <pre id="var-usage">Usage: (other-column-chosen-case matrix col)
 </pre>
-    <pre id="var-docstr">Case 3b: A column other than the first is chosen. Swap column col with the first column
-and compile the result</pre>
+    <pre id="var-docstr">Case 3b: A column other than the first is chosen. Swap column 
+col with the first column and compile the result</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L772" id="var-source">Source</a>
-  </div><div id="var-entry">
-    <br />
-    <hr />
-    <h2 id="clojure.core.match/pattern-compare">pattern-compare</h2>
-    <span id="var-type">multimethod</span><br />
-    <pre id="var-usage">No usage documentation available</pre>
-    <pre id="var-docstr">Like `clojure.core/compare` but for comparing patterns</pre>
-    
-    
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L242" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L723" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -952,7 +887,7 @@ expression, create a var and annotate via metadata with the
 original expression.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1880" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1857" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -964,19 +899,20 @@ original expression.</pre>
 a pattern row of the processed pattern expression plus the action epxression.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1766" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1741" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
     <h2 id="clojure.core.match/to-source">to-source</h2>
     <span id="var-type">multimethod</span><br />
     <pre id="var-usage">No usage documentation available</pre>
-    <pre id="var-docstr">Returns a Clojure form that, when executed, is truthy if the pattern matches
-the occurrence. Dispatches on the `type` of the pattern. For instance, a literal pattern 
-might return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match.</pre>
+    <pre id="var-docstr">Returns a Clojure form that, when executed, is truthy if the
+pattern matches the occurrence. Dispatches on the `type` of the
+pattern. For instance, a literal pattern might return `(= ~(:pattern
+pattern) ~ocr)`, using `=` to test for a match.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1613" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1584" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -988,7 +924,7 @@ might return `(= ~(:pattern pattern) ~ocr)`, using `=` to test for a match.</pre
 set of duplicate wildcards.  The underbar _ is excluded from both.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/002b9cf659ad6ef28f58f79786b0807b6f7723c2/src/main/clojure/clojure/core/match.clj#L1773" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/59f6fbfad289bc6064b775fc9a5a6934658ee855/src/main/clojure/clojure/core/match.clj#L1748" id="var-source">Source</a>
   </div>
 </div>
 <br />
@@ -1103,7 +1039,7 @@ matched. Avoid extending this directly for Java Beans, see
     </div>
     
     
-    <a href="https://github.com/clojure/core.match/blob/a07c2e9620df5b9d331bd6c380d47c15bf7cd60d/src/main/clojure/clojure/core/match/protocols.clj#L12" id="proto-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/e1fb4c67f1f76afc8bd74c342c96015407ea51f7/src/main/clojure/clojure/core/match/protocols.clj#L12" id="proto-source">Source</a>
   </div>
 </div>
 
@@ -1142,7 +1078,7 @@ matched. Avoid extending this directly for Java Beans, see
     <pre id="var-docstr">Positional factory function for class clojure.core.match.regex.RegexPattern.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj#L11" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/4f89cd06670a51ed533cd143d7f8fcba05f765db/src/main/clojure/clojure/core/match/regex.clj#L10" id="var-source">Source</a>
   </div><div id="var-entry">
     <br />
     <hr />
@@ -1153,7 +1089,7 @@ matched. Avoid extending this directly for Java Beans, see
     <pre id="var-docstr">Factory function for class clojure.core.match.regex.RegexPattern, taking a map of keywords to field values.</pre>
     
     
-    <a href="https://github.com/clojure/core.match/blob/17075bb1cd0cbdab080fbc98691080a5f07f88fc/src/main/clojure/clojure/core/match/regex.clj#L11" id="var-source">Source</a>
+    <a href="https://github.com/clojure/core.match/blob/4f89cd06670a51ed533cd143d7f8fcba05f765db/src/main/clojure/clojure/core/match/regex.clj#L10" id="var-source">Source</a>
   </div>
 </div>
 
