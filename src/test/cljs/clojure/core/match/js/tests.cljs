@@ -1,7 +1,7 @@
 (ns clojure.core.match.js.tests
-  (:use-macros [clojure.core.match.js :only [match]])
+  (:use-macros [clojure.core.match.js :only [match matchv asets]])
   (:require-macros [clojure.core.match.array])
-  (:require [clojure.core.match]))
+  (:require [clojure.core.match :as m]))
 
 (defn js-print [& args]
   (if (js* "typeof console != 'undefined'")
@@ -753,6 +753,35 @@
          [[:foo :bar :baz]] :a2
          :else :a3))
     :a2))
+
+(defn B [l v r]
+  (let [o (make-array 4)]
+    (asets o [:black l v r])))
+
+(defn R [l v r]
+  (let [o (make-array 4)]
+    (asets o [:red l v r])))
+
+(defn balance-array [node]
+  (matchv ::m/objects [node]
+    [(:or [:black [:red [:red a x b] y c] z d]
+          [:black [:red a x [:red b y c]] z d]
+          [:black a x [:red [:red b y c] z d]]
+          [:black a x [:red b y [:red c z d]]])] :balance
+    :else :balanced))
+
+(assert
+  (= (let [node (B nil nil (R nil nil (R nil nil nil)))]
+       (balance-array node))
+     :balance))
+
+(println "benchmarking array matching")
+
+(let [node (B nil nil (R nil nil (R nil nil nil)))]
+  (dotimes [_ 5]
+    (time
+      (dotimes [_ 1e6]
+        (balance-array node)))))
 
 ;; =============================================================================
 ;; Tickets

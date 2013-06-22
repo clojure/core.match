@@ -20,5 +20,5 @@
                 :optimizations :simple}}
     {:id "test-adv"
      :source-paths ["src/test/cljs"]
-     :compiler {:output-to "out/test_adv.js"
+     :compiler {:output-to "out/test.js"
                 :optimizations :advanced}}]})
