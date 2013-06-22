@@ -1,5 +1,6 @@
 (ns clojure.core.match.js.tests
   (:use-macros [clojure.core.match.js :only [match]])
+  (:require-macros [clojure.core.match.array])
   (:require [clojure.core.match]))
 
 (defn js-print [& args]
@@ -731,6 +732,27 @@
        [{:year (:or 2010 2011) :month b}] b
        :else :wrong)
     10))
+
+;; =============================================================================
+;; Arrays
+
+(assert
+  (= (let [x (int-array [1 2 3])]
+       (match [^ints x]
+         [[_ _ 2]] :a0
+         [[1 1 3]] :a1
+         [[1 2 3]] :a2
+         :else :a3))
+    :a2))
+
+(assert
+  (= (let [x (object-array [:foo :bar :baz])]
+       (match [^objects x]
+         [[_ _ :bar]] :a0
+         [[:foo :foo :bar]] :a1
+         [[:foo :bar :baz]] :a2
+         :else :a3))
+    :a2))
 
 ;; =============================================================================
 ;; Tickets

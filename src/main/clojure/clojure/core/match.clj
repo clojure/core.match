@@ -148,9 +148,10 @@
             (string? the-tag) (Class/forName the-tag)
             (symbol? the-tag) (Class/forName (str the-tag))
             :else (throw (Error. (str "Unsupported tag type" the-tag))))]
-    (if (= t ::vector)
-      `(vector? ~ocr)
-      `(instance? ~c ~ocr))))
+    (cond
+      (= t ::vector) `(vector? ~ocr)
+      (and (.isArray ^Class c) *clojurescript*) `(cljs.core/array? ~ocr)
+      :else `(instance? ~c ~ocr))))
 
 (defmethod test-with-size-inline ::vector
   [t ocr size]
