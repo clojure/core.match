@@ -711,7 +711,9 @@
         (cases S)
         (default-case D))
       (switch-node (ocrs col)
-        (binding [*recur-backtrack* B]
+        (if-not (identical? B *recur-backtrack*)
+          (binding [*recur-backtrack* B]
+            (cases S))
           (cases S))
         (binding [*recur-backtrack* nil]
           (default-case D))))))
