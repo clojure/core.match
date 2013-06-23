@@ -578,17 +578,20 @@
 
 (declare pattern-matrix compile)
 
+(defn return-split [S D]
+  (if *recur-present*
+    (if (and (empty-matrix? D) *recur-backtrack*)
+      [S *recur-backtrack* *recur-backtrack*]
+      [S D D])
+    [S D]))
+
 (defn matrix-splitter [matrix]
   (let [rows (rows matrix)
         n    (count (first (column-splitter (map first rows))))
         ocrs (occurrences matrix)
         S    (pattern-matrix (take n rows) ocrs)
         D    (pattern-matrix (drop n rows) ocrs)]
-    (if *recur-present*
-      (if (and (empty-matrix? D) *recur-backtrack*)
-        [S *recur-backtrack* *recur-backtrack*]
-        [S D D])
-      [S D])))
+    (return-split S D)))
 
 (defn group-rows [cs rows]
   (reduce
@@ -618,11 +621,7 @@
                        [c (pattern-matrix rows ocrs)]))
                 vec)
         D     (pattern-matrix (drop (count lrows) rows) ocrs)]
-    (if *recur-present*
-      (if (and (empty-matrix? D) *recur-backtrack*)
-        [S *recur-backtrack* *recur-backtrack*]
-        [S D D])
-      [S D])))
+    (return-split S D)))
 
 (defn default-case [matrix]
   (if-not (empty-matrix? matrix)
