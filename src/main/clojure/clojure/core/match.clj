@@ -369,17 +369,14 @@
 ;; -----------------------------------------------------------------------------
 ;; ## Fail Node
 
-(defmacro error [& body]
-  (if *clojurescript*
-    `(js/Error. ~@body)
-    `(Exception. ~@body)))
-
 (defrecord FailNode []
   INodeCompile
   (n-to-clj [this]
     (if *recur-present*
       `(throw
-         (error (str "No match found.")))
+         ~(if *clojurescript*
+            `(js/Error. (str "No match found."))
+            `(Exception. (str "No match found."))))
       (backtrack-expr))))
 
 (defn fail-node []
