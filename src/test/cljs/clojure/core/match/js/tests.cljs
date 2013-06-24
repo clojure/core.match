@@ -778,10 +778,9 @@
 (println "benchmarking array matching")
 
 (let [node (B nil nil (R nil nil (R nil nil nil)))]
-  (dotimes [_ 5]
-    (time
-      (dotimes [_ 1e6]
-        (balance-array node)))))
+  (time
+    (dotimes [_ 1e7]
+      (balance-array node))))
 
 ;; =============================================================================
 ;; Tickets

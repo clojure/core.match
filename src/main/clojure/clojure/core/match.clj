@@ -1886,9 +1886,13 @@ col with the first column and compile the result"
                  (if default
                    (conj (vec cs)
                      [last-match
-                      `(throw
-                         (IllegalArgumentException.
-                           (str "No matching clause: " ~@(interpose " " vars))))])
+                       (if *clojurescript*
+                         `(throw
+                            (js/Error.
+                              (str "No matching clause: " ~@(interpose " " vars))))
+                         `(throw
+                            (IllegalArgumentException.
+                              (str "No matching clause: " ~@(interpose " " vars)))))])
                    cs)))]
       (pattern-matrix
         (vec (map #(apply to-pattern-row %) cs))
@@ -1910,7 +1914,7 @@ col with the first column and compile the result"
 (defn clj-form [vars clauses]
   (when @*syntax-check* (check-matrix-args vars clauses))
   (let [actions (map second (partition 2 clauses))]
-    (binding [*recur-present* (recur-present? actions)]
+    (binding [*recur-present* (or *clojurescript* (recur-present? actions))]
       (-> (emit-matrix vars clauses)
         compile
         executable-form))))
