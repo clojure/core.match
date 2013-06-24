@@ -1,3 +1,8 @@
+From 0.2.0-beta4 to 0.2.0-rc1
+===
+
+None
+
 From 0.2.0-beta3 to 0.2.0-beta4
 ===
 
