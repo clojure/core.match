@@ -18,11 +18,11 @@
             [_ _ true] 4
             :else 5)))))
 
-  ;; ~40ms
-  (dotimes [_ 5]
-    (time
-      (dotimes [_ 1e6]
-        (let [x {:a 1 :b 1}]
+  ;; ~50ms
+  (let [x {:a 1 :b 1}]
+    (dotimes [_ 5]
+      (time
+        (dotimes [_ 1e6]
           (match [x]
             [{:a _ :b 2}] :a0
             [{:a 1 :b 1}] :a1
