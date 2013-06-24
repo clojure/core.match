@@ -465,9 +465,9 @@
   (= (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
        (match [n]
          [(:or [:black [:red [:red a x b] y c] z d]
-            [:black [:red a x [:red b y c]] z d]
-            [:black a x [:red [:red b y c] z d]]
-            [:black a x [:red b y [:red c z d]]])] :balance
+               [:black [:red a x [:red b y c]] z d]
+               [:black a x [:red [:red b y c] z d]]
+               [:black a x [:red b y [:red c z d]]])] :balance
          :else :valid))
     :balance))
 
