@@ -20,7 +20,8 @@
    (binding [*clojurescript* true
              *line* (-> &form meta :line)
              *locals* (dissoc &env '_)
-             *warned* (atom false)]
+             *warned* (atom false)
+             *recur-present* true]
      `~(clj-form vars clauses))))
 
 (defmacro matchv [type vars & clauses]
@@ -28,7 +29,8 @@
             *vector-type* type
             *line* (-> &form meta :line)
             *locals* (dissoc &env '_)
-            *warned* (atom false)]
+            *warned* (atom false)
+            *recur-present* true]
     `~(clj-form vars clauses)))
 
 (defmacro match-let [bindings & body]

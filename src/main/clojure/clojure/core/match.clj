@@ -1914,7 +1914,7 @@ col with the first column and compile the result"
 (defn clj-form [vars clauses]
   (when @*syntax-check* (check-matrix-args vars clauses))
   (let [actions (map second (partition 2 clauses))]
-    (binding [*recur-present* (or *clojurescript* (recur-present? actions))]
+    (binding [*recur-present* (or *recur-present* (recur-present? actions))]
       (-> (emit-matrix vars clauses)
         compile
         executable-form))))
