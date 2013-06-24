@@ -1,4 +1,18 @@
+From 0.2.0-beta3 to 0.2.0-beta4
+===
+
+Fixes
+---
+* MATCH-61: emit init expressions only once
+* MATCH-77: `*recur-present*` compilation inconsistent
+
+Enhancements
+---
+* add `match-let` and `matchv` to ClojureScript support
+* array specialization for vector patterns when type hinted
+
 From 0.2.0-beta2 to 0.2.0-beta3
+===
 
 Fixes
 ---
