@@ -69,7 +69,7 @@
 (defn backtrack-expr []
   `(throw clojure.core.match/backtrack))
 
-(def ^{:dynamic true} *recur-backtrack* nil)
+(def ^{:dynamic true} *backtrack-stack* ())
 (def ^{:dynamic true} *root* true)
 
 (defn warn [msg]
@@ -577,9 +577,9 @@
 
 (defn return-split [S D]
   (if *recur-present*
-    (if (and (empty-matrix? D) *recur-backtrack*)
-      [S *recur-backtrack* *recur-backtrack*]
-      [S D D])
+    (if (and (empty-matrix? D) (seq *backtrack-stack*))
+      [S (peek *backtrack-stack*) *backtrack-stack*]
+      [S D (conj *backtrack-stack* D)])
     [S D]))
 
 (defn matrix-splitter [matrix]
@@ -704,19 +704,23 @@
   "Case 3a: The first column is chosen. Compute and return a
   switch/bind node with a default matrix case"
   [matrix col ocrs]
-  (let [expanded (expand-matrix matrix col)
-        [S D B]  (split-matrix expanded)]
+  (let [expanded        (expand-matrix matrix col)
+        [S D :as split] (split-matrix expanded)]
     (if-not *recur-present*
       (switch-node (ocrs col)
         (cases S)
         (default-case D))
-      (switch-node (ocrs col)
-        (if-not (identical? B *recur-backtrack*)
-          (binding [*recur-backtrack* B]
+      (let [new-stack (last split)]
+        (switch-node (ocrs col)
+          (if-not (identical? *backtrack-stack* new-stack)
+            (binding [*backtrack-stack* new-stack]
+              (cases S))
             (cases S))
-          (cases S))
-        (binding [*recur-backtrack* nil]
-          (default-case D))))))
+          (if (and (seq *backtrack-stack*)
+                   (identical? (peek *backtrack-stack*) D))
+            (binding [*backtrack-stack* (pop *backtrack-stack*)]
+              (default-case D))
+            (default-case D)))))))
 
 (defn other-column-chosen-case 
   "Case 3b: A column other than the first is chosen. Swap column 
