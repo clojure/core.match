@@ -1878,6 +1878,7 @@ col with the first column and compile the result"
     (emit-matrix vars clauses true))
   ([vars clauses default]
     (let [cs (partition 2 clauses)
+          vs (process-vars vars)
           cs (let [[p a] (last cs)
                    last-match (vec (repeat (count vars) '_))]
                (if (= :else p)
@@ -1889,14 +1890,14 @@ col with the first column and compile the result"
                        (if *clojurescript*
                          `(throw
                             (js/Error.
-                              (str "No matching clause: " ~@(interpose " " vars))))
+                              (str "No matching clause: " ~@(interpose " " vs))))
                          `(throw
                             (IllegalArgumentException.
-                              (str "No matching clause: " ~@(interpose " " vars)))))])
+                              (str "No matching clause: " ~@(interpose " " vs)))))])
                    cs)))]
       (pattern-matrix
         (vec (map #(apply to-pattern-row %) cs))
-        (process-vars vars)))))
+        (process-vars vs)))))
 
 (defn executable-form [node]
   (n-to-clj node))
