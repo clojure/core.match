@@ -1,3 +1,10 @@
+From 0.2.0-rc1 to 0.2.0-rc2
+===
+
+Fixes
+---
+* Fix no match case, don't reevalute expressions
+
 From 0.2.0-beta4 to 0.2.0-rc1
 ===
 
