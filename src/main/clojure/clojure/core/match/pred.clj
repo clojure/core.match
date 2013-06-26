@@ -1,4 +1,5 @@
-(ns clojure.core.match.pred
+(ns ^{:skip-wiki true}
+  clojure.core.match.pred
   (:refer-clojure :exclude [==])
   (:use [clojure.core.logic])
   (:require [clojure.core.match :as match]))

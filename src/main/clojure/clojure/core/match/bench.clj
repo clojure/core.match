@@ -1,4 +1,5 @@
-(ns clojure.core.match.bench
+(ns ^{:skip-wiki true}
+  clojure.core.match.bench
   (:use [clojure.core.match :only [match]]))
 
 (comment

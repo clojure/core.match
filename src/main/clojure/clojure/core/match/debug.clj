@@ -1,4 +1,5 @@
-(ns clojure.core.match.debug
+(ns ^{:skip-wiki true}
+  clojure.core.match.debug
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match.protocols]
         [clojure.core.match 
