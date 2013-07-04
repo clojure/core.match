@@ -8,14 +8,14 @@ You can find more detailed information [here](https://github.com/clojure/core.ma
 Releases and dependency information
 ----
 
-Latest beta: 0.2.0-rc2
+Latest beta: 0.2.0-rc3
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [Leiningen](http://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "0.2.0-rc2"]
+[org.clojure/core.match "0.2.0-rc3"]
 ```
 
 [Maven](http://maven.apache.org) dependency information:
@@ -24,7 +24,7 @@ Latest beta: 0.2.0-rc2
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>0.2.0-rc2</version>
+  <version>0.2.0-rc3</version>
 </dependency>
 ```
 

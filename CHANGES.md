@@ -1,3 +1,10 @@
+From 0.2.0-rc2 to 0.2.0-rc3
+===
+
+Fixes
+---
+* MATCH-80: repeated match literal bug
+
 From 0.2.0-rc1 to 0.2.0-rc2
 ===
 
