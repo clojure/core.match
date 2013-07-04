@@ -609,9 +609,19 @@
 (defn literal-case-matrix-splitter [matrix]
   (let [ocrs  (occurrences matrix)
         rows  (rows matrix)
-        lrows (take-while
-                #(non-local-literal-pattern? (first %))
-                rows)
+        lrows (loop [rows (seq rows) res [] lits #{}]
+                ;; a bit hacky but lit patterns hash differently we
+                ;; store the literal value directly in lits set
+                (if rows
+                  (let [[p :as row] (first rows)]
+                    (if (and (non-local-literal-pattern? p)
+                             (not (contains? lits (:l p))))
+                      (recur (next rows) (conj res row)
+                        (if (non-local-literal-pattern? p)
+                          (conj lits (:l p))
+                          lits))
+                      res))
+                  res))
         S     (->> lrows
                 (group-rows (map first lrows))
                 (map (fn [[c rows]]

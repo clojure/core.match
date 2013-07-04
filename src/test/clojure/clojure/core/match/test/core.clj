@@ -888,3 +888,16 @@
              [_ _ _] 'b))
          'a)))
 
+(deftest match-80
+  (is (= (match [:r :d]
+           [:s :d] nil
+           [:r :t] nil
+           [:r :d] :x
+           [:s :t] nil)
+        :x))
+  (is (= (match [:r :d]
+           [:r :t] nil
+           [:s :d] nil
+           [:r :d] :x
+           [:s :t] nil)
+        :x)))
