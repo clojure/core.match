@@ -1,3 +1,18 @@
+From 0.2.0-rc3 to 0.2.0-rc4
+===
+
+Fixes
+---
+* MATCH-81: fix code-size issue, add match*, matchv* and match-let*
+  which optimize for performance over code-size
+
+Changes - Breaking
+---
+* Reorganize ClojureScript support. Runtime support ns is now
+  cljs.core.match and macro support is cljs.core.match.macros. For
+  array specialization you must require clojure.core.match and
+  clojure.core.match.array
+
 From 0.2.0-rc2 to 0.2.0-rc3
 ===
 
