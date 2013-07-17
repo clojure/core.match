@@ -63,11 +63,22 @@
        :doc "In the presence of recur we cannot apply code size optimizations"}
   *recur-present* false)
 
+(def ^{:dynamic true
+       :doc "Flag to optimize performance over code size."}
+  *no-backtrack* false)
+
 (def ^{:doc "Pre-allocated exception used for backtracing"}
   backtrack (Exception. "Could not find match."))
 
 (defn backtrack-expr []
-  `(throw clojure.core.match/backtrack))
+  (if *clojurescript*
+    `(throw cljs.core.match/backtrack)
+    `(throw clojure.core.match/backtrack)))
+
+(defn backtrack-sym []
+  (if *clojurescript*
+    'cljs.core.match/backtrack
+    'clojure.core.match/backtrack))
 
 (def ^{:dynamic true} *backtrack-stack* ())
 (def ^{:dynamic true} *root* true)
@@ -408,7 +419,7 @@
 (defn catch-error [& body]
   (let [err-sym (if *clojurescript* 'js/Error 'Exception)]
     `(catch ~err-sym e#
-       (if (identical? e# clojure.core.match/backtrack)
+       (if (identical? e# ~(backtrack-sym))
          (do
            ~@body)
          (throw e#)))))
@@ -1924,8 +1935,15 @@ col with the first column and compile the result"
 
 (defn clj-form [vars clauses]
   (when @*syntax-check* (check-matrix-args vars clauses))
-  (let [actions (map second (partition 2 clauses))]
-    (binding [*recur-present* (or *recur-present* (recur-present? actions))]
+  (let [actions (map second (partition 2 clauses))
+        recur-present? (recur-present? actions)]
+    ;; TODO: this is naive, recur-present? need ignore
+    ;; recur internal to an action - David
+    (assert (not (and *no-backtrack* recur-present?))
+      "Recur form present yet *no-backtrack* set to true")
+    (binding [*recur-present* (or *recur-present*
+                                  recur-present?
+                                  *no-backtrack*)]
       (-> (emit-matrix vars clauses)
         compile
         executable-form))))

@@ -2,7 +2,7 @@
   (:require-macros
     [clojure.core.match :as m]
     [clojure.core.match.array]
-    [cljs.core.match.macros :refer [match matchv asets]])
+    [cljs.core.match.macros :refer [match match* matchv matchv* asets]])
   (:require [cljs.core.match]))
 
 (defn js-print [& args]
@@ -765,7 +765,7 @@
     (asets o [:red l v r])))
 
 (defn balance-array [node]
-  (matchv ::m/objects [node]
+  (matchv* ::m/objects [node]
     [(:or [:black [:red [:red a x b] y c] z d]
           [:black [:red a x [:red b y c]] z d]
           [:black a x [:red [:red b y c] z d]]
@@ -809,7 +809,7 @@
 (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
   (time
     (dotimes [_ 1e6]
-      (match [n]
+      (match* [n]
         [(:or [:black [:red [:red a x b] y c] z d]
               [:black [:red a x [:red b y c]] z d]
               [:black a x [:red [:red b y c] z d]]
@@ -890,3 +890,22 @@
     :a1))
 
 (println "Tests completed without exception.")
+
+(defn get-meaning
+  [paragraph line blank mode theme annotation]
+  (match
+    [paragraph  line    (> blank 0) mode    theme   annotation  ]
+    [_          _       true        _       _       _           ] "monaco-enter"
+    [_          _       _           _       true    _           ] "monaco-theme"
+    [_          _       _           _       false   true        ] "monaco-annotation"
+    [_          _       false       :theme  _       false       ] "monaco-note"
+    [0          0       false       _       false   false       ] "monaco-outcome"
+    [0          _       false       _       false   false       ] "monaco-perex"
+    [1          _       false       _       false   false       ] "monaco-next-action"
+    [2          _       false       _       false   false       ] "monaco-following-action"
+    [_          _       false       nil     false   false       ] "monaco-supplemental"
+    :else "monaco-generic"))
+
+(assert
+  (= (get-meaning 2 nil false nil false false)
+     "monaco-following-action"))
