@@ -1,4 +1,4 @@
-(ns clojure.core.match.js
+(ns cljs.core.match.macros
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match :exclude [match matchv match-let]]))
 

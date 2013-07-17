@@ -1,7 +1,9 @@
-(ns clojure.core.match.js.tests
-  (:use-macros [clojure.core.match.js :only [match matchv asets]])
-  (:require-macros [clojure.core.match.array])
-  (:require [clojure.core.match :as m]))
+(ns cljs.core.match.tests
+  (:require-macros
+    [clojure.core.match :as m]
+    [clojure.core.match.array]
+    [cljs.core.match.macros :refer [match matchv asets]])
+  (:require [cljs.core.match]))
 
 (defn js-print [& args]
   (if (js* "typeof console != 'undefined'")
@@ -802,7 +804,7 @@
         [{:c 3 :d _ :e 4}] :a2
         :else nil))))
 
-(println "balance red black tree encoded as vectors")
+(println "balance red black tree encoded as vectors 1e6 iterations")
 
 (let [n [:black [:red [:red 1 2 3] 3 4] 5 6]]
   (time
@@ -814,7 +816,7 @@
               [:black a x [:red b y [:red c z d]]])] :balance
         :else :valid))))
 
-(println "balance red black tree encoded as arrays")
+(println "balance red black tree encoded as arrays 1e7 iterations")
 
 (let [node (B nil nil (R nil nil (R nil nil nil)))]
   (time

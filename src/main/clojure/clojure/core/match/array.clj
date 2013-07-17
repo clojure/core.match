@@ -106,8 +106,8 @@
       (let [^objects o (make-array Object 4)]
         (asets o [:red l v r])))
     
-    (defn balance-array [^objects node]
-      (match [node]
+    (defn balance-array [node]
+      (matchv ::objects [node]
          [(:or [:black [:red [:red a x b] y c] z d]
                [:black [:red a x [:red b y c]] z d]
                [:black a x [:red [:red b y c] z d]]
