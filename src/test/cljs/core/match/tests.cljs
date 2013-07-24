@@ -889,8 +889,6 @@
          [_] :a1))
     :a1))
 
-(println "Tests completed without exception.")
-
 (defn get-meaning
   [paragraph line blank mode theme annotation]
   (match
@@ -909,3 +907,33 @@
 (assert
   (= (get-meaning 2 nil false nil false false)
      "monaco-following-action"))
+
+;; MATCH-82
+
+(assert
+  (= (let [x 1]
+       (match 2
+         x 1
+         _ 2))
+    1))
+
+;; MATCH-83
+
+(assert
+  (= (let [x [1 2]]
+       (match x 
+         [0 _ _ _] :a 
+         [1 & _] :b 
+         _ :c))
+    :b))
+
+;; MATCH-84
+
+(assert
+  (= (let [v [3 2 3 4]]
+       (match [v]
+         [[1 1 3]] :a0
+         [[3 & r]] :a2))
+    :a2))
+
+(println "Tests completed without exception.")

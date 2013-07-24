@@ -901,3 +901,18 @@
            [:r :d] :x
            [:s :t] nil)
         :x)))
+
+(deftest match-83
+  (is (= (let [x [1 2]]
+           (match x 
+             [0 _ _ _] :a 
+             [1 & _] :b 
+             _ :c))
+        :b)))
+
+(deftest match-84
+  (is (= (let [v [3 2 3 4]]
+           (match [v]
+             [[1 1 3]] :a0
+             [[3 & r]] :a2))
+        :a2)))
