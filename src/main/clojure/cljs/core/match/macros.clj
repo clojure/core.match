@@ -19,7 +19,7 @@
               (partition 2 clauses))])]
    (binding [*clojurescript* true
              *line* (-> &form meta :line)
-             *locals* (dissoc &env '_)
+             *locals* (dissoc (:locals &env) '_)
              *warned* (atom false)]
      `~(clj-form vars clauses))))
 
@@ -34,7 +34,7 @@
               (partition 2 clauses))])]
    (binding [*clojurescript* true
              *line* (-> &form meta :line)
-             *locals* (dissoc &env '_)
+             *locals* (dissoc (:locals &env) '_)
              *warned* (atom false)
              *no-backtrack* true]
      `~(clj-form vars clauses))))
@@ -43,7 +43,7 @@
   (binding [*clojurescript* true
             *vector-type* type
             *line* (-> &form meta :line)
-            *locals* (dissoc &env '_)
+            *locals* (dissoc (:locals &env) '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
 
@@ -51,7 +51,7 @@
   (binding [*clojurescript* true
             *vector-type* type
             *line* (-> &form meta :line)
-            *locals* (dissoc &env '_)
+            *locals* (dissoc (:locals &env) '_)
             *warned* (atom false)
             *no-backtrack* true]
     `~(clj-form vars clauses)))
