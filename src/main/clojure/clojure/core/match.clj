@@ -1595,11 +1595,8 @@ col with the first column and compile the result"
 
 (defmethod groupable? [VectorPattern VectorPattern]
   [a b]
-  (cond
-    (= (:size a) (:size b)) true
-    (and (:rest? a) (<= (:size a) (:size b))) true
-    (and (:rest? b) (<= (:size b) (:size a))) true
-    :else false))
+  (and (= (:rest? a) (:rest? b))
+       (= (:size a) (:size b))))
 
 ;; =============================================================================
 ;; # Interface
