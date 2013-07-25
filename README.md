@@ -49,8 +49,8 @@ From ClojureScript:
 
 ```clojure
 (ns foo.bar
-  (:use-macros [clojure.core.match.js :only [match]])
-  (:require [clojure.core.match]))
+  (:use-macros [cljs.core.match.macros :only [match]])
+  (:require [cljs.core.match]))
 
 (doseq [n (range 1 101)]
   (println
