@@ -1,3 +1,12 @@
+From 0.2.0-rc4 to 0.2.0-rc5
+===
+
+Fixes
+---
+* MATCH-82: CLJS locals matching did not work correctly
+* MATCH-83: vector pattern with rest pattern bug
+* MATCH-84: vector pattern with rest pattern bug
+
 From 0.2.0-rc3 to 0.2.0-rc4
 ===
 
