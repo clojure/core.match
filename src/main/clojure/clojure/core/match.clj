@@ -901,7 +901,9 @@ col with the first column and compile the result"
      `(= ~ocr '~l)
 
      (and *clojurescript*
-         (or (number? l) (string? l)))
+         (or (number? l) (string? l)
+             (true? l) (false? l)
+             (nil? l)))
      `(identical? ~ocr ~l) 
       
      (and *clojurescript* (keyword? l))
