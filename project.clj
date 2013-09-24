@@ -7,9 +7,9 @@
   :source-paths ["src/main/clojure"]
 
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-1835"]]
+                 [org.clojure/clojurescript "0.0-1889"]]
   :dev-dependencies [[org.clojure/tools.nrepl "0.2.3"]]
-  :plugins [[lein-cljsbuild "0.3.2"]]
+  :plugins [[lein-cljsbuild "0.3.3"]]
 
   :cljsbuild
   {:builds

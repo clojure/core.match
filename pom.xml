@@ -42,16 +42,11 @@
   </developers>
 
   <dependencies>
-      <dependency>
-        <groupId>org.clojure</groupId>
-          <artifactId>core.logic</artifactId>
-          <version>0.6.5</version>
-      </dependency>
-      <dependency>
-        <optional>true</optional>
-        <groupId>vimclojure</groupId>
-        <artifactId>server</artifactId>
-        <version>2.3.0</version>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojurescript</artifactId>
+      <version>0.0-1889</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

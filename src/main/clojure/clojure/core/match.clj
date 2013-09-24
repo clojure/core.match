@@ -894,9 +894,20 @@ col with the first column and compile the result"
   IPatternCompile
   (to-source* [this ocr]
     (cond
-     (= l ()) `(empty? ~ocr)
-     (and (symbol? l) (not (-> l meta :local))) `(= ~ocr '~l)
-     :else `(= ~ocr ~l))))
+     (= l ())
+     `(empty? ~ocr)
+
+     (and (symbol? l) (not (-> l meta :local)))
+     `(= ~ocr '~l)
+
+     (and *clojurescript*
+         (or (number? l) (string? l)))
+     `(identical? ~ocr ~l) 
+      
+     (and *clojurescript* (keyword? l))
+     `(cljs.core/keyword-identical? ~ocr ~l)
+     
+      :else `(= ~ocr ~l))))
 
 (defn literal-pattern [l] 
   (LiteralPattern. l (meta l)))

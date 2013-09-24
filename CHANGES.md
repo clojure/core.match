@@ -5,6 +5,15 @@ Fixes
 ---
 * MATCH-86: or patterns do not AOT
 
+Changes
+---
+* Requires ClojureScript 0.0-1889
+* Cleaned up dependencies (no more core.logic requirement)
+
+Enhancements
+---
+* Use identical? when matching strings and numbers in ClojureScript
+
 From 0.2.0-rc4 to 0.2.0-rc5
 ===
 
