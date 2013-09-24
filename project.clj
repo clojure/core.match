@@ -1,4 +1,4 @@
-(defproject org.clojure/core.match "0.2.0-rc5"
+(defproject org.clojure/core.match "0.2.0-rc7-SNAPSHOT"
   :description "Optimized pattern matching and predicate dispatch for Clojure"
 
   :jvm-opts ^:replace ["-Xmx512m" "-server"]

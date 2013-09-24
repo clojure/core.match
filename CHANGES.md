@@ -1,3 +1,10 @@
+From 0.2.0-rc5 to 0.2.0-rc6
+===
+
+Fixes
+---
+* MATCH-86: or patterns do not AOT
+
 From 0.2.0-rc4 to 0.2.0-rc5
 ===
 
