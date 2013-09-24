@@ -1675,42 +1675,42 @@ col with the first column and compile the result"
   `(:or 1 ...) is dispatches as :or, and `(1 :as a)` is dispatched by :as."
   (fn [[f s]]
     (if (keyword? f)
-      [f (type s)]
-      [(type f) s])))
+      [f :default]
+      [:default s])))
 
-(defmethod emit-pattern-for-syntax [:or Object]
+(defmethod emit-pattern-for-syntax [:or :default]
   [pat] (or-pattern
           (->> (rest pat)
             (map emit-pattern)
             (into []))))
 
-(defmethod emit-pattern-for-syntax [Object :as]
+(defmethod emit-pattern-for-syntax [:default :as]
   [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
 
-(defmethod emit-pattern-for-syntax [Object :when]
+(defmethod emit-pattern-for-syntax [:default :when]
   [[p _ gs]]
   (let [gs (if (not (vector? gs)) [gs] gs)]
     (assert (every? symbol? gs) (str "Invalid predicate expression " gs))
     (assert (every? #(contains? @preds %) gs) (str "Unknown predicate in " gs))
     (predicate-pattern (emit-pattern p) (set gs))))
 
-(defmethod emit-pattern-for-syntax [Object :guard]
+(defmethod emit-pattern-for-syntax [:default :guard]
   [[p _ gs]] (let [gs (if (not (vector? gs)) [gs] gs)]
               (guard-pattern (emit-pattern p) (set gs))))
 
-(defmethod emit-pattern-for-syntax [Object :seq]
+(defmethod emit-pattern-for-syntax [:default :seq]
   [pat]
   (let [p (first pat)]
     (if (empty? p)
       (literal-pattern ())
       (seq-pattern (emit-patterns p :seq)))))
 
-(defmethod emit-pattern-for-syntax [Object ::vector]
+(defmethod emit-pattern-for-syntax [:default ::vector]
   [[p t offset-key offset]]
   (let [ps (emit-patterns p :vector)]
     (vector-pattern ps t offset (some rest-pattern? ps))))
 
-(defmethod emit-pattern-for-syntax [Object :only]
+(defmethod emit-pattern-for-syntax [:default :only]
   [[p _ only]] (with-meta (emit-pattern p) {:only only}))
 
 (defmethod emit-pattern-for-syntax :default
