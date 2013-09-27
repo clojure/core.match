@@ -1,3 +1,8 @@
+From 0.2.0-rc6 to 0.2.0
+===
+
+None
+
 From 0.2.0-rc5 to 0.2.0-rc6
 ===
 
