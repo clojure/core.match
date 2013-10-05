@@ -793,6 +793,20 @@
         [_ _ true] 4
         :else 5))))
 
+(println "basic Maranget example with match*")
+
+(time
+  (dotimes [i 1e6]
+    (let [x (zero? (mod i 2))
+          y (zero? (mod i 3))
+          z (zero? (mod i 5))]
+      (match* [x y z]
+        [_ false true] 1
+        [false true _ ] 2
+        [_ _ false] 3
+        [_ _ true] 4
+        :else 5))))
+
 (println "map matching")
 
 (let [x {:a 1 :b 1}]

@@ -49,7 +49,7 @@ From ClojureScript:
 
 ```clojure
 (ns foo.bar
-  (:use-macros [cljs.core.match.macros :only [match]])
+  (:require-macros [cljs.core.match.macros :refer [match]])
   (:require [cljs.core.match]))
 
 (doseq [n (range 1 101)]
