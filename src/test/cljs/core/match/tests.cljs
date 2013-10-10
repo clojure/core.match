@@ -779,6 +779,27 @@
 
 (println "benchmarking")
 
+(println "basic Maranget example hand written")
+
+(time
+  (loop [i 0 acc 0]
+    (if (== i 1000000)
+      (println acc)
+      (recur (inc i)
+        (+ acc
+          (let [x (zero? (mod i 2))
+                y (zero? (mod i 3))
+                z (zero? (mod i 5))]
+            (if (and (identical? y true) (identical? z true))
+              1
+              (if (and (identical? x false) (identical? y true))
+                2
+                (if (identical? z false)
+                  3
+                  (if (identical? z true)
+                    4
+                    5))))))))))
+
 (println "basic Maranget example")
 
 (time
@@ -796,16 +817,20 @@
 (println "basic Maranget example with match*")
 
 (time
-  (dotimes [i 1e6]
-    (let [x (zero? (mod i 2))
-          y (zero? (mod i 3))
-          z (zero? (mod i 5))]
-      (match* [x y z]
-        [_ false true] 1
-        [false true _ ] 2
-        [_ _ false] 3
-        [_ _ true] 4
-        :else 5))))
+  (loop [i 0 acc 0]
+    (if (== i 1000000)
+      (println acc)
+      (recur (inc i)
+        (+ acc
+          (let [x (zero? (mod i 2))
+                y (zero? (mod i 3))
+                z (zero? (mod i 5))]
+            (match* [x y z]
+              [_ false true] 1
+              [false true _ ] 2
+              [_ _ false] 3
+              [_ _ true] 4
+              :else 5)))))))
 
 (println "map matching")
 
