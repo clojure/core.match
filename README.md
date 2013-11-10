@@ -76,4 +76,4 @@ Copyright and license
 
 Copyright © 2010-2013 David Nolen, Rich Hickey & contributors.
 
-Licensed under the EPL (see the file epl.html).
+Licensed under the EPL (see the file epl-v10.html).
