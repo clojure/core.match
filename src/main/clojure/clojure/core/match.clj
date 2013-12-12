@@ -1360,7 +1360,7 @@ col with the first column and compile the result"
 (defn vector-pattern
   ([] (vector-pattern [] ::vector nil nil))
   ([v] (vector-pattern v ::vector nil nil))
-  ([v t] (vector-pattern v t nil nil nil))
+  ([v t] (vector-pattern v t nil nil))
   ([v t offset] (vector-pattern v t offset nil))
   ([v t offset rest?]
     {:pre [(vector? v)]}
