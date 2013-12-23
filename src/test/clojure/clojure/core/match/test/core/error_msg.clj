@@ -79,14 +79,6 @@
           [1 2] 1
           :else 1))))
 
-(deftest match-differing-patterns
-  (is (thrown-with-msg?
-        AssertionError
-        #"Pattern row 1: Pattern row has differing number of patterns. \[1 2\] has 2 pattern/s, expecting 1 for occurrences \[x\]"
-        (m-to-clj [x]
-          [1 2] 1
-          :else 1))))
-
 (deftest match-duplicate-wildcards
   (is (thrown-with-msg?
         AssertionError

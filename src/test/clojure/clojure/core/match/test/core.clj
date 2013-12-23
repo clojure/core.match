@@ -664,8 +664,8 @@
   (is (= (match [[:plus 1 2 3]]
            [[:pow arg pow]] 0
            [[:plus & args]] 1
-           :else 2))
-    1))
+           :else 2)
+         1)))
 
 (deftest map-pattern-match-only-2
   (is (= (let [x {:a 1 :b 2 :c 10 :d 30}]
