@@ -1,4 +1,4 @@
-(defproject org.clojure/core.match "0.2.1-SNAPSHOT"
+(defproject org.clojure/core.match "0.2.2-SNAPSHOT"
   :description "Optimized pattern matching and predicate dispatch for Clojure"
 
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
@@ -7,11 +7,11 @@
   :source-paths ["src/main/clojure"]
 
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-2080"]]
+                 [org.clojure/clojurescript "0.0-2138" :scope "provided"]]
 
   :dev-dependencies [[org.clojure/tools.nrepl "0.2.3"]]
 
-  :plugins [[lein-cljsbuild "1.0.0"]]
+  :plugins [[lein-cljsbuild "1.0.1"]]
 
   :cljsbuild
   {:builds
