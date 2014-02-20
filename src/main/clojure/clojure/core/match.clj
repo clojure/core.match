@@ -1851,7 +1851,7 @@ col with the first column and compile the result"
           (str "Pattern row " rownum
             ": Pattern row reuses wildcards in " pat
             ".  The following wildcards are ambiguous: "
-            (apply str (interpose ", " duplicates))
+            (apply str (interpose ", " (sort duplicates)))
             ".  There's no guarantee that the matched values will be same."
             "  Rename the occurrences uniquely."))))))
 
