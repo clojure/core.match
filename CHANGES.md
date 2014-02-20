@@ -1,3 +1,10 @@
+From 0.2.0 to 0.2.1
+===
+
+Fixes
+---
+* MATCH-91: keyword with dots cause core.match to fail
+
 From 0.2.0-rc6 to 0.2.0
 ===
 
