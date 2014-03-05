@@ -2,7 +2,8 @@
   (:require-macros
     [clojure.core.match :as m]
     [clojure.core.match.array]
-    [cljs.core.match.macros :refer [match match* matchv matchv* asets]])
+    [cljs.core.match.macros :refer [match match* matchv matchv* asets]]
+    [cljs.core.match.macro-test :as mt])
   (:require [cljs.core.match]))
 
 (defn js-print [& args]
@@ -974,5 +975,11 @@
          [[1 1 3]] :a0
          [[3 & r]] :a2))
     :a2))
+
+;; Test macros
+
+(assert
+  (= ((mt/test1))
+     :match))
 
 (println "Tests completed without exception.")
