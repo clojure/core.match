@@ -6,8 +6,8 @@
   :test-paths ["src/test/clojure"]
   :source-paths ["src/main/clojure"]
 
-  :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/clojurescript "0.0-2173" :scope "provided"]]
+  :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/clojurescript "0.0-2197" :scope "provided"]]
 
   :dev-dependencies [[org.clojure/tools.nrepl "0.2.3"]]
 
