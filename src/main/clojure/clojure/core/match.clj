@@ -3,7 +3,7 @@
   (:use [clojure.core.match.protocols])
   (:require [clojure.set :as set])
   (:import [java.io Writer]
-           [clojure.core.match.protocols IExistentialPattern]))
+           [clojure.core.match.protocols IExistentialPattern IPseudoPattern]))
 
 ;; =============================================================================
 ;; # Introduction
@@ -566,7 +566,7 @@
 (defn select [pm]
   (swap pm (necessary-column pm)))
 
-(declare default-specialize-matrix pseudo-pattern?)
+(declare default-specialize-matrix)
 
 (defn specialize
   ([matrix]
@@ -575,6 +575,9 @@
     (if (satisfies? ISpecializeMatrix p)
       (specialize-matrix p matrix)
       (default-specialize-matrix p matrix))))
+
+(defn pseudo-pattern? [x]
+  (instance? IPseudoPattern x))
 
 (defn pseudo-patterns [matrix i]
   (filter pseudo-pattern? (column matrix i)))
@@ -1389,6 +1392,8 @@ col with the first column and compile the result"
          (map #(specialize-or-pattern-row % pat ps) rows))))
 
 (deftype OrPattern [ps _meta]
+  IPseudoPattern
+
   Object
   (toString [this]
     (str ps))
@@ -1424,21 +1429,6 @@ col with the first column and compile the result"
 
 (defmethod print-method OrPattern [p ^Writer writer]
   (.write writer (str "<OrPattern: " (:ps p) ">")))
-
-;; -----------------------------------------------------------------------------
-;; Pseudo-patterns
-;;
-;; Pseudo-patterns like OrPatterns are not real patterns. OrPatterns
-;; are much like a macro, they just expands into a simpler form. This
-;; expansion is dealt with specially in first-column-chosen-case.
-
-(defmulti pseudo-pattern? type)
-
-(defmethod pseudo-pattern? OrPattern
-  [x] true)
-
-(defmethod pseudo-pattern? :default
-  [x] false)
 
 ;; -----------------------------------------------------------------------------
 ;; ## Guard Patterns
@@ -1998,3 +1988,4 @@ col with the first column and compile the result"
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
+

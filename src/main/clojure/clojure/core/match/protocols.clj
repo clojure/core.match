@@ -31,5 +31,8 @@
 (defprotocol IVectorPattern
   (split [this n]))
 
-;; marker
+;; markers
+
 (definterface IExistentialPattern)
+
+(definterface IPseudoPattern)
