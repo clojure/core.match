@@ -1765,7 +1765,7 @@ col with the first column and compile the result"
   "Take an unprocessed pattern expression and an action expression and return
    a pattern row of the processed pattern expression plus the action epxression."
   [pat action]
-  (let [ps (map emit-pattern (group-keywords pat))]
+  (let [ps (map (comp emit-pattern macroexpand) (group-keywords pat))]
     (pattern-row ps action)))
 
 (defn wildcards-and-duplicates
