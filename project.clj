@@ -7,6 +7,7 @@
   :source-paths ["src/main/clojure"]
 
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/tools.analyzer.jvm "0.1.0-beta12"]
                  [org.clojure/clojurescript "0.0-2197" :scope "provided"]]
 
   :dev-dependencies [[org.clojure/tools.nrepl "0.2.3"]]
