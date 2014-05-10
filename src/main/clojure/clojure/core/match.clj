@@ -1,9 +1,13 @@
 (ns clojure.core.match
   (:refer-clojure :exclude [compile])
   (:use [clojure.core.match.protocols])
-  (:require [clojure.set :as set])
+  (:require [clojure.set :as set]
+            [clojure.tools.analyzer :as ana]
+            [clojure.tools.analyzer.jvm :as ana-jvm]
+            [clojure.tools.analyzer.passes.jvm.annotate-loops :as loops])
   (:import [java.io Writer]
            [clojure.core.match.protocols IExistentialPattern IPseudoPattern]))
+
 
 ;; =============================================================================
 ;; # Introduction
@@ -91,6 +95,13 @@
                  (str *ns* ", line " *line* ":") 
                  msg))
       (reset! *warned* true))))
+
+(defn analyze [form env]
+  (binding [ana/macroexpand-1 ana-jvm/macroexpand-1
+            ana/create-var    ana-jvm/create-var
+            ana/parse         ana-jvm/parse
+            ana/var?          var?]
+    (ana/analyze form env)))
 
 ;; =============================================================================
 ;; # Map Pattern Interop
