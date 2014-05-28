@@ -1966,7 +1966,9 @@ col with the first column and compile the result"
   "Pattern match a row of occurrences. Take a vector of occurrences, vars.
   Clause question-answer syntax is like `cond`. Questions must be
   wrapped in a vector, with same arity as vars. Last question can be :else,
-  which expands to a row of wildcards.
+  which expands to a row of wildcards. Optionally may take a single
+  var not wrapped in a vector, questions then need not be wrapped in a
+  vector.
   
   Example:
   (let [x 1
