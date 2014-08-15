@@ -88,13 +88,12 @@
 (def ^{:dynamic true} *root* true)
 
 (defn warn [msg]
-  (if (not @*warned*)
-    (do
-      (binding [*out* *err*] 
-        (println "WARNING:"
-                 (str *ns* ", line " *line* ":") 
-                 msg))
-      (reset! *warned* true))))
+  (when (not @*warned*)
+    (binding [*out* *err*] 
+      (println "WARNING:"
+        (str *ns* ", line " *line* ":") 
+        msg))
+    (reset! *warned* true)))
 
 (defn analyze [form env]
   (binding [ana/macroexpand-1 ana-jvm/macroexpand-1
@@ -102,6 +101,15 @@
             ana/parse         ana-jvm/parse
             ana/var?          var?]
     (ana/analyze form env)))
+
+(defn get-loop-locals []
+  (let [LOOP_LOCALS clojure.lang.Compiler/LOOP_LOCALS]
+    (mapcat
+      (fn [b]
+        (let [name (.sym ^clojure.lang.Compiler$LocalBinding b)]
+          [name name]))
+      (when (bound? LOOP_LOCALS)
+        @LOOP_LOCALS))))
 
 ;; =============================================================================
 ;; # Map Pattern Interop

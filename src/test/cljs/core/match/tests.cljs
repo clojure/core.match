@@ -766,7 +766,7 @@
     (asets o [:red l v r])))
 
 (defn balance-array [node]
-  (matchv* ::m/objects [node]
+  (matchv ::m/objects [node]
     [(:or [:black [:red [:red a x b] y c] z d]
           [:black [:red a x [:red b y c]] z d]
           [:black a x [:red [:red b y c] z d]]
