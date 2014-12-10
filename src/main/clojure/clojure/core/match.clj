@@ -58,6 +58,10 @@
 (def ^{:dynamic true} *warned*)
 
 (def ^{:dynamic true
+       :doc "Allow map matching syntax to check for IMatchLookup"}
+  *match-lookup* false)
+
+(def ^{:dynamic true
        :doc "Default vector type. Can be rebound allowing emission of
              custom inline code for vector patterns, for example
              type-hinted primitive array operations"}
@@ -1200,9 +1204,10 @@ col with the first column and compile the result"
 
   IPatternCompile
   (to-source* [this ocr]
-    (if *clojurescript*
-      `(satisfies? cljs.core/ILookup ~ocr)
-      `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))))
+    (cond
+      *clojurescript* `(satisfies? cljs.core/ILookup ~ocr)
+      *match-lookup*  `(or (instance? clojure.lang.ILookup ~ocr) (satisfies? IMatchLookup ~ocr))
+      :else `(instance? clojure.lang.ILookup ~ocr)))
 
   ISpecializeMatrix
   (specialize-matrix [this matrix]
@@ -2025,6 +2030,23 @@ col with the first column and compile the result"
             *locals* (dissoc &env '_)
             *warned* (atom false)]
     `~(clj-form vars clauses)))
+
+(defmacro matchm
+  "Same as match but supports IMatchLookup when
+  matching maps."
+  [vars & clauses]
+  (let [[vars clauses]
+        (if (vector? vars)
+          [vars clauses]
+          [(vector vars)
+           (mapcat (fn [[c a]]
+                     [(if (not= c :else) (vector c) c) a])
+             (partition 2 clauses))])]
+    (binding [*match-lookup* true
+              *line* (-> &form meta :line)
+              *locals* (dissoc &env '_)
+              *warned* (atom false)]
+      `~(clj-form vars clauses))))
 
 (defmacro match-let [bindings & body]
   (let [bindvars# (take-nth 2 bindings)]

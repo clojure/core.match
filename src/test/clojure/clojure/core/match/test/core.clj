@@ -370,7 +370,7 @@
 
 (deftest map-pattern-interop-1
   (is (= (let [d (java.util.Date. 2010 10 1 12 30)]
-           (match [d]
+           (matchm [d]
              [{:year 2009 :month a}] [:a0 a]
              [{:year (:or 2010 2011) :month b}] [:a1 b]
              :else []))

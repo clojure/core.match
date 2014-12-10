@@ -1,11 +1,11 @@
 (ns clojure.core.match.test.date
   (:use clojure.test)
-  (:use [clojure.core.match :only [match]])
+  (:use [clojure.core.match :only [matchm]])
   (:use clojure.core.match.date))
 
 (deftest date-test1
-  (is (= (match [(java.util.Date. 2010 10 1 12 30)]
-                [{:year 2009 :month a}] a
-                [{:year (:or 2010 2011) :month b}] b
-                :else :wrong)
-         10)))
+  (is (= (matchm [(java.util.Date. 2010 10 1 12 30)]
+           [{:year 2009 :month a}] a
+           [{:year (:or 2010 2011) :month b}] b
+           :else :wrong)
+        10)))
