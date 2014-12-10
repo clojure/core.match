@@ -1,17 +1,25 @@
 (ns clojure.core.match.regex
-  (:use [clojure.core.match
-         :only [emit-pattern to-source groupable?]])
-  (:import java.util.regex.Pattern))
+  (:require
+   [clojure.core.match.protocols :as mp]
+   [clojure.core.match :as m :refer [emit-pattern to-source groupable?]])
+  (:import [java.util.regex Pattern]))
 
 ;; # Regular Expression Extension
 ;;
 ;; This extension adds support for Clojure's regular expression syntax.
 
+(extend-type Pattern
+  mp/ISyntaxTag
+  (syntax-tag [_] ::m/regex))
+
 (defrecord RegexPattern [regex])
 
-(defmethod emit-pattern java.util.regex.Pattern
+(defn regex-pattern [pat]
+  (assoc (RegexPattern. pat) ::m/tag ::m/regex))
+
+(defmethod emit-pattern ::m/regex
   [pat]
-  (RegexPattern. pat))
+  (regex-pattern pat))
 
 ;; Regular expressions are matched with `re-matches`.
 ;;
@@ -20,7 +28,7 @@
 ;;
 ;; `(re-matches #"olive" q)`
 
-(defmethod to-source RegexPattern
+(defmethod to-source ::m/regex
   [pat ocr]
   `(re-matches ~(:regex pat) ~ocr))
 
@@ -28,7 +36,7 @@
 ;;
 ;; Two `Pattern`s are equal if they have the same pattern and the same flags.
 
-(defmethod groupable? [RegexPattern RegexPattern]
+(defmethod groupable? [::m/regex ::m/regex]
   [a b]
   (let [^Pattern ra (:regex a)
         ^Pattern rb (:regex b)]

@@ -245,7 +245,7 @@
 (defmulti groupable?
   "Determine if two patterns may be grouped together for simultaneous
    testing."
-  (fn [a b] [(type a) (type b)]))
+  (fn [a b] [(::tag a) (::tag b)]))
 
 (defmethod groupable? :default
   [a b] (= a b))
@@ -911,6 +911,7 @@ col with the first column and compile the result"
   (valAt [this k not-found]
     (case k
       :l l
+      ::tag ::literal
       not-found))
 
   IPatternCompile
@@ -1009,6 +1010,7 @@ col with the first column and compile the result"
   (valAt [this k not-found]
     (case k
       :s s
+      ::tag ::seq
       not-found))
   
   IPatternCompile
@@ -1052,7 +1054,7 @@ col with the first column and compile the result"
 (defrecord RestPattern [p])
 
 (defn rest-pattern [p]
-  (RestPattern. p))
+  (assoc (RestPattern. p) ::tag ::rest))
 
 (defn rest-pattern? [x]
   (instance? RestPattern x))
@@ -1088,7 +1090,7 @@ col with the first column and compile the result"
       (pattern-matrix nrows ocrs))))
 
 (defn map-key-pattern [p]
-  (MapKeyPattern. p))
+  (assoc (MapKeyPattern. p) ::tag ::map-key))
 
 (defn map-key-pattern? [x]
   (instance? MapKeyPattern x))
@@ -1193,6 +1195,7 @@ col with the first column and compile the result"
   (valAt [this k not-found]
     (case k
       :m m
+      ::tag ::map
       not-found))
 
   IPatternCompile
@@ -1336,6 +1339,7 @@ col with the first column and compile the result"
       :size size
       :offset offset
       :rest? rest?
+      ::tag ::vector
       not-found))
 
   IPatternCompile
@@ -1430,6 +1434,7 @@ col with the first column and compile the result"
   (valAt [this k not-found]
     (case k
       :ps ps
+      ::tag ::or
       not-found))
 
   ISpecializeMatrix
@@ -1487,6 +1492,7 @@ col with the first column and compile the result"
     (case k
       :p p
       :gs gs
+      ::tag ::guard
       not-found))
 
   IPatternCompile
@@ -1567,6 +1573,7 @@ col with the first column and compile the result"
     (case k
       :p p
       :gs gs
+      ::tag ::predicate
       not-found))
 
   IPatternCompile
@@ -1595,27 +1602,27 @@ col with the first column and compile the result"
 ;; -----------------------------------------------------------------------------
 ;; Pattern Comparisons
 
-(defmethod groupable? [LiteralPattern LiteralPattern]
+(defmethod groupable? [::literal ::literal]
   [a b] (= (:l a) (:l b)))
 
-(defmethod groupable? [GuardPattern GuardPattern]
+(defmethod groupable? [::guard ::guard]
   [a b] (= (:gs a) (:gs b)))
 
-(defmethod groupable? [PredicatePattern PredicatePattern]
+(defmethod groupable? [::predice ::predicate]
   [a b] (= (:gs a) (:gs b)))
 
-(defmethod groupable? [MapPattern MapPattern]
+(defmethod groupable? [::map ::map]
   [a b]
   (= (-> a meta :only) (-> b meta :only)))
 
-(defmethod groupable? [OrPattern OrPattern]
+(defmethod groupable? [::or ::or]
   [a b]
   (let [as (:ps a)
         bs (:ps b)]
     (and (= (count as) (count bs))
          (every? identity (map groupable? as bs)))))
 
-(defmethod groupable? [VectorPattern VectorPattern]
+(defmethod groupable? [::vector ::vector]
   [a b]
   (and (= (:rest? a) (:rest? b))
        (= (:size a) (:size b))))
@@ -1628,13 +1635,28 @@ col with the first column and compile the result"
   pattern matches the occurrence. Dispatches on the `type` of the
   pattern. For instance, a literal pattern might return `(= ~(:pattern
   pattern) ~ocr)`, using `=` to test for a match."
-  (fn [pattern ocr] (type pattern)))
+  (fn [pattern ocr] (::tag pattern)))
 
 (defmulti emit-pattern 
   "Returns the corresponding pattern for the given syntax. Dispatches
   on the class of its argument. For example, `[(:or 1 2) 2]` is dispatched
   as clojure.lang.IPersistentVector"
-  class)
+  (fn [pattern] (syntax-tag pattern)))
+
+(extend-protocol ISyntaxTag
+  clojure.lang.IPersistentVector
+  (syntax-tag [_] ::vector)
+  clojure.lang.ISeq
+  (syntax-tag [_] ::seq)
+  clojure.lang.IPersistentMap
+  (syntax-tag [_] ::map)
+  clojure.lang.Symbol
+  (syntax-tag [_] ::symbol)
+
+  Object
+  (syntax-tag [_] :default)
+  nil
+  (syntax-tag [_] :default))
 
 ;; ============================================================================
 ;; # emit-pattern Methods
@@ -1656,12 +1678,12 @@ col with the first column and compile the result"
           :else
           (recur (next ps) t (conj v (emit-pattern (first ps)))))))))
 
-(defmethod emit-pattern clojure.lang.IPersistentVector
+(defmethod emit-pattern ::vector
   [pat]
   (let [ps (emit-patterns pat :vector)]
     (vector-pattern ps *vector-type* 0 (some rest-pattern? ps))))
 
-(defmethod emit-pattern clojure.lang.IPersistentMap
+(defmethod emit-pattern ::map
   [pat]
   (map-pattern
     (->> pat
@@ -1670,7 +1692,7 @@ col with the first column and compile the result"
       (remove nil?)
       (into {}))))
 
-(defmethod emit-pattern clojure.lang.Symbol
+(defmethod emit-pattern ::symbol
   [pat]
   (if (not= (get *locals* pat ::not-found) ::not-found)
     (literal-pattern (with-meta pat (assoc (meta pat) :local true)))
@@ -1683,7 +1705,7 @@ col with the first column and compile the result"
 (declare emit-pattern-for-syntax or-pattern as-pattern guard-pattern
          predicate-pattern vector-pattern)
 
-(defmethod emit-pattern clojure.lang.ISeq
+(defmethod emit-pattern ::seq
   [pat] (if (and (= (count pat) 2)
                  (= (first pat) 'quote)
                  (or (symbol? (second pat))

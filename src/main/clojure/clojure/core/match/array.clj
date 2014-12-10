@@ -1,5 +1,4 @@
 ;; WARNING: this namespace is experimental
-
 (ns ^{:skip-wiki true}
   clojure.core.match.array
   (:refer-clojure :exclude [compile])

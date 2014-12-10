@@ -31,6 +31,9 @@
 (defprotocol IVectorPattern
   (split [this n]))
 
+(defprotocol ISyntaxTag
+  (syntax-tag [this]))
+
 ;; markers
 
 (definterface IExistentialPattern)
