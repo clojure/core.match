@@ -8,7 +8,7 @@ You can find more detailed information [here](https://github.com/clojure/core.ma
 Releases and dependency information
 ----
 
-Latest beta: 0.2.2
+Latest release: 0.2.2
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
