@@ -863,6 +863,8 @@
     (dotimes [_ 1e6]
       (balance-array node))))
 
+;; fn application
+
 (let [n 1]
   (assert
     (= (match [n]
@@ -890,6 +892,21 @@
          [(5 :<< count)] :five
          :else :oops)
       :three-or-four)))
+
+(let [v [1 2 3]
+      m {:a 2 :b 2}]
+  (assert
+    (= (match [v]
+         [[1 (3 :<< inc) 3]] :match1
+         [[1 (4 :<< inc) 3]] :match2
+         :else :no-match)
+      :match1))
+  (assert
+    (= (match [m]
+         [{:a (2 :<< inc) :b _}] :match1
+         [{:a (3 :<< inc) :b _}] :match2
+         :else :no-match)
+      :match2)))
 
 ;; =============================================================================
 ;; Tickets

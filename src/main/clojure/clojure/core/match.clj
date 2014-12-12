@@ -1549,7 +1549,7 @@ col with the first column and compile the result"
   (into
     [(with-meta
        (gensym (str "app_" focr))
-       {:bind-expr `(~form ~focr)})]
+       {:bind-expr `(~form ~(or (-> focr meta :bind-expr) focr))})]
     ocrs))
 
 (defn specialize-app-pattern-matrix [rows form]

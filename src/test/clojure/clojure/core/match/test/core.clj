@@ -846,6 +846,20 @@
              :else :oops)
           :three-or-four))))
 
+(deftest match-app-3
+  (let [v [1 2 3]
+        m {:a 2 :b 2}]
+    (is (= (match [v]
+             [[1 (3 :<< inc) 3]] :match1
+             [[1 (4 :<< inc) 3]] :match2
+             :else :no-match)
+          :match1))
+    (is (= (match [m]
+             [{:a (2 :<< inc) :b _}] :match1
+             [{:a (3 :<< inc) :b _}] :match2
+             :else :no-match)
+           :match2))))
+
 ;; =============================================================================
 ;; Tickets
 
