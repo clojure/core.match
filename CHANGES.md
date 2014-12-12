@@ -1,3 +1,28 @@
+From 0.2.2 to 0.3.0-alpha1
+===
+
+Changes
+---
+* Depend on tools.analyzer
+* MATCH-100: Support function application in match syntax
+* MATCH-97: satisfies? calls for IMatchLookup perf issues, breaking
+
+Fixes
+---
+* MATCH-98: RegexPattern cannot be aot-compiled
+
+From 0.2.1 to 0.2.2
+===
+
+Changes
+---
+* Depend on tools.analyzer
+
+Fixes
+---
+* MATCH-86: Cannot AOT OrPatterns
+* sort pattern duplicates to avoid order issues now that hash values have changed in Clojure 1.6.0
+
 From 0.2.0 to 0.2.1
 ===
 
