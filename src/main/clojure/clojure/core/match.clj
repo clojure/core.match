@@ -734,11 +734,19 @@
         bs (row-bindings f ocrs)]
     (leaf-node a bs)))
 
+;; if the first pattern in the first column is a
+;; pseudo-pattern, expand until it isn't, looking at
+;; any rows beyond the first causes problems for
+;; fn application pattern
+;; TODO: col is always ZERO - this is confusing
+;; that it takes col as an argument, fix - David
+
 (defn expand-matrix [matrix col]
-  (reduce
-    (fn [matrix p]
-      (specialize matrix p))
-    matrix (pseudo-patterns matrix col)))
+  (loop [matrix matrix]
+    (let [p (first (column matrix col))]
+      (if (pseudo-pattern? p)
+        (recur (specialize matrix p))
+        matrix))))
 
 (defn split-matrix [matrix]
   (if (non-local-literal-pattern? (ffirst (rows matrix)))
@@ -752,6 +760,7 @@
   switch/bind node with a default matrix case"
   [matrix col ocrs]
   (let [expanded        (expand-matrix matrix col)
+        ocrs            (occurrences expanded)
         [S D :as split] (split-matrix expanded)]
     (if-not *recur-present*
       (switch-node (ocrs col)
@@ -1524,6 +1533,89 @@ col with the first column and compile the result"
   (.write writer (str "<GuardPattern " (:p p) " :guard " (:gs p) ">")))
 
 ;; -----------------------------------------------------------------------------
+;; ## Function Application Pattern
+;;
+;; Function Application patterns are used to represent function application on
+;; occurrences. Pattern matching will continue on the result of the application.
+;;    `(3 :<< inc)`
+
+(declare app-pattern?)
+
+;; take the original occurence and replace it with a wildcard in each
+;; row that has a compatible application create & new occurrence whose
+;; binding is the old occurence with the function applied
+
+(defn app-pattern-matrix-ocrs [[focr :as ocrs] form]
+  (into
+    [(with-meta
+       (gensym (str "app_" focr))
+       {:bind-expr `(~form ~focr)})]
+    ocrs))
+
+(defn specialize-app-pattern-matrix [rows form]
+  (let [[matched-rows rest-rows]
+        (split-with
+          (fn [[pat :as row]]
+            (and (app-pattern? pat)
+                 (= (:form pat) form)))
+          rows)]
+    (vec
+      (concat
+        (map
+          (fn [row]
+            (prepend
+              (update-pattern row 0 (wildcard-pattern))
+              (:p (first row))))
+          matched-rows)
+        (map
+          (fn [row]
+            (prepend row (wildcard-pattern)))
+          rest-rows)))))
+
+(deftype AppPattern [p form _meta]
+  IPseudoPattern
+
+  Object
+  (toString [this]
+  (str p " :<< " form))
+  (equals [_ other]
+    (and (instance? AppPattern other)
+         (= p (:p other))
+         (= form (:form other))))
+
+  clojure.lang.IObj
+  (meta [_] _meta)
+  (withMeta [_ new-meta]
+    (AppPattern. p form new-meta))
+
+  clojure.lang.ILookup
+  (valAt [this k]
+    (.valAt this k nil))
+  (valAt [this k not-found]
+    (case k
+      :p p
+      :form form
+      ::tag ::app
+      not-found))
+
+  ISpecializeMatrix
+  (specialize-matrix [this matrix]
+    (let [rows  (rows matrix)
+          ocrs  (occurrences matrix)
+          nocrs (app-pattern-matrix-ocrs ocrs form)
+          nrows (specialize-app-pattern-matrix rows form)]
+      (pattern-matrix nrows nocrs))))
+
+(defn app-pattern [p form]
+  (AppPattern. p form nil))
+
+(defn app-pattern? [x]
+  (instance? AppPattern x))
+
+(defmethod print-method AppPattern [p ^Writer writer]
+  (.write writer (str "<AppPattern " (:p p) " :app " (:form p) ">")))
+
+;; -----------------------------------------------------------------------------
 ;; ## Predicate Patterns
 ;;
 ;; Predicate patterns are used to represent simple guards on patterns,
@@ -1632,6 +1724,10 @@ col with the first column and compile the result"
   (and (= (:rest? a) (:rest? b))
        (= (:size a) (:size b))))
 
+(defmethod groupable? [::app ::app]
+  [a b]
+  (and (= (:form a) (:form b))))
+
 ;; =============================================================================
 ;; # Interface
 
@@ -1735,6 +1831,9 @@ col with the first column and compile the result"
 
 (defmethod emit-pattern-for-syntax [:default :as]
   [[p _ sym]] (with-meta (emit-pattern p) {:as sym}))
+
+(defmethod emit-pattern-for-syntax [:default :<<]
+  [[p _ form]] (app-pattern (emit-pattern p) form))
 
 (defmethod emit-pattern-for-syntax [:default :when]
   [[p _ gs]]

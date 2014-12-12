@@ -860,8 +860,36 @@
 
 (let [node (B nil nil (R nil nil (R nil nil nil)))]
   (time
-    (dotimes [_ 1e7]
+    (dotimes [_ 1e6]
       (balance-array node))))
+
+(let [n 1]
+  (assert
+    (= (match [n]
+         [(1 :<< inc)] :one
+         [(2 :<< inc)] :two
+         :else :oops)
+      :two))
+  (assert
+    (= (match [n]
+         [(1 :<< inc)] :one
+         [(3 :<< #(* % 3))] :three
+         :else :oops)
+      :three)))
+
+(let [v [1 2 4 3]]
+  (assert
+    (= (match [v]
+         [(([1 2 4 5] :seq) :<< sort)] :this-sort
+         [(([3 _ _ _] :seq) :<< reverse)] :last-is-three
+         :else :oops)
+      :last-is-three))
+  (assert
+    (= (match [v]
+         [((:or 3 4) :<< count)] :three-or-four
+         [(5 :<< count)] :five
+         :else :oops)
+      :three-or-four)))
 
 ;; =============================================================================
 ;; Tickets

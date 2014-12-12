@@ -820,6 +820,32 @@
              [[1 2 3]] :a3))
         :a3)))
 
+(deftest match-app-1
+  (let [n 1]
+    (is (= (match [n]
+             [(1 :<< inc)] :one
+             [(2 :<< inc)] :two
+             :else :oops)
+          :two))
+    (is (= (match [n]
+             [(1 :<< inc)] :one
+             [(3 :<< #(* % 3))] :three
+             :else :oops)
+          :three))))
+
+(deftest match-app-2
+  (let [v [1 2 4 3]]
+    (is (= (match [v]
+             [(([1 2 4 5] :seq) :<< sort)] :this-sort
+             [(([3 _ _ _] :seq) :<< reverse)] :last-is-three
+             :else :oops)
+          :last-is-three))
+    (is (= (match [v]
+             [((:or 3 4) :<< count)] :three-or-four
+             [(5 :<< count)] :five
+             :else :oops)
+          :three-or-four))))
+
 ;; =============================================================================
 ;; Tickets
 
