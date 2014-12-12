@@ -10,14 +10,14 @@ You can find more detailed information
 Releases and dependency information
 ----
 
-Latest release: 0.3.0-alpha1
+Latest release: 0.3.0-alpha2
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [Leiningen](http://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "0.3.0-alpha1"]
+[org.clojure/core.match "0.3.0-alpha2"]
 ```
 
 [Maven](http://maven.apache.org) dependency information:
@@ -26,7 +26,7 @@ Latest release: 0.3.0-alpha1
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>0.3.0-alpha1</version>
+  <version>0.3.0-alpha2</version>
 </dependency>
 ```
 

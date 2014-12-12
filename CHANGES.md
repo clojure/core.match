@@ -1,3 +1,11 @@
+From 0.3.0-alpha1 to 0.3.0-alpha2
+
+Fixes
+---
+* Fix fn app pattern issue when nested in maps & vectors
+
+===
+
 From 0.2.2 to 0.3.0-alpha1
 ===
 
