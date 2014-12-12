@@ -1,9 +1,11 @@
 match
 ====
 
-An optimized pattern match and predicate dispatch library for Clojure. Currently the library only implements pattern matching. It supports Clojure 1.3.0 and later as well as ClojureScript.
+An optimized pattern matching library for Clojure. It supports Clojure
+1.5.1 and later as well as ClojureScript.
 
-You can find more detailed information [here](https://github.com/clojure/core.match/wiki/Overview).
+You can find more detailed information
+[here](https://github.com/clojure/core.match/wiki/Overview).
 
 Releases and dependency information
 ----
@@ -74,6 +76,7 @@ Developer information
 Copyright and license
 ----
 
-Copyright © 2010-2013 David Nolen, Rich Hickey & contributors.
+Copyright © 2010-2014 David Nolen, Ambrose Bonnaire-Sergeant, Rich
+Hickey & contributors.
 
 Licensed under the EPL (see the file epl.html).
