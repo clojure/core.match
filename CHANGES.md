@@ -1,4 +1,12 @@
+From 0.3.0-alpha2 to 0.3.0-alpha3
+===
+
+Fixes
+---
+* Fix regression in test sharing due to unfinished literal case work
+
 From 0.3.0-alpha1 to 0.3.0-alpha2
+===
 
 Fixes
 ---
