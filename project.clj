@@ -1,4 +1,4 @@
-(defproject org.clojure/core.match "0.3.0-alpha3"
+(defproject org.clojure/core.match "0.3.0-alpha4-SNAPSHOT"
   :description "Optimized pattern matching for Clojure"
 
   :jvm-opts ^:replace ["-Xmx512m" "-server"]
