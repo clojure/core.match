@@ -749,11 +749,13 @@
         matrix))))
 
 (defn split-matrix [matrix]
-  (if (non-local-literal-pattern? (ffirst (rows matrix)))
+  (matrix-splitter matrix)
+  #_(if (non-local-literal-pattern? (ffirst (rows matrix)))
     ;; literal testing based on equality can do w/o
     ;; backtracking for all adjacent literal ctors in a column
     (literal-case-matrix-splitter matrix)
-    (matrix-splitter matrix)))
+    (matrix-splitter matrix))
+  )
 
 (defn first-column-chosen-case 
   "Case 3a: The first column is chosen. Compute and return a
