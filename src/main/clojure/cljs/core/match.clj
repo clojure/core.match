@@ -1,6 +1,6 @@
 (ns cljs.core.match
   (:refer-clojure :exclude [compile])
-  (:use [clojure.core.match :exclude [match matchv match-let]]))
+  (:use [clojure.core.match :exclude [match matchv match-let matchm]]))
 
 (defmacro asets [a vs]
   `(do
