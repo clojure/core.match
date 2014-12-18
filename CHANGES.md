@@ -1,3 +1,10 @@
+From 0.3.0-alpha3 to 0.3.0-alpha4
+===
+
+Fixes
+---
+* Add `matchm` to ClojureScript support
+
 From 0.3.0-alpha2 to 0.3.0-alpha3
 ===
 
