@@ -36,7 +36,7 @@ Example Usage
 From Clojure:
 
 ```clojure
-(use '[clojure.core.match :only [match]])
+(require '[clojure.core.match :refer [match]])
 
 (doseq [n (range 1 101)]
   (println
