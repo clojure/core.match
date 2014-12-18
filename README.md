@@ -36,7 +36,7 @@ Example Usage
 From Clojure:
 
 ```clojure
-(use '[clojure.core.match :only (match)])
+(use '[clojure.core.match :only [match]])
 
 (doseq [n (range 1 101)]
   (println
@@ -51,8 +51,7 @@ From ClojureScript:
 
 ```clojure
 (ns foo.bar
-  (:require-macros [cljs.core.match.macros :refer [match]])
-  (:require [cljs.core.match]))
+  (:require [cljs.core.match :refer-macros [match]]))
 
 (doseq [n (range 1 101)]
   (println
