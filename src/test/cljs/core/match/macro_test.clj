@@ -2,4 +2,4 @@
 
 (defmacro test1 []
   `(fn [& args#]
-     (cljs.core.match.macros/match [1 2 3] [1 2 3] :match)))
+     (cljs.core.match/match [1 2 3] [1 2 3] :match)))
