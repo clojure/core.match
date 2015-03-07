@@ -8,3 +8,9 @@
                        [#"asdf"] 1
                        :else 2)
                 1)))
+
+(deftest dont-attempt-to-match-non-string
+         (is (= (match [:not-a-string]
+                       [#"qwerty"] :yes
+                       :else :no)
+                :no)))
