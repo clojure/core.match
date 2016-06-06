@@ -1,26 +1,25 @@
 {:namespaces
  ({:doc nil,
    :name "clojure.core.match",
-   :wiki-url
-   "http://clojure.github.io/core.match/clojure.core.match-api.html",
+   :wiki-url "http://clojure.github.io/core.match/index.html",
    :source-url
    "https://github.com/clojure/core.match/blob/1c6b2b522990ed9c78fa3499d2797d0fab87d114/src/main/clojure/clojure/core/match.clj"}
   {:doc nil,
    :name "clojure.core.match.java",
    :wiki-url
-   "http://clojure.github.io/core.match/clojure.core.match-api.html#clojure.core.match.java",
+   "http://clojure.github.io/core.match/index.html#clojure.core.match.java",
    :source-url
    "https://github.com/clojure/core.match/blob/ff6c839d1551a57e2b15033c256324343680fe92/src/main/clojure/clojure/core/match/java.clj"}
   {:doc nil,
    :name "clojure.core.match.protocols",
    :wiki-url
-   "http://clojure.github.io/core.match/clojure.core.match-api.html#clojure.core.match.protocols",
+   "http://clojure.github.io/core.match/index.html#clojure.core.match.protocols",
    :source-url
    "https://github.com/clojure/core.match/blob/0545c6af9d545dcf1bc0a3ca792771b9a678a030/src/main/clojure/clojure/core/match/protocols.clj"}
   {:doc nil,
    :name "clojure.core.match.regex",
    :wiki-url
-   "http://clojure.github.io/core.match/clojure.core.match-api.html#clojure.core.match.regex",
+   "http://clojure.github.io/core.match/index.html#clojure.core.match.regex",
    :source-url
    "https://github.com/clojure/core.match/blob/0545c6af9d545dcf1bc0a3ca792771b9a678a030/src/main/clojure/clojure/core/match/regex.clj"}),
  :vars
