@@ -78,4 +78,4 @@ Copyright and license
 Copyright © 2010-2014 David Nolen, Ambrose Bonnaire-Sergeant, Rich
 Hickey & contributors.
 
-Licensed under the EPL (see the file epl.html).
+Licensed under the EPL (see the file epl-v10.html).
