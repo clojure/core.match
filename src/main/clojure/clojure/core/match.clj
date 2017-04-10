@@ -2154,3 +2154,6 @@ col with the first column and compile the result"
     `(let ~bindings
        (match [~@bindvars#]
          ~@body))))
+
+(defmacro ?= [a & body]
+  `(match [~a] [~@body] true :else false))
