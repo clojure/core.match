@@ -30,7 +30,9 @@
 
 (defmethod to-source ::m/regex
   [pat ocr]
-  `(re-matches ~(:regex pat) ~ocr))
+  `(let [ocr# ~ocr]
+     (when (string? ocr#)
+       (re-matches ~(:regex pat) ocr#))))
 
 ;; `java.util.regex.Pattern` doesn't override `equals`, so we reinvent it here.
 ;;
