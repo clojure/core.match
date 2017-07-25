@@ -53,11 +53,6 @@
       <version>0.0-2411</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.clojure</groupId>
-      <artifactId>tools.analyzer.jvm</artifactId>
-      <version>0.6.5</version>
-    </dependency>
   </dependencies>
 
   <repositories>
