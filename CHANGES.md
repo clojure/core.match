@@ -1,3 +1,10 @@
+From 0.3.0-alpha4 to 0.3.0-alpha5
+===
+
+Fixes
+---
+* Remove unused tools.analyzer dependency
+
 From 0.3.0-alpha3 to 0.3.0-alpha4
 ===
 
