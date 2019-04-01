@@ -75,7 +75,7 @@ Developer information
 Copyright and license
 ----
 
-Copyright © 2010-2014 David Nolen, Ambrose Bonnaire-Sergeant, Rich
+Copyright © 2010-2019 David Nolen, Ambrose Bonnaire-Sergeant, Rich
 Hickey & contributors.
 
 Licensed under the EPL (see the file epl.html).
