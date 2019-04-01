@@ -1,3 +1,10 @@
+From 0.3.0-alpha5 to 0.3.0
+===
+
+Fixes
+---
+* MATCH-124 - correct namespaced keywords to work with Clojure 1.9+
+
 From 0.3.0-alpha4 to 0.3.0-alpha5
 ===
 
