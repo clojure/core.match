@@ -1,3 +1,8 @@
+From 0.3.0 to 1.0.0
+===
+
+No changes
+
 From 0.3.0-alpha5 to 0.3.0
 ===
 
