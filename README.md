@@ -16,6 +16,11 @@ Latest release: 1.0.0
 
 * [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
+[CLI/`deps.edn`](https://clojure.org/reference/deps_and_cli) dependency information:
+```clojure
+org.clojure/core.match {:mvn/version "1.0.0"}
+```
+
 [Leiningen](http://github.com/technomancy/leiningen/) dependency information:
 
 ```
