@@ -72,6 +72,12 @@ From ClojureScript:
 For more detailed descriptions of usage please refer to the
 [wiki](http://github.com/clojure/core.match/wiki).
 
+Videos on core.match
+----
+
+* [Understanding pattern matching in Clojure with core.match](https://youtu.be/mi3OtBc73-k) by Misophistful
+* [Pattern Matching in Clojure](https://youtu.be/n7aE6k8o_BU) by Sean Johnson
+
 Developer information
 ----
 
