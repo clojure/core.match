@@ -75,7 +75,7 @@ For more detailed descriptions of usage please refer to the
 Developer information
 ----
 
-* [Bug Tracker](http://dev.clojure.org/jira/browse/MATCH)
+* [Bug Tracker](https://clojure.atlassian.net/projects/MATCH)
 * [Continuous Integration](http://build.clojure.org/job/core.match/)
 * [Compatibility Test Matrix](http://build.clojure.org/job/core.match-test-matrix/)
 

@@ -22,7 +22,7 @@
 
   <issueManagement>
     <system>jira</system>
-    <url>http://dev.clojure.org/jira/browse/MATCH</url>
+    <url>https://clojure.atlassian.net/projects/MATCH</url>
   </issueManagement>
 
   <developers>
