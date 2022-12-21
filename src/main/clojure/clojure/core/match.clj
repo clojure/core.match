@@ -1169,7 +1169,9 @@ col with the first column and compile the result"
   (vec (map #(specialize-map-pattern-row % env) rows)))
 
 (defn gen-map-pattern-ocr [ocr k]
-  (gensym (str (name ocr) "_" (.replace (name k) "." "_DOT_") "__")))
+  (gensym (str (name ocr) "_" (->  (name k)
+                                   (.replace "." "_DOT_")
+                                   (.replace "/" "_SLASH_")) "__")))
 
 (defn map-pattern-matrix-ocr-sym [k env]
   (let [focr (:focr env)

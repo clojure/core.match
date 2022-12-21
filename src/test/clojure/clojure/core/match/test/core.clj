@@ -970,3 +970,9 @@
            (match [m]
              [{:a.b _}] :a0))
          :a0)))
+
+(deftest match-93
+  (is (= (let [m {"a/b" "a"}]
+           (match [m]
+             [{"a/b" "a"}] :a))
+         :a)))
