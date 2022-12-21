@@ -1,3 +1,8 @@
+From 1.0.0 to 1.0.1
+===
+
+* MATCH-129 - fix syntax error using string literal with a / in it
+
 From 0.3.0 to 1.0.0
 ===
 
