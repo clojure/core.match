@@ -12,28 +12,28 @@ Releases and dependency information
 
 This project follows the version scheme MAJOR.MINOR.PATCH where each component provides some relative indication of the size of the change, but does not follow semantic versioning. In general, all changes endeavor to be non-breaking (by moving to new names rather than by breaking existing names).
 
-Latest release: 1.0.0
+Latest release: 1.0.1
 
-* [All released versions](http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
+* [All released versions](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [CLI/`deps.edn`](https://clojure.org/reference/deps_and_cli) dependency information:
 ```clojure
-org.clojure/core.match {:mvn/version "1.0.0"}
+org.clojure/core.match {:mvn/version "1.0.1"}
 ```
 
-[Leiningen](http://github.com/technomancy/leiningen/) dependency information:
+[Leiningen](https://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "1.0.0"]
+[org.clojure/core.match "1.0.1"]
 ```
 
-[Maven](http://maven.apache.org) dependency information:
+[Maven](https://maven.apache.org) dependency information:
 
 ```
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -70,14 +70,14 @@ From ClojureScript:
 ```
 
 For more detailed descriptions of usage please refer to the
-[wiki](http://github.com/clojure/core.match/wiki).
+[wiki](https://github.com/clojure/core.match/wiki).
 
 Developer information
 ----
 
 * [Bug Tracker](https://clojure.atlassian.net/projects/MATCH)
-* [Continuous Integration](http://build.clojure.org/job/core.match/)
-* [Compatibility Test Matrix](http://build.clojure.org/job/core.match-test-matrix/)
+* [Continuous Integration](https://build.clojure.org/job/core.match/)
+* [Compatibility Test Matrix](https://build.clojure.org/job/core.match-test-matrix/)
 
 Copyright and license
 ----
