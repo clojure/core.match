@@ -76,13 +76,12 @@ Developer information
 ----
 
 * [Bug Tracker](https://clojure.atlassian.net/projects/MATCH)
-* [Continuous Integration](https://build.clojure.org/job/core.match/)
-* [Compatibility Test Matrix](https://build.clojure.org/job/core.match-test-matrix/)
+* [Continuous Integration](https://github.com/clojure/core.match/actions/workflows/test.yml)
 
 Copyright and license
 ----
 
-Copyright © 2010-2020 David Nolen, Ambrose Bonnaire-Sergeant, Rich
+Copyright © 2010-2023 David Nolen, Ambrose Bonnaire-Sergeant, Rich
 Hickey & contributors.
 
 Licensed under the EPL (see the file epl.html).
