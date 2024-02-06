@@ -1,3 +1,8 @@
+From 1.0.1 to 1.1.0
+===
+
+* Updated Clojure dep to 1.10.3
+
 From 1.0.0 to 1.0.1
 ===
 
