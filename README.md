@@ -12,19 +12,19 @@ Releases and dependency information
 
 This project follows the version scheme MAJOR.MINOR.PATCH where each component provides some relative indication of the size of the change, but does not follow semantic versioning. In general, all changes endeavor to be non-breaking (by moving to new names rather than by breaking existing names).
 
-Latest release: 1.0.1
+Latest release: 1.1.0
 
 * [All released versions](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.clojure%22%20AND%20a%3A%22core.match%22)
 
 [CLI/`deps.edn`](https://clojure.org/reference/deps_and_cli) dependency information:
 ```clojure
-org.clojure/core.match {:mvn/version "1.0.1"}
+org.clojure/core.match {:mvn/version "1.1.0"}
 ```
 
 [Leiningen](https://github.com/technomancy/leiningen/) dependency information:
 
 ```
-[org.clojure/core.match "1.0.1"]
+[org.clojure/core.match "1.1.0"]
 ```
 
 [Maven](https://maven.apache.org) dependency information:
@@ -33,7 +33,7 @@ org.clojure/core.match {:mvn/version "1.0.1"}
 <dependency>
   <groupId>org.clojure</groupId>
   <artifactId>core.match</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
