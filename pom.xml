@@ -9,7 +9,7 @@
   <licenses>
     <license>
       <name>Eclipse Public License 1.0</name>
-      <url>http://opensource.org/licenses/eclipse-1.0.php</url>
+      <url>https://opensource.org/license/epl-1-0/</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -17,7 +17,7 @@
   <parent>
     <groupId>org.clojure</groupId>
     <artifactId>pom.contrib</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
   </parent>
 
   <issueManagement>
@@ -29,7 +29,7 @@
     <developer>
       <id>swannodette</id>
       <name>David Nolen</name>
-      <url>http://dosync.posterous.com</url>
+      <url>https://dosync.posterous.com</url>
       <roles>
         <role>Project Lead</role>
       </roles>
@@ -37,7 +37,7 @@
     <developer>
       <id>frenchy64</id>
       <name>Ambrose Bonnaire-Sergeant</name>
-      <url>http://twitter.com/ambrosebs</url>
+      <url>https://twitter.com/ambrosebs</url>
     </developer>
   </developers>
 
@@ -59,17 +59,10 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-      <repository>
-      <id>clojars.org</id>
-      <url>http://clojars.org/repo</url>
-  </repository>
-  </repositories>
-
   <scm>
     <connection>scm:git:git://github.com/clojure/core.match.git</connection>
     <developerConnection>scm:git:git://github.com/clojure/core.match.git</developerConnection>
-    <url>http://github.com/clojure/core.match</url>
+    <url>https://github.com/clojure/core.match</url>
     <tag>HEAD</tag>
   </scm>
 </project>
