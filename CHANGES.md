@@ -1,3 +1,8 @@
+From 1.1.0 to 1.1.1
+===
+
+* Update to latest parent pom and Clojure 1.11.4
+
 From 1.0.1 to 1.1.0
 ===
 
