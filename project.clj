@@ -6,7 +6,7 @@
   :test-paths ["src/test/clojure"]
   :source-paths ["src/main/clojure"]
 
-  :dependencies [[org.clojure/clojure "1.10.3"]
+  :dependencies [[org.clojure/clojure "1.11.4"]
                  [org.clojure/clojurescript "0.0-2496" :scope "provided"]]
 
   :plugins [[lein-cljsbuild "1.0.4-SNAPSHOT"]
